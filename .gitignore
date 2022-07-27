@@ -1,0 +1,8 @@
+.idea/
+.vscode/
+__pycache__
+burst_*.txt
+Controller_Simulations
+Steady_State_Simulation
+*.mat
+*.csv
