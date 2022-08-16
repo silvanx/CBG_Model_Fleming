@@ -12,7 +12,7 @@ This module contains:
 :license: CeCILL, see LICENSE for details.
 """
 
-DEFAULT_MAX_DELAY = 10.0
+DEFAULT_MAX_DELAY = 'auto'
 DEFAULT_TIMESTEP = 0.1
 DEFAULT_MIN_DELAY = 'auto'
 
