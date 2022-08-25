@@ -12,7 +12,6 @@ Description: Cortico-Basal Ganglia Network Model implemented in PyNN using the s
 			 
 @author: John Fleming, john.fleming@ucdconnect.ie
 """
-
 import neuron
 h = neuron.h
 
@@ -31,6 +30,7 @@ import math
 from scipy import signal
 import os
 import sys
+import datetime
 
 # Import global variables for GPe DBS
 import Global_Variables as GV
@@ -158,7 +158,7 @@ if __name__ == '__main__':
 	
 	# Save/load Striatal Spike times
 	np.save('Striatal_Spike_Times.npy', striatal_spike_times)		# Save spike times so they can be reloaded 
-	striatal_spike_times =  np.load('Striatal_Spike_Times.npy')		# Load spike times from file
+	striatal_spike_times =  np.load('Striatal_Spike_Times.npy', allow_pickle=True)		# Load spike times from file
 	for i in range(0,Pop_size):
 		spike_times = striatal_spike_times[i][0].value
 		spike_times = spike_times[spike_times>steady_state_duration]
@@ -174,8 +174,8 @@ if __name__ == '__main__':
 	Thalamic_Pop = Population(Pop_size, Thalamic_Neuron_Type(), initial_values={'v': v_init}, label='Thalamic Neurons')
 	
 	# Update the spike times for the striatal populations
-	for i in range(0,Pop_size):
-		Striatal_Pop[i].spike_times=striatal_spike_times[i][0]
+	for i in range(0, Pop_size):
+		Striatal_Pop[i].spike_times = striatal_spike_times[i][0]
 	
 	# Load Cortical bias currents for beta burst modulation
 	burst_times_script = "burst_times_1.txt"
@@ -236,20 +236,22 @@ if __name__ == '__main__':
 	"""
 	
 	# Assign Positions for recording and stimulating electrode point sources
-	recording_electrode_1_position = np.array([0,-1500,250])
-	recording_electrode_2_position = np.array([0,1500,250])
-	stimulating_electrode_position = np.array([0,0,250])
+	recording_electrode_1_position = np.array([0, -1500, 250])
+	recording_electrode_2_position = np.array([0, 1500, 250])
+	stimulating_electrode_position = np.array([0, 0, 250])
 	
 	# Calculate STN cell distances to each recording electrode - only using xy coordinates for distance calculations
 	STN_recording_electrode_1_distances = distances_to_electrode(recording_electrode_1_position, STN_Pop)
 	STN_recording_electrode_2_distances = distances_to_electrode(recording_electrode_2_position, STN_Pop)
 	
-	# Calculate Cortical Collateral distances from the stimulating electrode - uses xyz coordinates for distance calculation - these distances need to be in um for xtra mechanism
+	# Calculate Cortical Collateral distances from the stimulating electrode - uses xyz coordinates for distance
+	# calculation - these distances need to be in um for xtra mechanism
 	Cortical_Collateral_stimulating_electrode_distances = collateral_distances_to_electrode(stimulating_electrode_position, Cortical_Pop, L=500, nseg=11)
 	#np.savetxt('cortical_collateral_electrode_distances.txt', Cortical_Collateral_stimulating_electrode_distances, delimiter=',')	# Save the generated cortical collateral stimulation electrode distances to a textfile
 	
 	# Synaptic Connections
-	# Add variability to Cortical connections - cortical interneuron connection weights are random from uniform distribution
+	# Add variability to Cortical connections - cortical interneuron connection weights are random from uniform
+	# distribution
 	gCtxInt_max_weight = 2.5e-3									# Ctx -> Int max coupling value
 	gIntCtx_max_weight = 6.0e-3									# Int -> Ctx max coupling value
 	gCtxInt = RandomDistribution('uniform',(0, gCtxInt_max_weight), rng=NumpyRNG(seed=3695))
@@ -368,6 +370,9 @@ if __name__ == '__main__':
 	#controller = standard_PID_Controller(SetPoint=1.0414e-04, Kp=5.0, Ti=0, Td=0, Ts=0.02, MinValue=0.0, MaxValue=3.0)
 	# PI Controller: 
 	controller = standard_PID_Controller(SetPoint=1.0414e-04, Kp=0.23, Ti=0.2, Td=0, Ts=0.02, MinValue=0.0, MaxValue=3.0)
+	start_timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+	simulation_identifier = controller.get_label() + "-" + start_timestamp
+	simulation_output_dir = "Simulation_Output_Results/Controller_Simulations/Amp/" + simulation_identifier
 	
 	# Generate a square wave which represents the DBS signal - Needs to be initialized to zero when unused to prevent open-circuit of cortical collateral extracellular mechanism
 	DBS_Signal, DBS_times, next_DBS_pulse_time = generate_DBS_Signal(start_time=steady_state_duration+10+simulator.state.dt, stop_time=simulation_duration, dt=simulator.state.dt,
@@ -443,7 +448,6 @@ if __name__ == '__main__':
 	
 	# For loop to integrate the model up to each controller call
 	for controller_call_index, controller_call_time in enumerate(controller_call_times):
-		
 		# Integrate model to controller_call_time
 		run_until(controller_call_time-simulator.state.dt)
 		
@@ -508,20 +512,19 @@ if __name__ == '__main__':
 		# Write population data to file
 		write_index = "{:.0f}_".format(controller_call_index)
 		suffix = "_{:.0f}ms-{:.0f}ms".format(last_write_time, simulator.state.t)
-		controller_label = controller.get_label()
 		
-		STN_Pop.write_data("/Simulation_Output_Results/Controller_Simulations/Amp/"+controller_label+"/STN_Pop/"+write_index+"STN_Soma_v"+suffix+".mat", 'soma(0.5).v', clear=True)
+		STN_Pop.write_data(simulation_output_dir + "/STN_Pop/" + write_index + "STN_Soma_v" + suffix + ".mat", 'soma(0.5).v', clear=True)
 		
 		last_write_time = simulator.state.t
 	
 	"""
 	# Write population membrane voltage data to file
-	Cortical_Pop.write_data("/Simulation_Output_Results/Controller_Simulations/Amp/"+controller_label+"/Cortical_Pop/Cortical_Collateral_v.mat", 'collateral(0.5).v', clear=False)
-	Cortical_Pop.write_data("/Simulation_Output_Results/Controller_Simulations/Amp/"+controller_label+"/Cortical_Pop/Cortical_Soma_v.mat", 'soma(0.5).v', clear=True)
-	Interneuron_Pop.write_data("/Simulation_Output_Results/Controller_Simulations/Amp/"+controller_label+"/Interneuron_Pop/Interneuron_Soma_v.mat", 'soma(0.5).v', clear=True)
-	GPe_Pop.write_data("/Simulation_Output_Results/Controller_Simulations/Amp/"+controller_label+"/GPe_Pop/GPe_Soma_v.mat", 'soma(0.5).v', clear=True)
-	GPi_Pop.write_data("/Simulation_Output_Results/Controller_Simulations/Amp/"+controller_label+"/GPi_Pop/GPi_Soma_v.mat", 'soma(0.5).v', clear=True)
-	Thalamic_Pop.write_data("/Simulation_Output_Results/Controller_Simulations/Amp/"+controller_label+"/Thalamic_Pop/Thalamic_Soma_v.mat", 'soma(0.5).v', clear=True)
+	Cortical_Pop.write_data(simulation_output_dir + "/Cortical_Pop/Cortical_Collateral_v.mat", 'collateral(0.5).v', clear=False)
+	Cortical_Pop.write_data(simulation_output_dir + "/Cortical_Pop/Cortical_Soma_v.mat", 'soma(0.5).v', clear=True)
+	Interneuron_Pop.write_data(simulation_output_dir + "/Interneuron_Pop/Interneuron_Soma_v.mat", 'soma(0.5).v', clear=True)
+	GPe_Pop.write_data(simulation_output_dir + "/GPe_Pop/GPe_Soma_v.mat", 'soma(0.5).v', clear=True)
+	GPi_Pop.write_data(simulation_output_dir + "/GPi_Pop/GPi_Soma_v.mat", 'soma(0.5).v', clear=True)
+	Thalamic_Pop.write_data(simulation_output_dir + "/Thalamic_Pop/Thalamic_Soma_v.mat", 'soma(0.5).v', clear=True)
 	"""
 	
 	# Write controller values to csv files
@@ -529,10 +532,10 @@ if __name__ == '__main__':
 	controller_measured_error_values = np.asarray(controller.get_error_history()) 
 	controller_output_values = np.asarray(controller.get_output_history())
 	controller_sample_times = np.asarray(controller.get_sample_times()) 
-	np.savetxt("/Simulation_Output_Results/Controller_Simulations/Amp/"+controller_label+"/controller_beta_values.csv", controller_measured_beta_values, delimiter=',')
-	np.savetxt("/Simulation_Output_Results/Controller_Simulations/Amp/"+controller_label+"/controller_error_values.csv", controller_measured_error_values, delimiter=',')
-	np.savetxt("/Simulation_Output_Results/Controller_Simulations/Amp/"+controller_label+"/controller_amplitude_values.csv", controller_output_values, delimiter=',')	
-	np.savetxt("/Simulation_Output_Results/Controller_Simulations/Amp/"+controller_label+"/controller_sample_times.csv", controller_sample_times, delimiter=',')
+	np.savetxt(simulation_output_dir + "/controller_beta_values.csv", controller_measured_beta_values, delimiter=',')
+	np.savetxt(simulation_output_dir + "/controller_error_values.csv", controller_measured_error_values, delimiter=',')
+	np.savetxt(simulation_output_dir + "/controller_amplitude_values.csv", controller_output_values, delimiter=',')
+	np.savetxt(simulation_output_dir + "/controller_sample_times.csv", controller_sample_times, delimiter=',')
 	
 	# Write the STN LFP to .mat file
 	STN_LFP_Block = neo.Block(name='STN_LFP')
@@ -541,7 +544,7 @@ if __name__ == '__main__':
 	STN_LFP_signal = neo.AnalogSignal(STN_LFP, units='mV', t_start=0*pq.ms, sampling_rate=pq.Quantity(simulator.state.dt, '1/ms'))
 	STN_LFP_seg.analogsignals.append(STN_LFP_signal)
 	
-	w = neo.io.NeoMatlabIO(filename="/Simulation_Output_Results/Controller_Simulations/Amp/"+controller_label+"/STN_LFP.mat") 
+	w = neo.io.NeoMatlabIO(filename=simulation_output_dir + "/STN_LFP.mat")
 	w.write_block(STN_LFP_Block)
 	
 	"""
@@ -551,7 +554,7 @@ if __name__ == '__main__':
 	STN_LFP_AMPA_Block.segments.append(STN_LFP_AMPA_seg)
 	STN_LFP_AMPA_signal = neo.AnalogSignal(STN_LFP_AMPA, units='mV', t_start=0*pq.ms, sampling_rate=pq.Quantity(simulator.state.dt, '1/ms'))
 	STN_LFP_AMPA_seg.analogsignals.append(STN_LFP_AMPA_signal)
-	w = neo.io.NeoMatlabIO(filename="/Simulation_Output_Results/Controller_Simulations/Amp/"+controller_label+"/STN_LFP_AMPA.mat") 
+	w = neo.io.NeoMatlabIO(filename=simulation_output_dir + "/STN_LFP_AMPA.mat") 
 	w.write_block(STN_LFP_AMPA_Block)
 	
 	STN_LFP_GABAa_Block = neo.Block(name='STN_LFP_GABAa')
@@ -559,7 +562,7 @@ if __name__ == '__main__':
 	STN_LFP_GABAa_Block.segments.append(STN_LFP_GABAa_seg)
 	STN_LFP_GABAa_signal = neo.AnalogSignal(STN_LFP_GABAa, units='mV', t_start=0*pq.ms, sampling_rate=pq.Quantity(simulator.state.dt, '1/ms'))
 	STN_LFP_GABAa_seg.analogsignals.append(STN_LFP_GABAa_signal)
-	w = neo.io.NeoMatlabIO(filename="/Simulation_Output_Results/Controller_Simulations/Amp/"+controller_label+"/STN_LFP_GABAa.mat") 
+	w = neo.io.NeoMatlabIO(filename=simulation_output_dir + "/STN_LFP_GABAa.mat") 
 	w.write_block(STN_LFP_GABAa_Block)
 	"""
 	
@@ -573,7 +576,7 @@ if __name__ == '__main__':
 	DBS_times = neo.AnalogSignal(DBS_times_neuron, units='ms', t_start=DBS_times_neuron*pq.ms, sampling_rate=pq.Quantity(1.0/simulator.state.dt, '1/ms'))
 	DBS_Signal_seg.analogsignals.append(DBS_times)
 	
-	w = neo.io.NeoMatlabIO(filename="/Simulation_Output_Results/Controller_Simulations/Amp/"+controller_label+"/DBS_Signal.mat") 
+	w = neo.io.NeoMatlabIO(filename=simulation_output_dir + "/DBS_Signal.mat")
 	w.write_block(DBS_Block)
 
 	print("Simulation Done!")
