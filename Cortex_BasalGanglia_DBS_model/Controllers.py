@@ -11,7 +11,8 @@ Description: Controller class implementations for:
 
 import math
 
-class Constant_Controller:
+
+class ConstantController:
 	"""Constant DBS Parameter Controller Class"""
 
 	def __init__(self, SetPoint=0.0, MinValue=0.0, MaxValue=1e9, ConstantValue=0.0, Ts=0.0, units='mA'):
@@ -50,11 +51,11 @@ class Constant_Controller:
 			
 		"""
 		
-		# Calculate Error - if SetPoint > 0.0, then normalize error with respect to setpoint
-		if self.SetPoint==0.0:
+		# Calculate Error - if SetPoint > 0.0, then normalize error with respect to set point
+		if self.SetPoint == 0.0:
 			error = state_value - self.SetPoint
 		else:
-			error = (state_value - self.SetPoint)/self.SetPoint 
+			error = (state_value - self.SetPoint) / self.SetPoint
 		
 		# Bound the controller output (between MinValue - MaxValue)
 		if self.ConstantValue > self.MaxValue:
@@ -82,7 +83,7 @@ class Constant_Controller:
 	
 	def setConstantValue(self, constant_value):
 		"""Sets the constant controller output"""
-		self.ConstantValue = ConstantValue
+		self.ConstantValue = constant_value
 	
 	def setTs(self, Ts):
 		"""Sets the sampling rate of the controller"""
@@ -110,7 +111,8 @@ class Constant_Controller:
 	def get_label(self):
 		return self.label
 
-class ON_OFF_Controller:
+
+class OnOffController:
 	"""On-Off Controller Class"""
 
 	def __init__(self, SetPoint=0.0, MinValue=0.0, MaxValue=1e9, RampDuration=0.25, Ts=0.02):
@@ -118,7 +120,7 @@ class ON_OFF_Controller:
 		self.SetPoint = SetPoint
 		self.MaxValue = MaxValue
 		self.MinValue = MinValue
-		self.RampDuration = RampDuration	# should be defined in sec, i.e. 0.25 sec
+		self.RampDuration = RampDuration    # should be defined in sec, i.e. 0.25 sec
 		self.Ts = Ts						# should be in sec as per above
 		self.label = 'On_Off_Controller'
 		
@@ -157,8 +159,8 @@ class ON_OFF_Controller:
 
 		"""
 		
-		# Calculate Error - if SetPoint > 0.0, then normalize error with respect to setpoint
-		if self.SetPoint==0.0:
+		# Calculate Error - if SetPoint > 0.0, then normalize error with respect to set point
+		if self.SetPoint == 0.0:
 			error = state_value - self.SetPoint
 			increment = 0.0
 		else:
@@ -169,12 +171,12 @@ class ON_OFF_Controller:
 				increment = -self.OutputValueIncrement
 		
 		# Bound the controller output (between MinValue - MaxValue)
-		if self.LastOutputValue+increment > self.MaxValue:
+		if self.LastOutputValue + increment > self.MaxValue:
 			self.OutputValue = self.MaxValue
-		elif self.LastOutputValue+increment < self.MinValue:
+		elif self.LastOutputValue + increment < self.MinValue:
 			self.OutputValue = self.MinValue
 		else:
-			self.OutputValue = self.LastOutputValue+increment
+			self.OutputValue = self.LastOutputValue + increment
 		
 		# Record state, error and sample time values
 		self.state_history.append(state_value)
@@ -197,7 +199,7 @@ class ON_OFF_Controller:
 		self.OutputValueIncrement = (self.MaxValue - self.MinValue)/(self.RampDuration/self.Ts)
 	
 	def setRampDuration(self, ramp_duration):
-		"""Sets the how long the controller output takes to reach it's max value"""
+		"""Sets how long the controller output takes to reach its max value"""
 		self.RampDuration = ramp_duration
 		self.OutputValueIncrement = (self.MaxValue - self.MinValue)/(self.RampDuration/self.Ts)
 	
@@ -228,7 +230,8 @@ class ON_OFF_Controller:
 	def get_label(self):
 		return self.label
 
-class Dual_Threshold_Controller:
+
+class DualThresholdController:
 	"""Dual-Threshold Controller Class"""
 
 	def __init__(self, LowerThreshold=0.0, UpperThreshold=0.1, MinValue=0.0, MaxValue=1e9, RampDuration=0.25, Ts=0.02):
@@ -276,7 +279,9 @@ class Dual_Threshold_Controller:
 				y(t) = y(t-1)
 			where:
 		
-			u(t) = MaxValue / (RampDuration/Ts) if state_value(t) > UpperThreshold or -MaxValue / (RampDuration/Ts) if state_value(t) < LowerThreshold
+			u(t) = MaxValue / (RampDuration / Ts) if state_value(t) > UpperThreshold
+			or
+			u(t) = -MaxValue / (RampDuration / Ts) if state_value(t) < LowerThreshold
 
 		"""
 		
@@ -292,12 +297,12 @@ class Dual_Threshold_Controller:
 			increment = 0								
 		
 		# Bound the controller output (between MinValue - MaxValue)
-		if self.LastOutputValue+increment > self.MaxValue:
+		if self.LastOutputValue + increment > self.MaxValue:
 			self.OutputValue = self.MaxValue
 		elif self.LastOutputValue+increment < self.MinValue:
 			self.OutputValue = self.MinValue
 		else:
-			self.OutputValue = self.LastOutputValue+increment
+			self.OutputValue = self.LastOutputValue + increment
 			
 		# Record state, error and sample time values
 		self.state_history.append(state_value)
@@ -328,7 +333,7 @@ class Dual_Threshold_Controller:
 		self.OutputValueIncrement = (self.MaxValue - self.MinValue)/(self.RampDuration/self.Ts)
 		
 	def setRampDuration(self, ramp_duration):
-		"""Sets the how long the controller output takes to reach it's max value"""
+		"""Sets how long the controller output takes to reach its max value"""
 		self.RampDuration = ramp_duration
 		self.OutputValueIncrement = (self.MaxValue - self.MinValue)/(self.RampDuration/self.Ts)
 	
@@ -340,9 +345,6 @@ class Dual_Threshold_Controller:
 	def setLabel(self, label):
 		"""Sets the label of the controller"""
 		self.label = label
-	
-	def setSetPoint(self, set_point):
-		self.SetPoint = set_point
 		
 	def get_state_history(self):
 		return self.state_history
@@ -359,7 +361,8 @@ class Dual_Threshold_Controller:
 	def get_label(self):
 		return self.label
 
-class standard_PID_Controller:
+
+class StandardPIDController:
 	"""Standard PID Controller Class"""
 
 	def __init__(self, SetPoint=0.0, Kp=0.0, Ti=0.0, Td=0.0, Ts=0.02, MinValue=0.0, MaxValue=1e9):
@@ -376,7 +379,7 @@ class standard_PID_Controller:
 		self.label = "standard_PID_Controller/Kp=%f, Ti=%f, Td=%f" % (self.Kp, self.Ti, self.Td)
 		
 		self.Ts = Ts
-		self.current_time = 0.0 # (sec)
+		self.current_time = 0.0  # (sec)
 		self.last_time = 0.0	
 		
 		# Initialize controller terms
@@ -412,14 +415,14 @@ class standard_PID_Controller:
 		
 			where:
 		
-			u(t) = K_p (e(t) + (1/T_i)* \int_{0}^{t} e(t)dt + T_d {de}/{dt})		
+			u(t) = K_p (e(t) + (1/T_i)* \\int_{0}^{t} e(t)dt + T_d {de}/{dt})
 			
 			where the error calculated is the tracking error (r(t) - y(t))
 
 		"""
 
-		# Calculate Error - if SetPoint > 0.0, then normalize error with respect to setpoint
-		if self.SetPoint==0.0:
+		# Calculate Error - if SetPoint > 0.0, then normalize error with respect to set point
+		if self.SetPoint == 0.0:
 			error = state_value - self.SetPoint
 		else:
 			error = (state_value - self.SetPoint)/self.SetPoint 
@@ -482,7 +485,7 @@ class standard_PID_Controller:
 		self.label = "standard_PID_Controller/Kp=%f, Ti=%f, Td=%f" % (self.Kp, self.Ti, self.Td)
 
 	def setSetPoint(self, set_point):
-		"""Set target setpoint value"""
+		"""Set target set point value"""
 		self.SetPoint = set_point
 
 	def setMaxValue(self, max_value):

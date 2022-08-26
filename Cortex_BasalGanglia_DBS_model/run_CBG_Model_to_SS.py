@@ -23,7 +23,7 @@ from Cortical_Basal_Ganglia_Cell_Classes import Cortical_Neuron_Type, Interneuro
     GP_Neuron_Type, Thalamic_Neuron_Type
 from Electrode_Distances import distances_to_electrode, collateral_distances_to_electrode
 from pyNN.parameters import Sequence
-from Controllers import Constant_Controller, ON_OFF_Controller, Dual_Threshold_Controller, standard_PID_Controller
+from Controllers import ConstantController, OnOffController, DualThresholdController, StandardPIDController
 import random
 import neo.io
 import quantities as pq

@@ -23,7 +23,7 @@ from Cortical_Basal_Ganglia_Cell_Classes import Cortical_Neuron_Type, Interneuro
     Thalamic_Neuron_Type
 from Electrode_Distances import distances_to_electrode, collateral_distances_to_electrode
 from pyNN.parameters import Sequence
-from Controllers import Constant_Controller, ON_OFF_Controller, Dual_Threshold_Controller, standard_PID_Controller
+from Controllers import ConstantController, OnOffController, DualThresholdController, StandardPIDController
 import random
 import neo.io
 import quantities as pq
@@ -409,8 +409,8 @@ if __name__ == '__main__':
     # P Controller:
     # controller = standard_PID_Controller(SetPoint=1.0414e-04, Kp=5.0, Ti=0, Td=0, Ts=0.02, MinValue=0.0, MaxValue=3.0)
     # PI Controller:
-    controller = standard_PID_Controller(SetPoint=1.0414e-04, Kp=0.23, Ti=0.2, Td=0, Ts=0.02, MinValue=0.0,
-                                         MaxValue=3.0)
+    controller = StandardPIDController(SetPoint=1.0414e-04, Kp=0.23, Ti=0.2, Td=0, Ts=0.02, MinValue=0.0,
+                                       MaxValue=3.0)
     start_timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     simulation_identifier = controller.get_label() + "-" + start_timestamp
     simulation_output_dir = "Simulation_Output_Results/Controller_Simulations/Amp/" + simulation_identifier

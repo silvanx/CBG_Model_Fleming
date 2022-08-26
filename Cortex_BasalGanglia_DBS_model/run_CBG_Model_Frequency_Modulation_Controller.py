@@ -14,41 +14,37 @@ Description: Cortico-Basal Ganglia Network Model implemented in PyNN using the s
 """
 
 import neuron
-from pyNN.neuron import setup, run, reset, run_until, run_to_steady_state, run_from_steady_state, end, simulator, \
-    Population, SpikeSourcePoisson, SpikeSourceArray, Projection, OneToOneConnector, AllToAllConnector, \
-    FromFileConnector, FixedNumberPreConnector, StaticSynapse, NativeCellType, SpikeSourcePoisson, SpikeSourceArray, \
-    NoisyCurrentSource, StepCurrentSource
+from pyNN.neuron import setup, run_until, end, simulator, Population, Projection, FromFileConnector, StaticSynapse, \
+    SpikeSourceArray, NoisyCurrentSource, StepCurrentSource
 from pyNN.random import RandomDistribution, NumpyRNG
 from pyNN import space
-from Cortical_Basal_Ganglia_Cell_Classes import Cortical_Neuron_Type, Interneuron_Type, STN_Neuron_Type, GP_Neuron_Type, \
-    Thalamic_Neuron_Type
+from Cortical_Basal_Ganglia_Cell_Classes import Cortical_Neuron_Type, Interneuron_Type, STN_Neuron_Type, \
+    GP_Neuron_Type, Thalamic_Neuron_Type
 from Electrode_Distances import distances_to_electrode, collateral_distances_to_electrode
 from pyNN.parameters import Sequence
-from Controllers import standard_PID_Controller
-import random
+from Controllers import StandardPIDController
 import neo.io
 import quantities as pq
 import numpy as np
 import math
 from scipy import signal
-import os
-import sys
 from utils import make_beta_cheby1_filter, calculate_avg_beta_power
 import datetime
 
 # Import global variables for GPe DBS
-import Global_Variables as GV
+import Global_Variables as gv
 
 h = neuron.h
 
 
-def generate_DBS_Signal(start_time, stop_time, last_pulse_time_prior, dt, amplitude, frequency, pulse_width, offset):
+# TODO: Move this function to Controllers
+def generate_dbs_signal(start_time, stop_time, last_pulse_time_prior, dt, amplitude, frequency, pulse_width, offset):
     """Generate monophasic square-wave DBS signal
 
     Example inputs:
         start_time = 0				# ms
         stop_time = 12000			# ms
-        last_pulse_time_prior 		# ms - time the last DBS pulse occurred at - need to track since stimulation frequency is modulating
+        last_pulse_time_prior 		# ms - time the last DBS pulse occurred at - stimulation frequency is modulating
         dt = 0.01					# ms
         amplitude = -1.0			# mA - (amplitude<0 = cathodic stimulation, amplitude>0 = anodic stimulation)
         frequency = 130.0			# Hz
@@ -60,36 +56,36 @@ def generate_DBS_Signal(start_time, stop_time, last_pulse_time_prior, dt, amplit
 
     # Check if DBS is switched off
     if frequency == 0:
-        DBS_Signal = np.zeros(len(tmp))
+        dbs_signal = np.zeros(len(tmp))
         last_pulse_time = last_pulse_time_prior
         next_pulse_time = 1e9
     else:
         # Calculate the duty cycle of the DBS signal
-        T = (1.0 / frequency) * 1000.0  # time is in ms, so *1000 is conversion to ms
-        duty_cycle = ((pulse_width) / T)
+        isi = (1.0 / frequency) * 1000.0  # time is in ms, so *1000 is conversion to ms
+        duty_cycle = (pulse_width / isi)
         # Need to initially set amplitude value > 0 to find last spike time, then can scale by amplitude
-        DBS_Signal = offset + 1.0 * (1.0 + signal.square(2.0 * np.pi * frequency * tmp, duty=duty_cycle)) / 2.0
-        DBS_Signal[-1] = 0.0
+        dbs_signal = offset + 1.0 * (1.0 + signal.square(2.0 * np.pi * frequency * tmp, duty=duty_cycle)) / 2.0
+        dbs_signal[-1] = 0.0
 
         # Calculate the time for the first pulse of the next segment
         try:
-            last_pulse_index = np.where(np.diff(DBS_Signal) < 0)[0][-1]
-            next_pulse_time = times[last_pulse_index] + T - pulse_width
+            last_pulse_index = np.where(np.diff(dbs_signal) < 0)[0][-1]
+            next_pulse_time = times[last_pulse_index] + isi - pulse_width
 
             # Track when the last pulse was
             last_pulse_time = times[last_pulse_index]
 
         except:
-            last_pulse_index = len(DBS_Signal) - 1  # Catch times when signal may be flat
-            next_pulse_time = times[last_pulse_index] + T - pulse_width
+            last_pulse_index = len(dbs_signal) - 1  # Catch times when signal may be flat
+            next_pulse_time = times[last_pulse_index] + isi - pulse_width
 
             # Track when the last pulse was
             last_pulse_time = times[last_pulse_index]
 
         # Rescale amplitude
-        DBS_Signal *= amplitude
+        dbs_signal *= amplitude
 
-    return DBS_Signal, times, next_pulse_time, last_pulse_time
+    return dbs_signal, times, next_pulse_time, last_pulse_time
 
 
 if __name__ == '__main__':
@@ -122,11 +118,12 @@ if __name__ == '__main__':
     STN_Electrode_space = space.Space(axes='xy')
     STN_space = space.RandomStructure(boundary=space.Sphere(2000))  # Sphere with radius 2000um
 
-    # Generate Possoin-distributed Striatal Spike trains
-    # striatal_spike_times = generate_poisson_spike_times(Pop_size, steady_state_duration, simulation_runtime, 20, 1.0, 3695)
+    # Generate Poisson-distributed Striatal Spike trains
+    # striatal_spike_times = generate_poisson_spike_times(Pop_size, steady_state_duration, simulation_runtime,
+    #                                                     20, 1.0, 3695)
 
     # Save/load Striatal Spike times
-    # np.save('Striatal_Spike_Times.npy', striatal_spike_times)		# Save spike times so they can be reloaded
+    # np.save('Striatal_Spike_Times.npy', striatal_spike_times)		# Save spike times, so they can be reloaded
     striatal_spike_times = np.load('Striatal_Spike_Times.npy', allow_pickle=True)  # Load spike times from file
     for i in range(0, Pop_size):
         spike_times = striatal_spike_times[i][0].value
@@ -197,22 +194,22 @@ if __name__ == '__main__':
         STN_cell.position[1] = STN_Neuron_y_Positions[cell_id]
         STN_cell.position[2] = 500
 
-    """
-    # Position Check - 	
-    # 1) Make sure cells are bounded in 4mm space in x, y coordinates
-    # 2) Make sure no cells are placed inside the stimulating/recording electrode -0.5mm<x<0.5mm, -1.5mm<y<2mm
-    for Cortical_cell in Cortical_Pop:
-        while(((np.abs(Cortical_cell.position[0])>2000) or ((np.abs(Cortical_cell.position[1])>2000))) or ((np.abs(Cortical_cell.position[0])<500) and (Cortical_cell.position[1]>-1500 and Cortical_cell.position[1]<2000))):
-            Cortical_cell.position = STN_space.generate_positions(1).flatten()
-    
-    #np.savetxt('cortical_xy_pos.txt', Cortical_Axon_Pop.positions, delimiter=',')	# Save the generated cortical xy positions to a textfile
-    
+    # # Position Check -
+    # # 1) Make sure cells are bounded in 4mm space in x, y coordinates
+    # # 2) Make sure no cells are placed inside the stimulating/recording electrode -0.5mm<x<0.5mm, -1.5mm<y<2mm
+    # for Cortical_cell in Cortical_Pop:
+    #     while(((np.abs(Cortical_cell.position[0]) > 2000) or (np.abs(Cortical_cell.position[1]) > 2000)) or
+    #           ((np.abs(Cortical_cell.position[0]) < 500) and (-1500 < Cortical_cell.position[1] < 2000))):
+    #         Cortical_cell.position = STN_space.generate_positions(1).flatten()
+    # # Save the generated cortical xy positions to a textfile
+    # np.savetxt('cortical_xy_pos.txt', Cortical_Axon_Pop.positions, delimiter=',')
+
     for STN_cell in STN_Pop:
-        while(((np.abs(STN_cell.position[0])>2000) or ((np.abs(STN_cell.position[1])>2000))) or ((np.abs(STN_cell.position[0])<500) and (STN_cell.position[1]>-1500 and STN_cell.position[1]<2000))):
+        while(((np.abs(STN_cell.position[0]) > 2000) or (np.abs(STN_cell.position[1]) > 2000)) or
+              ((np.abs(STN_cell.position[0]) < 500) and (-1500 < STN_cell.position[1] < 2000))):
             STN_cell.position = STN_space.generate_positions(1).flatten()
-    
-    #np.savetxt('STN_xy_pos.txt', STN_Pop.positions, delimiter=',')	# Save the generated STN xy positions to a textfile
-    """
+    # # Save the generated STN xy positions to a textfile
+    # np.savetxt('STN_xy_pos.txt', STN_Pop.positions, delimiter=',')
 
     # Assign Positions for recording and stimulating electrode point sources
     recording_electrode_1_position = np.array([0, -1500, 250])
@@ -223,13 +220,16 @@ if __name__ == '__main__':
     STN_recording_electrode_1_distances = distances_to_electrode(recording_electrode_1_position, STN_Pop)
     STN_recording_electrode_2_distances = distances_to_electrode(recording_electrode_2_position, STN_Pop)
 
-    # Calculate Cortical Collateral distances from the stimulating electrode - uses xyz coordinates for distance calculation - these distances need to be in um for xtra
+    # Calculate Cortical Collateral distances from the stimulating electrode
+    # uses xyz coordinates for distance calculation - these distances need to be in um for xtra
     Cortical_Collateral_stimulating_electrode_distances = collateral_distances_to_electrode(
         stimulating_electrode_position, Cortical_Pop, L=500, nseg=11)
-    # np.savetxt('cortical_collateral_electrode_distances.txt', Cortical_Collateral_stimulating_electrode_distances, delimiter=',')	# Save the generated cortical collateral stimulation electrode distances to a textfile
+    # # Save the generated cortical collateral stimulation electrode distances to a textfile
+    # np.savetxt('cortical_collateral_electrode_distances.txt', Cortical_Collateral_stimulating_electrode_distances,
+    #            delimiter=',')
 
     # Synaptic Connections
-    # Add variability to Cortical connections - cortical interneuron connection weights are random from uniform distribution
+    # Add variability to Cortical connections - cortical interneuron connection weights are uniformly random
     gCtxInt_max_weight = 2.5e-3  # Ctx -> Int max coupling value
     gIntCtx_max_weight = 6.0e-3  # Int -> Ctx max coupling value
     gCtxInt = RandomDistribution('uniform', (0, gCtxInt_max_weight), rng=NumpyRNG(seed=3695))
@@ -250,21 +250,36 @@ if __name__ == '__main__':
     syn_ThalamicCortical = StaticSynapse(weight=5, delay=2)
     syn_CorticalThalamic = StaticSynapse(weight=0.0, delay=2)
 
-    """
-    # Create new network topology Connections
-    prj_CorticalAxon_Interneuron = Projection(Cortical_Pop, Interneuron_Pop,  FixedNumberPreConnector(n=10, allow_self_connections=False), syn_CorticalAxon_Interneuron, source='middle_axon_node', receptor_type='AMPA')
-    prj_Interneuron_CorticalSoma = Projection(Interneuron_Pop, Cortical_Pop,  FixedNumberPreConnector(n=10, allow_self_connections=False), syn_Interneuron_CorticalSoma, receptor_type='GABAa')
-    prj_CorticalSTN = Projection(Cortical_Pop, STN_Pop, FixedNumberPreConnector(n=5, allow_self_connections=False), syn_CorticalCollateralSTN, source='collateral(0.5)', receptor_type='AMPA')
-    prj_STNGPe = Projection(STN_Pop, GPe_Pop, FixedNumberPreConnector(n=1, allow_self_connections=False), syn_STNGPe, source='soma(0.5)', receptor_type='AMPA')
-    prj_GPeGPe = Projection(GPe_Pop, GPe_Pop, FixedNumberPreConnector(n=1, allow_self_connections=False), syn_GPeGPe, source='soma(0.5)', receptor_type='GABAa')
-    prj_GPeSTN = Projection(GPe_Pop, STN_Pop, FixedNumberPreConnector(n=2, allow_self_connections=False), syn_GPeSTN, source='soma(0.5)', receptor_type='GABAa')	
-    prj_StriatalGPe = Projection(Striatal_Pop, GPe_Pop, FixedNumberPreConnector(n=1, allow_self_connections=False), syn_StriatalGPe, source='soma(0.5)', receptor_type='GABAa')	
-    prj_STNGPi = Projection(STN_Pop, GPi_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False), syn_STNGPi, source='soma(0.5)', receptor_type='AMPA')
-    prj_GPeGPi = Projection(GPe_Pop, GPi_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False), syn_GPeGPi, source='soma(0.5)', receptor_type='GABAa')
-    prj_GPiThalamic = Projection(GPi_Pop, Thalamic_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False), syn_GPiThalamic, source='soma(0.5)', receptor_type='GABAa')
-    prj_ThalamicCortical = Projection(Thalamic_Pop, Cortical_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False), syn_ThalamicCortical, source='soma(0.5)', receptor_type='AMPA')
-    prj_CorticalThalamic = Projection(Cortical_Pop, Thalamic_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False), syn_CorticalThalamic, source='soma(0.5)', receptor_type='AMPA')
-    """
+    # # Create new network topology Connections
+    # prj_CorticalAxon_Interneuron = Projection(Cortical_Pop, Interneuron_Pop,
+    #                                           FixedNumberPreConnector(n=10, allow_self_connections=False),
+    #                                           syn_CorticalAxon_Interneuron, source='middle_axon_node',
+    #                                           receptor_type='AMPA')
+    # prj_Interneuron_CorticalSoma = Projection(Interneuron_Pop, Cortical_Pop,
+    #                                           FixedNumberPreConnector(n=10, allow_self_connections=False),
+    #                                           syn_Interneuron_CorticalSoma, receptor_type='GABAa')
+    # prj_CorticalSTN = Projection(Cortical_Pop, STN_Pop, FixedNumberPreConnector(n=5, allow_self_connections=False),
+    #                              syn_CorticalCollateralSTN, source='collateral(0.5)', receptor_type='AMPA')
+    # prj_STNGPe = Projection(STN_Pop, GPe_Pop, FixedNumberPreConnector(n=1, allow_self_connections=False), syn_STNGPe,
+    #                         source='soma(0.5)', receptor_type='AMPA')
+    # prj_GPeGPe = Projection(GPe_Pop, GPe_Pop, FixedNumberPreConnector(n=1, allow_self_connections=False), syn_GPeGPe,
+    #                         source='soma(0.5)', receptor_type='GABAa')
+    # prj_GPeSTN = Projection(GPe_Pop, STN_Pop, FixedNumberPreConnector(n=2, allow_self_connections=False), syn_GPeSTN,
+    #                         source='soma(0.5)', receptor_type='GABAa')
+    # prj_StriatalGPe = Projection(Striatal_Pop, GPe_Pop, FixedNumberPreConnector(n=1, allow_self_connections=False),
+    #                              syn_StriatalGPe, source='soma(0.5)', receptor_type='GABAa')
+    # prj_STNGPi = Projection(STN_Pop, GPi_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False), syn_STNGPi,
+    #                         source='soma(0.5)', receptor_type='AMPA')
+    # prj_GPeGPi = Projection(GPe_Pop, GPi_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False), syn_GPeGPi,
+    #                         source='soma(0.5)', receptor_type='GABAa')
+    # prj_GPiThalamic = Projection(GPi_Pop, Thalamic_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False),
+    #                              syn_GPiThalamic, source='soma(0.5)', receptor_type='GABAa')
+    # prj_ThalamicCortical = Projection(Thalamic_Pop, Cortical_Pop,
+    #                                   FixedNumberPreConnector(n=1,allow_self_connections=False), syn_ThalamicCortical,
+    #                                   source='soma(0.5)', receptor_type='AMPA')
+    # prj_CorticalThalamic = Projection(Cortical_Pop, Thalamic_Pop,
+    #                                   FixedNumberPreConnector(n=1,allow_self_connections=False), syn_CorticalThalamic,
+    #                                   source='soma(0.5)', receptor_type='AMPA')
 
     # Load network topology from file
     prj_CorticalAxon_Interneuron = Projection(Cortical_Pop, Interneuron_Pop,
@@ -331,7 +346,7 @@ if __name__ == '__main__':
     rho = (1 / (sigma * 1e-2))  # rho needs units of ohm cm for xtra mechanism (S/m -> S/cm)
 
     # Calculate transfer resistances for each collateral segment for xtra - units are Mohms
-    collateral_rx = (rho / (4 * math.pi)) * (1 / Cortical_Collateral_stimulating_electrode_distances) * (0.01)
+    collateral_rx = (rho / (4 * math.pi)) * (1 / Cortical_Collateral_stimulating_electrode_distances) * 0.01
 
     # Convert ndarray to array of Sequence objects - needed to set cortical collateral transfer resistances
     collateral_rx_seq = np.ndarray(shape=(1, Pop_size), dtype=Sequence).flatten()
@@ -355,19 +370,20 @@ if __name__ == '__main__':
     controller_call_times = np.arange(steady_state_duration + controller_window_length + controller_sampling_time,
                                       simulation_duration, controller_sampling_time)
 
-    # Initialize the Controller being used:
-    # P Controller:
-    # controller = standard_PID_Controller(SetPoint=1.0414e-04, Kp=416.7, Ti=0.0, Td=0, Ts=0.02, MinValue=0.0, MaxValue=250.0)		# Controller sampling period, Ts, is in sec
+    # Initialize the Controller being used. Controller sampling period, Ts, is in sec.
+    # # P Controller:
+    # controller = StandardPIDController(SetPoint=1.0414e-04, Kp=416.7, Ti=0.0, Td=0, Ts=0.02, MinValue=0.0,
+    #                                      MaxValue=250.0)
     # PI Controller:
-    controller = standard_PID_Controller(SetPoint=1.0414e-04, Kp=19.3, Ti=0.2, Td=0, Ts=0.02, MinValue=0.0,
-                                         MaxValue=250.0)
+    controller = StandardPIDController(SetPoint=1.0414e-04, Kp=19.3, Ti=0.2, Td=0, Ts=0.02, MinValue=0.0,
+                                       MaxValue=250.0)
     start_timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     simulation_identifier = controller.get_label() + "-" + start_timestamp
     simulation_output_dir = "Simulation_Output_Results/Controller_Simulations/Freq/" + simulation_identifier
 
     # Generate a square wave which represents the DBS signal - Needs to be initialized to zero when unused to prevent
     # open-circuit of cortical collateral extracellular mechanism
-    DBS_Signal, DBS_times, next_DBS_pulse_time, last_DBS_pulse_time = generate_DBS_Signal(
+    DBS_Signal, DBS_times, next_DBS_pulse_time, last_DBS_pulse_time = generate_dbs_signal(
         start_time=steady_state_duration + 10 + simulator.state.dt, stop_time=simulation_duration,
         last_pulse_time_prior=steady_state_duration,
         dt=simulator.state.dt, amplitude=-1.0, frequency=130.0, pulse_width=0.06, offset=0)
@@ -397,18 +413,18 @@ if __name__ == '__main__':
     last_freq_calculated = 0
     last_DBS_pulse_time = steady_state_duration
 
-    # GPe DBS current stimulations - precalculated for % of collaterals entrained for varying DBS amplitude
+    # GPe DBS current stimulation - precalculated for % of collaterals entrained for varying DBS amplitude
     interp_DBS_amplitudes = np.array([0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2, 2.25, 2.50, 3, 4, 5])
     interp_collaterals_entrained = np.array([0, 0, 0, 1, 4, 8, 19, 30, 43, 59, 82, 100, 100, 100])
     GPe_stimulation_order = np.loadtxt('GPe_Stimulation_Order.txt', delimiter=',')
     GPe_stimulation_order = [int(index) for index in GPe_stimulation_order]
 
-    # Make new GPe DBS vector for each GPe neuron - each GPe neuron needs a pointer to it's own DBS signal
+    # Make new GPe DBS vector for each GPe neuron - each GPe neuron needs a pointer to its own DBS signal
     GPe_DBS_Signal_neuron = []
     GPe_DBS_times_neuron = []
     updated_GPe_DBS_signal = []
     for i in range(0, Pop_size):
-        GPe_DBS_Signal, GPe_DBS_times, GPe_next_DBS_pulse_time, GPe_last_DBS_pulse_time = generate_DBS_Signal(
+        GPe_DBS_Signal, GPe_DBS_times, GPe_next_DBS_pulse_time, GPe_last_DBS_pulse_time = generate_dbs_signal(
             start_time=steady_state_duration + 10 + simulator.state.dt, stop_time=simulation_duration,
             last_pulse_time_prior=steady_state_duration,
             dt=simulator.state.dt, amplitude=100.0, frequency=130.0, pulse_width=0.06, offset=0)
@@ -425,7 +441,7 @@ if __name__ == '__main__':
         GPe_DBS_times_neuron.append(h.Vector(GPe_DBS_times))
 
         # Play the stimulation into each GPe neuron
-        GPe_DBS_Signal_neuron[i].play(GV.GPe_stimulation_iclamps[i]._ref_amp, GPe_DBS_times_neuron[i], 1)
+        GPe_DBS_Signal_neuron[i].play(gv.GPe_stimulation_iclamps[i]._ref_amp, GPe_DBS_times_neuron[i], 1)
 
         # Hold a reference to the signal as a numpy array, and append to list of GPe stimulation signals
         updated_GPe_DBS_signal.append(GPe_DBS_Signal_neuron[i].as_numpy())
@@ -481,7 +497,7 @@ if __name__ == '__main__':
         lfp_beta_average_value = calculate_avg_beta_power(lfp_signal=STN_LFP[-controller_window_length_no_samples:],
                                                           tail_length=controller_window_tail_length_no_samples,
                                                           beta_b=beta_b, beta_a=beta_a)
-        print("Beta Average: %f" % (lfp_beta_average_value))
+        print("Beta Average: %f" % lfp_beta_average_value)
 
         # Calculate the updated DBS Frequency
         DBS_amp = 1.5
@@ -509,7 +525,7 @@ if __name__ == '__main__':
 
                 # DBS Cortical Collateral Stimulation
                 new_DBS_Signal_Segment, new_DBS_times_Segment, next_DBS_pulse_time, last_DBS_pulse_time = \
-                    generate_DBS_Signal(
+                    generate_dbs_signal(
                         start_time=next_DBS_pulse_time, stop_time=controller_call_times[controller_call_index + 1],
                         last_pulse_time_prior=last_DBS_pulse_time,
                         dt=simulator.state.dt, amplitude=-DBS_amp, frequency=DBS_freq, pulse_width=0.06, offset=0)
@@ -518,7 +534,7 @@ if __name__ == '__main__':
                 window_start_index = np.where(DBS_times == new_DBS_times_Segment[0])[0][0]
                 new_window_sample_length = len(new_DBS_Signal_Segment)
                 updated_DBS_signal[
-                window_start_index:window_start_index + new_window_sample_length] = new_DBS_Signal_Segment
+                    window_start_index:window_start_index + new_window_sample_length] = new_DBS_Signal_Segment
 
                 # DBS GPe neuron stimulation
                 num_GPe_Neurons_entrained = int(np.interp(DBS_amp, interp_DBS_amplitudes, interp_collaterals_entrained))
@@ -531,7 +547,7 @@ if __name__ == '__main__':
                 # Stimulate the entrained GPe neurons
                 for i in np.arange(0, num_GPe_Neurons_entrained):
                     updated_GPe_DBS_signal[GPe_stimulation_order[i]][
-                    window_start_index:window_start_index + new_window_sample_length] = GPe_DBS_Signal_Segment
+                        window_start_index:window_start_index + new_window_sample_length] = GPe_DBS_Signal_Segment
 
                 # Remember the last frequency that was calculated
                 last_freq_calculated = DBS_freq
@@ -549,15 +565,15 @@ if __name__ == '__main__':
 
         last_write_time = simulator.state.t
 
-    """
-    # Write population membrane voltage data to file
-    Cortical_Pop.write_data(simulation_output_dir+"/Cortical_Pop/Cortical_Collateral_v.mat", 'collateral(0.5).v', clear=False)
-    Cortical_Pop.write_data(simulation_output_dir+"/Cortical_Pop/Cortical_Soma_v.mat", 'soma(0.5).v', clear=True)
-    Interneuron_Pop.write_data(simulation_output_dir+"/Interneuron_Pop/Interneuron_Soma_v.mat", 'soma(0.5).v', clear=True)
-    GPe_Pop.write_data(simulation_output_dir+"/GPe_Pop/GPe_Soma_v.mat", 'soma(0.5).v', clear=True)
-    GPi_Pop.write_data(simulation_output_dir+"/GPi_Pop/GPi_Soma_v.mat", 'soma(0.5).v', clear=True)
-    Thalamic_Pop.write_data(simulation_output_dir+"/Thalamic_Pop/Thalamic_Soma_v.mat", 'soma(0.5).v', clear=True)
-    """
+    # # Write population membrane voltage data to file
+    # Cortical_Pop.write_data(simulation_output_dir+"/Cortical_Pop/Cortical_Collateral_v.mat", 'collateral(0.5).v',
+    #                         clear=False)
+    # Cortical_Pop.write_data(simulation_output_dir+"/Cortical_Pop/Cortical_Soma_v.mat", 'soma(0.5).v', clear=True)
+    # Interneuron_Pop.write_data(simulation_output_dir+"/Interneuron_Pop/Interneuron_Soma_v.mat", 'soma(0.5).v',
+    #                            clear=True)
+    # GPe_Pop.write_data(simulation_output_dir+"/GPe_Pop/GPe_Soma_v.mat", 'soma(0.5).v', clear=True)
+    # GPi_Pop.write_data(simulation_output_dir+"/GPi_Pop/GPi_Soma_v.mat", 'soma(0.5).v', clear=True)
+    # Thalamic_Pop.write_data(simulation_output_dir+"/Thalamic_Pop/Thalamic_Soma_v.mat", 'soma(0.5).v', clear=True)
 
     # Write controller values to csv files
     controller_measured_beta_values = np.asarray(controller.get_state_history())
@@ -580,24 +596,24 @@ if __name__ == '__main__':
     w = neo.io.NeoMatlabIO(filename=simulation_output_dir + "/STN_LFP.mat")
     w.write_block(STN_LFP_Block)
 
-    """
-    # Write LFP AMPA and GABAa conmponents to file
-    STN_LFP_AMPA_Block = neo.Block(name='STN_LFP_AMPA')
-    STN_LFP_AMPA_seg = neo.Segment(name='segment_0')
-    STN_LFP_AMPA_Block.segments.append(STN_LFP_AMPA_seg)
-    STN_LFP_AMPA_signal = neo.AnalogSignal(STN_LFP_AMPA, units='mV', t_start=0*pq.ms, sampling_rate=pq.Quantity(simulator.state.dt, '1/ms'))
-    STN_LFP_AMPA_seg.analogsignals.append(STN_LFP_AMPA_signal)
-    w = neo.io.NeoMatlabIO(filename=simulation_output_dir+"/STN_LFP_AMPA.mat") 
-    w.write_block(STN_LFP_AMPA_Block)
-    
-    STN_LFP_GABAa_Block = neo.Block(name='STN_LFP_GABAa')
-    STN_LFP_GABAa_seg = neo.Segment(name='segment_0')
-    STN_LFP_GABAa_Block.segments.append(STN_LFP_GABAa_seg)
-    STN_LFP_GABAa_signal = neo.AnalogSignal(STN_LFP_GABAa, units='mV', t_start=0*pq.ms, sampling_rate=pq.Quantity(simulator.state.dt, '1/ms'))
-    STN_LFP_GABAa_seg.analogsignals.append(STN_LFP_GABAa_signal)
-    w = neo.io.NeoMatlabIO(filename=simulation_output_dir+"/STN_LFP_GABAa.mat") 
-    w.write_block(STN_LFP_GABAa_Block)
-    """
+    # # Write LFP AMPA and GABAa components to file
+    # STN_LFP_AMPA_Block = neo.Block(name='STN_LFP_AMPA')
+    # STN_LFP_AMPA_seg = neo.Segment(name='segment_0')
+    # STN_LFP_AMPA_Block.segments.append(STN_LFP_AMPA_seg)
+    # STN_LFP_AMPA_signal = neo.AnalogSignal(STN_LFP_AMPA, units='mV', t_start=0*pq.ms,
+    #                                        sampling_rate=pq.Quantity(simulator.state.dt, '1/ms'))
+    # STN_LFP_AMPA_seg.analogsignals.append(STN_LFP_AMPA_signal)
+    # w = neo.io.NeoMatlabIO(filename=simulation_output_dir+"/STN_LFP_AMPA.mat")
+    # w.write_block(STN_LFP_AMPA_Block)
+    #
+    # STN_LFP_GABAa_Block = neo.Block(name='STN_LFP_GABAa')
+    # STN_LFP_GABAa_seg = neo.Segment(name='segment_0')
+    # STN_LFP_GABAa_Block.segments.append(STN_LFP_GABAa_seg)
+    # STN_LFP_GABAa_signal = neo.AnalogSignal(STN_LFP_GABAa, units='mV', t_start=0*pq.ms,
+    #                                         sampling_rate=pq.Quantity(simulator.state.dt, '1/ms'))
+    # STN_LFP_GABAa_seg.analogsignals.append(STN_LFP_GABAa_signal)
+    # w = neo.io.NeoMatlabIO(filename=simulation_output_dir+"/STN_LFP_GABAa.mat")
+    # w.write_block(STN_LFP_GABAa_Block)
 
     # Write the DBS Signal to .mat file
     # DBS Amplitude
@@ -611,8 +627,7 @@ if __name__ == '__main__':
                                  sampling_rate=pq.Quantity(1.0 / simulator.state.dt, '1/ms'))
     DBS_Signal_seg.analogsignals.append(DBS_times)
 
-    w = neo.io.NeoMatlabIO(
-        filename=simulation_output_dir + "/DBS_Signal.mat")
+    w = neo.io.NeoMatlabIO(filename=simulation_output_dir + "/DBS_Signal.mat")
     w.write_block(DBS_Block)
 
     print("Simulation Done!")
