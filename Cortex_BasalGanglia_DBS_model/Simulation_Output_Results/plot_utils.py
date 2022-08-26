@@ -2,13 +2,14 @@ import scipy.io as sio
 import numpy as np
 import csv
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 
 def mat_to_dict(obj):
     return dict(zip((e[0] for e in obj.dtype.descr), obj))
 
 
-def load_DBS_output(dir):
+def load_dbs_output(dir):
     dbs_file = sio.loadmat(dir / 'DBS_Signal.mat')
     segments, name, _ = dbs_file['block'][0, 0]
     segment = mat_to_dict(segments[0, 0][0, 0])
@@ -19,7 +20,7 @@ def load_DBS_output(dir):
     return time, dbs
 
 
-def load_STN_LFP(dir, steady_state_time, sim_time):
+def load_stn_lfp(dir, steady_state_time, sim_time):
     lfp_file = sio.loadmat(dir / 'STN_LFP.mat')
     segments, name, _ = lfp_file['block'][0, 0]
     segment = mat_to_dict(segments[0, 0][0, 0])
@@ -63,3 +64,13 @@ def plot_controller_result(plot_start_t, plot_end_t, parameter,
     axs[2].set_ylabel('Local field potential [%s]' % lfp['signal_units'][0])
     axs[2].set_xlabel('Time [ms]')
     plt.subplots_adjust(hspace=0.3)
+
+
+def load_and_plot(dirname, parameter, steady_state_time, sim_time, plot_start_t, plot_end_t):
+    directory = Path(dirname)
+    time, dbs = load_dbs_output(directory)
+    lfp_time, lfp = load_stn_lfp(directory, steady_state_time, sim_time)
+    controller_t, controller_p = load_controller_data(directory, parameter)
+    plot_controller_result(plot_start_t, plot_end_t, parameter,
+                           time, dbs, controller_t, controller_p,
+                           lfp_time, lfp)
