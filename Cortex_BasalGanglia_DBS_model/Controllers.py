@@ -10,6 +10,8 @@ Description: Controller class implementations for:
 """
 
 import math
+import numpy as np
+import scipy.signal as signal
 
 
 class ConstantController:
@@ -468,7 +470,53 @@ class StandardPIDController:
 		
 		# Return controller output
 		return self.OutputValue
-		
+
+
+	def generate_dbs_signal(self, start_time, stop_time, dt, amplitude, frequency, pulse_width, offset,
+							last_pulse_time_prior=0):
+		"""Generate monophasic square-wave DBS signal
+
+		Example inputs:
+		    start_time = 0				# ms
+		    stop_time = 12000			# ms
+		    dt = 0.01					# ms
+		    amplitude = -1.0			# mA - (amplitude<0 = cathodic stimulation, amplitude>0 = anodic stimulation)
+		    frequency = 130.0			# Hz
+		    pulse_width	= 0.06			# ms
+		    offset = 0					# mA
+		"""
+
+		times = np.round(np.arange(start_time, stop_time, dt), 2)
+		tmp = np.arange(0, stop_time - start_time, dt) / 1000.0
+
+		if frequency == 0:
+			dbs_signal = np.zeros(len(tmp))
+			last_pulse_time = last_pulse_time_prior
+			next_pulse_time = 1e9
+		else:
+			# Calculate the duty cycle of the DBS signal
+			isi = 1000.0 / frequency  # time is in ms, so *1000 is conversion to ms
+			duty_cycle = pulse_width / isi
+			dbs_signal = offset + 1.0 * (1.0 + signal.square(2.0 * np.pi * frequency * tmp, duty=duty_cycle)) / 2.0
+			dbs_signal[-1] = 0.0
+
+			# Calculate the time for the first pulse of the next segment
+			try:
+				last_pulse_index = np.where(np.diff(dbs_signal) < 0)[0][-1]
+				next_pulse_time = times[last_pulse_index] + isi - pulse_width
+
+				# Track when the last pulse was
+				last_pulse_time = times[last_pulse_index]
+
+			except:
+				last_pulse_index = len(dbs_signal) - 1  # Catch times when signal may be flat
+				next_pulse_time = times[last_pulse_index] + isi - pulse_width
+
+			# Rescale amplitude
+			dbs_signal *= amplitude
+
+		return dbs_signal, times, next_pulse_time, last_pulse_time
+
 	def setKp(self, proportional_gain):
 		"""Determine how aggressively the controller reacts to the current error with setting Proportional Gain"""
 		self.Kp = proportional_gain

@@ -29,7 +29,6 @@ import neo.io
 import quantities as pq
 import numpy as np
 import math
-from scipy import signal
 import sys
 import datetime
 from utils import generate_poisson_spike_times, make_beta_cheby1_filter, calculate_avg_beta_power
@@ -40,43 +39,11 @@ import Global_Variables as GV
 h = neuron.h
 
 
-def generate_DBS_Signal(start_time, stop_time, dt, amplitude, frequency, pulse_width, offset):
-    """Generate monophasic square-wave DBS signal
-
-    Example inputs:
-        start_time = 0				# ms
-        stop_time = 12000			# ms
-        dt = 0.01					# ms
-        amplitude = -1.0			# mA - (amplitude<0 = cathodic stimulation, amplitude>0 = anodic stimulation)
-        frequency = 130.0			# Hz
-        pulse_width	= 0.06			# ms
-        offset = 0					# mA
-    """
-
-    times = np.round(np.arange(start_time, stop_time, dt), 2)
-    tmp = np.arange(0, stop_time - start_time, dt) / 1000.0
-
-    # Calculate the duty cycle of the DBS signal
-    T = (1.0 / frequency) * 1000.0  # time is in ms, so *1000 is conversion to ms
-    duty_cycle = (pulse_width / T)
-    DBS_Signal = offset + 1.0 * (1.0 + signal.square(2.0 * np.pi * frequency * tmp, duty=duty_cycle)) / 2.0
-    DBS_Signal[-1] = 0.0
-
-    # Calculate the time for the first pulse of the next segment
-    last_pulse_index = np.where(np.diff(DBS_Signal) < 0)[0][-1]
-    next_pulse_time = times[last_pulse_index] + T - pulse_width
-
-    # Rescale amplitude
-    DBS_Signal *= amplitude
-
-    return DBS_Signal, times, next_pulse_time
-
-
 if __name__ == '__main__':
     # Setup simulation
     setup(timestep=0.01, rngseed=3695)
     steady_state_duration = 6000.0  # Duration of simulation steady state
-    # TODO: Fix the simulation error when simulation_runtime < steady_state_duration - 1
+    # TODO: Fix the steady_state restore error when simulation_runtime < steady_state_duration - 1
     simulation_runtime = 32000.0  # Duration of simulation from steady state
     simulation_duration = steady_state_duration + simulation_runtime + simulator.state.dt  # Total simulation time
     rec_sampling_interval = 0.5  # Signals are sampled every 0.5 ms
@@ -208,7 +175,8 @@ if __name__ == '__main__':
     # calculation - these distances need to be in um for xtra mechanism
     Cortical_Collateral_stimulating_electrode_distances = collateral_distances_to_electrode(
         stimulating_electrode_position, Cortical_Pop, L=500, nseg=11)
-    # np.savetxt('cortical_collateral_electrode_distances.txt', Cortical_Collateral_stimulating_electrode_distances, delimiter=',')	# Save the generated cortical collateral stimulation electrode distances to a textfile
+    # np.savetxt('cortical_collateral_electrode_distances.txt', Cortical_Collateral_stimulating_electrode_distances,
+    #            delimiter=',')  # Save the generated cortical collateral stimulation electrode distances to a textfile
 
     # Synaptic Connections
     # Add variability to Cortical connections - cortical interneuron connection weights are random from uniform
@@ -233,21 +201,37 @@ if __name__ == '__main__':
     syn_ThalamicCortical = StaticSynapse(weight=5, delay=2)
     syn_CorticalThalamic = StaticSynapse(weight=0.0, delay=2)
 
-    """
-    # Create new network topology Connections
-    prj_CorticalAxon_Interneuron = Projection(Cortical_Pop, Interneuron_Pop,  FixedNumberPreConnector(n=10, allow_self_connections=False), syn_CorticalAxon_Interneuron, source='middle_axon_node', receptor_type='AMPA')
-    prj_Interneuron_CorticalSoma = Projection(Interneuron_Pop, Cortical_Pop,  FixedNumberPreConnector(n=10, allow_self_connections=False), syn_Interneuron_CorticalSoma, receptor_type='GABAa')
-    prj_CorticalSTN = Projection(Cortical_Pop, STN_Pop, FixedNumberPreConnector(n=5, allow_self_connections=False), syn_CorticalCollateralSTN, source='collateral(0.5)', receptor_type='AMPA')
-    prj_STNGPe = Projection(STN_Pop, GPe_Pop, FixedNumberPreConnector(n=1, allow_self_connections=False), syn_STNGPe, source='soma(0.5)', receptor_type='AMPA')
-    prj_GPeGPe = Projection(GPe_Pop, GPe_Pop, FixedNumberPreConnector(n=1, allow_self_connections=False), syn_GPeGPe, source='soma(0.5)', receptor_type='GABAa')
-    prj_GPeSTN = Projection(GPe_Pop, STN_Pop, FixedNumberPreConnector(n=2, allow_self_connections=False), syn_GPeSTN, source='soma(0.5)', receptor_type='GABAa')	
-    prj_StriatalGPe = Projection(Striatal_Pop, GPe_Pop, FixedNumberPreConnector(n=1, allow_self_connections=False), syn_StriatalGPe, source='soma(0.5)', receptor_type='GABAa')	
-    prj_STNGPi = Projection(STN_Pop, GPi_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False), syn_STNGPi, source='soma(0.5)', receptor_type='AMPA')
-    prj_GPeGPi = Projection(GPe_Pop, GPi_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False), syn_GPeGPi, source='soma(0.5)', receptor_type='GABAa')
-    prj_GPiThalamic = Projection(GPi_Pop, Thalamic_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False), syn_GPiThalamic, source='soma(0.5)', receptor_type='GABAa')
-    prj_ThalamicCortical = Projection(Thalamic_Pop, Cortical_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False), syn_ThalamicCortical, source='soma(0.5)', receptor_type='AMPA')
-    prj_CorticalThalamic = Projection(Cortical_Pop, Thalamic_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False), syn_CorticalThalamic, source='soma(0.5)', receptor_type='AMPA')
-    """
+    # # Create new network topology Connections
+    # prj_CorticalAxon_Interneuron = Projection(Cortical_Pop, Interneuron_Pop,
+    #                                           FixedNumberPreConnector(n=10, allow_self_connections=False),
+    #                                           syn_CorticalAxon_Interneuron, source='middle_axon_node',
+    #                                           receptor_type='AMPA')
+    # prj_Interneuron_CorticalSoma = Projection(Interneuron_Pop, Cortical_Pop,
+    #                                           FixedNumberPreConnector(n=10, allow_self_connections=False),
+    #                                           syn_Interneuron_CorticalSoma, receptor_type='GABAa')
+    # prj_CorticalSTN = Projection(Cortical_Pop, STN_Pop, FixedNumberPreConnector(n=5, allow_self_connections=False),
+    #                              syn_CorticalCollateralSTN, source='collateral(0.5)', receptor_type='AMPA')
+    # prj_STNGPe = Projection(STN_Pop, GPe_Pop, FixedNumberPreConnector(n=1, allow_self_connections=False),
+    #                         syn_STNGPe, source='soma(0.5)', receptor_type='AMPA')
+    # prj_GPeGPe = Projection(GPe_Pop, GPe_Pop, FixedNumberPreConnector(n=1, allow_self_connections=False),
+    #                         syn_GPeGPe, source='soma(0.5)', receptor_type='GABAa')
+    # prj_GPeSTN = Projection(GPe_Pop, STN_Pop, FixedNumberPreConnector(n=2, allow_self_connections=False),
+    #                         syn_GPeSTN, source='soma(0.5)', receptor_type='GABAa')
+    # prj_StriatalGPe = Projection(Striatal_Pop, GPe_Pop, FixedNumberPreConnector(n=1, allow_self_connections=False),
+    #                              syn_StriatalGPe, source='soma(0.5)', receptor_type='GABAa')
+    # prj_STNGPi = Projection(STN_Pop, GPi_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False),
+    #                         syn_STNGPi, source='soma(0.5)', receptor_type='AMPA')
+    # prj_GPeGPi = Projection(GPe_Pop, GPi_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False),
+    #                         syn_GPeGPi, source='soma(0.5)', receptor_type='GABAa')
+    # prj_GPiThalamic = Projection(GPi_Pop, Thalamic_Pop, FixedNumberPreConnector(n=1,allow_self_connections=False),
+    #                              syn_GPiThalamic, source='soma(0.5)', receptor_type='GABAa')
+    # prj_ThalamicCortical = Projection(Thalamic_Pop, Cortical_Pop,
+    #                                   FixedNumberPreConnector(n=1, allow_self_connections=False),
+    #                                   syn_ThalamicCortical, source='soma(0.5)', receptor_type='AMPA')
+    # prj_CorticalThalamic = Projection(Cortical_Pop, Thalamic_Pop,
+    #                                   FixedNumberPreConnector(n=1, allow_self_connections=False),
+    #                                   syn_CorticalThalamic, source='soma(0.5)', receptor_type='AMPA')
+
 
     # Load network topology from file
     prj_CorticalAxon_Interneuron = Projection(Cortical_Pop, Interneuron_Pop,
@@ -354,8 +338,9 @@ if __name__ == '__main__':
     simulation_identifier = controller.get_label() + "-" + start_timestamp
     simulation_output_dir = "Simulation_Output_Results/Controller_Simulations/Amp/" + simulation_identifier
 
-    # Generate a square wave which represents the DBS signal - Needs to be initialized to zero when unused to prevent open-circuit of cortical collateral extracellular mechanism
-    DBS_Signal, DBS_times, next_DBS_pulse_time = generate_DBS_Signal(
+    # Generate a square wave which represents the DBS signal - Needs to be initialized to zero when unused to prevent
+    # open-circuit of cortical collateral extracellular mechanism
+    DBS_Signal, DBS_times, next_DBS_pulse_time, _ = controller.generate_dbs_signal(
         start_time=steady_state_duration + 10 + simulator.state.dt, stop_time=simulation_duration,
         dt=simulator.state.dt,
         amplitude=-1.0, frequency=130.0, pulse_width=0.06, offset=0)
@@ -387,12 +372,12 @@ if __name__ == '__main__':
     GPe_stimulation_order = np.loadtxt('GPe_Stimulation_Order.txt', delimiter=',')
     GPe_stimulation_order = [int(index) for index in GPe_stimulation_order]
 
-    # Make new GPe DBS vector for each GPe neuron - each GPe neuron needs a pointer to it's own DBS signal
+    # Make new GPe DBS vector for each GPe neuron - each GPe neuron needs a pointer to its own DBS signal
     GPe_DBS_Signal_neuron = []
     GPe_DBS_times_neuron = []
     updated_GPe_DBS_signal = []
     for i in range(0, Pop_size):
-        GPe_DBS_Signal, GPe_DBS_times, GPe_next_DBS_pulse_time = generate_DBS_Signal(
+        GPe_DBS_Signal, GPe_DBS_times, GPe_next_DBS_pulse_time, _ = controller.generate_dbs_signal(
             start_time=steady_state_duration + 10 + simulator.state.dt, stop_time=simulation_duration,
             dt=simulator.state.dt,
             amplitude=100.0, frequency=130.0, pulse_width=0.06, offset=0)
@@ -408,7 +393,7 @@ if __name__ == '__main__':
         GPe_DBS_Signal_neuron.append(h.Vector(GPe_DBS_Signal))
         GPe_DBS_times_neuron.append(h.Vector(GPe_DBS_times))
 
-        # Play the stimulation into eacb GPe neuron
+        # Play the stimulation into each GPe neuron
         GPe_DBS_Signal_neuron[i].play(GV.GPe_stimulation_iclamps[i]._ref_amp, GPe_DBS_times_neuron[i], 1)
 
         # Hold a reference to the signal as a numpy array, and append to list of GPe stimulation signals
@@ -464,7 +449,7 @@ if __name__ == '__main__':
         lfp_beta_average_value = calculate_avg_beta_power(lfp_signal=STN_LFP[-controller_window_length_no_samples:],
                                                           tail_length=controller_window_tail_length_no_samples,
                                                           beta_b=beta_b, beta_a=beta_a)
-        print("Beta Average: %f" % (lfp_beta_average_value))
+        print("Beta Average: %f" % lfp_beta_average_value)
 
         # Calculate the updated DBS amplitude
         DBS_amp = controller.update(state_value=lfp_beta_average_value, current_time=simulator.state.t)
@@ -477,7 +462,7 @@ if __name__ == '__main__':
                 GPe_next_DBS_pulse_time = next_DBS_pulse_time
 
                 # DBS Cortical Collateral Stimulation
-                new_DBS_Signal_Segment, new_DBS_times_Segment, next_DBS_pulse_time = generate_DBS_Signal(
+                new_DBS_Signal_Segment, new_DBS_times_Segment, next_DBS_pulse_time, _ = controller.generate_dbs_signal(
                     start_time=next_DBS_pulse_time, stop_time=controller_call_times[controller_call_index + 1],
                     dt=simulator.state.dt,
                     amplitude=-DBS_amp, frequency=130.0, pulse_width=0.06, offset=0)

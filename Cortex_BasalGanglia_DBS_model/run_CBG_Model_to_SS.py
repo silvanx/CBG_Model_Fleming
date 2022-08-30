@@ -39,40 +39,6 @@ from utils import generate_poisson_spike_times, make_beta_cheby1_filter
 h = neuron.h
 
 
-def generate_DBS_Signal(start_time, stop_time, dt, amplitude, frequency, pulse_width, offset):
-    """Generate monophasic square-wave DBS signal
-
-    Example inputs:
-        start_time = 0				# ms
-        stop_time = 12000			# ms
-        dt = 0.01					# ms
-        amplitude = -1.0			# mA - (amplitude<0 = cathodic stimulation, amplitude>0 = anodic stimulation)
-        frequency = 130.0			# Hz
-        pulse_width	= 0.06			# ms
-        offset = 0					# mA
-    """
-
-    times = np.round(np.arange(start_time, stop_time, dt), 2)
-    tmp = np.arange(0, stop_time - start_time, dt) / 1000.0
-
-    # Calculate the duty cycle of the DBS signal
-    T = (1.0 / frequency) * 1000.0  # time is in ms, so *1000 is conversion to ms
-    duty_cycle = (pulse_width / T)
-    # DBS_Signal = offset + amplitude * (1.0+signal.square(2.0 * np.pi * frequency * tmp, duty=duty_cycle))/2.0
-    DBS_Signal = offset + 1.0 * (1.0 + signal.square(2.0 * np.pi * frequency * tmp,
-                                                     duty=duty_cycle)) / 2.0  # Need to initially set value > 0 to find last spike time, then can scale by amplitude
-    DBS_Signal[-1] = 0.0
-
-    # Calculate the time for the first pulse of the next segment
-    last_pulse_index = np.where(np.diff(DBS_Signal) < 0)[0][-1]
-    next_pulse_time = times[last_pulse_index] + T - pulse_width
-
-    # Rescale amplitude
-    DBS_Signal *= amplitude
-
-    return DBS_Signal, times, next_pulse_time
-
-
 if __name__ == '__main__':
 
     # Setup simulation

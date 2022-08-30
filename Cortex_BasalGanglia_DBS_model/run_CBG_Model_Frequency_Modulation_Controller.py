@@ -27,7 +27,6 @@ import neo.io
 import quantities as pq
 import numpy as np
 import math
-from scipy import signal
 from utils import make_beta_cheby1_filter, calculate_avg_beta_power
 import datetime
 
@@ -37,62 +36,12 @@ import Global_Variables as gv
 h = neuron.h
 
 
-# TODO: Move this function to Controllers
-def generate_dbs_signal(start_time, stop_time, last_pulse_time_prior, dt, amplitude, frequency, pulse_width, offset):
-    """Generate monophasic square-wave DBS signal
-
-    Example inputs:
-        start_time = 0				# ms
-        stop_time = 12000			# ms
-        last_pulse_time_prior 		# ms - time the last DBS pulse occurred at - stimulation frequency is modulating
-        dt = 0.01					# ms
-        amplitude = -1.0			# mA - (amplitude<0 = cathodic stimulation, amplitude>0 = anodic stimulation)
-        frequency = 130.0			# Hz
-        pulse_width	= 0.06			# ms
-        offset = 0					# mA
-    """
-    times = np.round(np.arange(start_time, stop_time, dt), 2)
-    tmp = np.arange(0, stop_time - start_time, dt) / 1000.0
-
-    # Check if DBS is switched off
-    if frequency == 0:
-        dbs_signal = np.zeros(len(tmp))
-        last_pulse_time = last_pulse_time_prior
-        next_pulse_time = 1e9
-    else:
-        # Calculate the duty cycle of the DBS signal
-        isi = (1.0 / frequency) * 1000.0  # time is in ms, so *1000 is conversion to ms
-        duty_cycle = (pulse_width / isi)
-        # Need to initially set amplitude value > 0 to find last spike time, then can scale by amplitude
-        dbs_signal = offset + 1.0 * (1.0 + signal.square(2.0 * np.pi * frequency * tmp, duty=duty_cycle)) / 2.0
-        dbs_signal[-1] = 0.0
-
-        # Calculate the time for the first pulse of the next segment
-        try:
-            last_pulse_index = np.where(np.diff(dbs_signal) < 0)[0][-1]
-            next_pulse_time = times[last_pulse_index] + isi - pulse_width
-
-            # Track when the last pulse was
-            last_pulse_time = times[last_pulse_index]
-
-        except:
-            last_pulse_index = len(dbs_signal) - 1  # Catch times when signal may be flat
-            next_pulse_time = times[last_pulse_index] + isi - pulse_width
-
-            # Track when the last pulse was
-            last_pulse_time = times[last_pulse_index]
-
-        # Rescale amplitude
-        dbs_signal *= amplitude
-
-    return dbs_signal, times, next_pulse_time, last_pulse_time
-
-
 if __name__ == '__main__':
 
     # Setup simulation
     setup(timestep=0.01, rngseed=3695)
     steady_state_duration = 6000.0  # Duration of simulation steady state
+    # TODO: Fix the steady_state restore error when simulation_runtime < steady_state_duration - 1
     simulation_runtime = 32000.0  # Duration of simulation from steady state
     simulation_duration = steady_state_duration + simulation_runtime + simulator.state.dt  # Total simulation time
     rec_sampling_interval = 0.5  # Signals are sampled every 0.5 ms
@@ -383,7 +332,7 @@ if __name__ == '__main__':
 
     # Generate a square wave which represents the DBS signal - Needs to be initialized to zero when unused to prevent
     # open-circuit of cortical collateral extracellular mechanism
-    DBS_Signal, DBS_times, next_DBS_pulse_time, last_DBS_pulse_time = generate_dbs_signal(
+    DBS_Signal, DBS_times, next_DBS_pulse_time, last_DBS_pulse_time = controller.generate_dbs_signal(
         start_time=steady_state_duration + 10 + simulator.state.dt, stop_time=simulation_duration,
         last_pulse_time_prior=steady_state_duration,
         dt=simulator.state.dt, amplitude=-1.0, frequency=130.0, pulse_width=0.06, offset=0)
@@ -424,7 +373,7 @@ if __name__ == '__main__':
     GPe_DBS_times_neuron = []
     updated_GPe_DBS_signal = []
     for i in range(0, Pop_size):
-        GPe_DBS_Signal, GPe_DBS_times, GPe_next_DBS_pulse_time, GPe_last_DBS_pulse_time = generate_dbs_signal(
+        GPe_DBS_Signal, GPe_DBS_times, _, GPe_last_DBS_pulse_time = controller.generate_dbs_signal(
             start_time=steady_state_duration + 10 + simulator.state.dt, stop_time=simulation_duration,
             last_pulse_time_prior=steady_state_duration,
             dt=simulator.state.dt, amplitude=100.0, frequency=130.0, pulse_width=0.06, offset=0)
@@ -525,7 +474,7 @@ if __name__ == '__main__':
 
                 # DBS Cortical Collateral Stimulation
                 new_DBS_Signal_Segment, new_DBS_times_Segment, next_DBS_pulse_time, last_DBS_pulse_time = \
-                    generate_dbs_signal(
+                    controller.generate_dbs_signal(
                         start_time=next_DBS_pulse_time, stop_time=controller_call_times[controller_call_index + 1],
                         last_pulse_time_prior=last_DBS_pulse_time,
                         dt=simulator.state.dt, amplitude=-DBS_amp, frequency=DBS_freq, pulse_width=0.06, offset=0)
