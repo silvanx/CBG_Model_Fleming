@@ -30,7 +30,6 @@ import quantities as pq
 import numpy as np
 import math
 from scipy import signal
-import os
 import sys
 import datetime
 from utils import generate_poisson_spike_times, make_beta_cheby1_filter, calculate_avg_beta_power
@@ -74,11 +73,10 @@ def generate_DBS_Signal(start_time, stop_time, dt, amplitude, frequency, pulse_w
 
 
 if __name__ == '__main__':
-
     # Setup simulation
     setup(timestep=0.01, rngseed=3695)
     steady_state_duration = 6000.0  # Duration of simulation steady state
-    # TODO: Fix the simulation error when simulation runtime < 5999.0
+    # TODO: Fix the simulation error when simulation_runtime < steady_state_duration - 1
     simulation_runtime = 32000.0  # Duration of simulation from steady state
     simulation_duration = steady_state_duration + simulation_runtime + simulator.state.dt  # Total simulation time
     rec_sampling_interval = 0.5  # Signals are sampled every 0.5 ms

@@ -66,7 +66,8 @@ def plot_controller_result(plot_start_t, plot_end_t, parameter,
     plt.subplots_adjust(hspace=0.3)
 
 
-def load_and_plot(dirname, parameter, steady_state_time, sim_time, plot_start_t, plot_end_t):
+def load_and_plot(dirname, parameter, steady_state_time, sim_time,
+                  plot_start_t, plot_end_t):
     directory = Path(dirname)
     time, dbs = load_dbs_output(directory)
     lfp_time, lfp = load_stn_lfp(directory, steady_state_time, sim_time)

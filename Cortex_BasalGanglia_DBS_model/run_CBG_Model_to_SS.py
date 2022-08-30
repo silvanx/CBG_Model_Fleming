@@ -77,6 +77,7 @@ if __name__ == '__main__':
 
     # Setup simulation
     setup(timestep=0.01, rngseed=3695)
+    np.random.seed(3695)
     steady_state_duration = 6000.0  # Duration of simulation steady state
     simulation_duration = steady_state_duration  # Total simulation time
     rec_sampling_interval = 0.5  # Fs = 2000Hz
@@ -103,11 +104,11 @@ if __name__ == '__main__':
     STN_space = space.RandomStructure(boundary=space.Sphere(2000))  # Sphere with radius 2000um
 
     # Generate poisson distributed spike time striatal input
-    striatal_spike_times = generate_poisson_spike_times(Pop_size, steady_state_duration, simulation_duration, 20, 1.0,
-                                                        3695)
+    # striatal_spike_times = generate_poisson_spike_times(Pop_size, steady_state_duration, simulation_duration, 20, 1.0,
+    #                                                     3695)
 
     # Save/load Striatal Spike times
-    np.save('Striatal_Spike_Times.npy', striatal_spike_times)  # Save spike times so they can be reloaded
+    # np.save('Striatal_Spike_Times.npy', striatal_spike_times)  # Save spike times so they can be reloaded
     striatal_spike_times = np.load('Striatal_Spike_Times.npy', allow_pickle=True)  # Load spike times from file
 
     # Generate the cortico-basal ganglia neuron populations
@@ -137,9 +138,9 @@ if __name__ == '__main__':
     # Generate Noisy current sources for cortical pyramidal and interneuron populations
     Cortical_Pop_Membrane_Noise = [NoisyCurrentSource(mean=0, stdev=0.005, start=0.0, stop=simulation_duration, dt=1.0)
                                    for count in range(Pop_size)]
-    Interneuron_Pop_Membrane_Noise = [
-        NoisyCurrentSource(mean=0, stdev=0.005, start=0.0, stop=simulation_duration, dt=1.0) for count in
-        range(Pop_size)]
+    Interneuron_Pop_Membrane_Noise = [NoisyCurrentSource(mean=0, stdev=0.005, start=0.0, stop=simulation_duration,
+                                                         dt=1.0)
+                                      for count in range(Pop_size)]
 
     # Inject each membrane noise current into each cortical and interneuron in network
     for Cortical_Neuron, Cortical_Neuron_Membrane_Noise in zip(Cortical_Pop, Cortical_Pop_Membrane_Noise):
