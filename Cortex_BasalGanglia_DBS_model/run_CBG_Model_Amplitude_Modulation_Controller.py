@@ -592,8 +592,7 @@ if __name__ == '__main__':
     # Load the steady state
     run_until(steady_state_duration + simulator.state.dt,
               run_from_steady_state=True)
-    print('Success!')
-    exit()
+    print('Loaded the steady state')
 
     # Reload striatal spike times after loading the steady state
     for i in range(0, Pop_size):
