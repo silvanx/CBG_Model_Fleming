@@ -40,17 +40,17 @@ import Global_Variables as GV
 h = neuron.h
 
 
-def create_network():
+def create_network(Pop_size, rng_seed=3695):
     # Generate Poisson-distributed Striatal Spike trains
     striatal_spike_times =\
         generate_poisson_spike_times(Pop_size, steady_state_duration,
-                                     simulation_runtime, 20, 1.0, 3695)
+                                     simulation_runtime, 20, 1.0, rng_seed)
 
     # Save spike times so they can be reloaded
     np.save('Striatal_Spike_Times.npy', striatal_spike_times)
 
 
-def load_network():
+def load_network(Pop_size, rng_seed=3695):
     # Load striatal spike times from file
     striatal_spike_times = np.load('Striatal_Spike_Times.npy',
                                    allow_pickle=True)
@@ -58,6 +58,33 @@ def load_network():
         spike_times = striatal_spike_times[i][0].value
         spike_times = spike_times[spike_times > steady_state_duration]
         striatal_spike_times[i][0] = Sequence(spike_times)
+
+    # Generate the cortico-basal ganglia neuron populations
+    Cortical_Pop =\
+        Population(Pop_size,
+                   Cortical_Neuron_Type(soma_bias_current_amp=0.245),
+                   structure=STN_space, label='Cortical Neurons')
+    Interneuron_Pop =\
+        Population(Pop_size, Interneuron_Type(bias_current_amp=0.070),
+                   initial_values={'v': v_init}, label='Interneurons')
+    STN_Pop = Population(Pop_size, STN_Neuron_Type(bias_current=-0.125),
+                         structure=STN_space, initial_values={'v': v_init},
+                         label='STN Neurons')
+    # GPe/i have the same parameters, but different bias currents
+    GPe_Pop = Population(Pop_size, GP_Neuron_Type(bias_current=-0.009),
+                         initial_values={'v': v_init}, label='GPe Neurons')
+    GPi_Pop = Population(Pop_size, GP_Neuron_Type(bias_current=0.006),
+                         initial_values={'v': v_init}, label='GPi Neurons')
+    Striatal_Pop =\
+        Population(Pop_size,
+                   SpikeSourceArray(spike_times=striatal_spike_times[0][0]),
+                   label='Striatal Neuron Spike Source')
+    Thalamic_Pop =\
+        Population(Pop_size, Thalamic_Neuron_Type(),
+                   initial_values={'v': v_init}, label='Thalamic Neurons')
+
+    for i in range(0, Pop_size):
+        Striatal_Pop[i].spike_times = striatal_spike_times[i][0]
 
     # Load burst times
     burst_times_script = "burst_times_1.txt"
@@ -67,17 +94,52 @@ def load_network():
     modulation_s = 0.02 * modulation_s  # Scale the modulation signal
     cortical_modulation_current = StepCurrentSource(times=modulation_t,
                                                     amplitudes=modulation_s)
+    Cortical_Pop.inject(cortical_modulation_current)
 
     # Load cortical positions - Comment/Remove to generate new positions
     Cortical_Neuron_xy_Positions = np.loadtxt('cortical_xy_pos.txt',
                                               delimiter=',')
     Cortical_Neuron_x_Positions = Cortical_Neuron_xy_Positions[0, :]
     Cortical_Neuron_y_Positions = Cortical_Neuron_xy_Positions[1, :]
+    # Set cortical xy positions to those loaded in
+    for cell_id, Cortical_cell in enumerate(Cortical_Pop):
+        Cortical_cell.position[0] = Cortical_Neuron_x_Positions[cell_id]
+        Cortical_cell.position[1] = Cortical_Neuron_y_Positions[cell_id]
 
     # Load STN positions - Comment/Remove to generate new positions
     STN_Neuron_xy_Positions = np.loadtxt('STN_xy_pos.txt', delimiter=',')
     STN_Neuron_x_Positions = STN_Neuron_xy_Positions[0, :]
     STN_Neuron_y_Positions = STN_Neuron_xy_Positions[1, :]
+
+    for cell_id, STN_cell in enumerate(STN_Pop):
+        STN_cell.position[0] = STN_Neuron_x_Positions[cell_id]
+        STN_cell.position[1] = STN_Neuron_y_Positions[cell_id]
+        STN_cell.position[2] = 500
+
+    # Synaptic Connections
+    # Add variability to Cortical connections - cortical interneuron
+    # connection weights are random from uniform distribution
+    gCtxInt_max_weight = 2.5e-3  # Ctx -> Int max coupling value
+    gIntCtx_max_weight = 6.0e-3  # Int -> Ctx max coupling value
+    gCtxInt = RandomDistribution('uniform', (0, gCtxInt_max_weight),
+                                 rng=NumpyRNG(seed=rng_seed))
+    gIntCtx = RandomDistribution('uniform', (0, gIntCtx_max_weight),
+                                 rng=NumpyRNG(seed=rng_seed))
+
+    # Define other synaptic connection weights and delays
+    syn_CorticalAxon_Interneuron = StaticSynapse(weight=gCtxInt, delay=2)
+    syn_Interneuron_CorticalSoma = StaticSynapse(weight=gIntCtx, delay=2)
+    # syn_CorticalSpikeSourceCorticalAxon = StaticSynapse(weight=0.25, delay=0)
+    syn_CorticalCollateralSTN = StaticSynapse(weight=0.12, delay=1)
+    syn_STNGPe = StaticSynapse(weight=0.111111, delay=4)
+    syn_GPeGPe = StaticSynapse(weight=0.015, delay=4)
+    syn_GPeSTN = StaticSynapse(weight=0.111111, delay=3)
+    syn_StriatalGPe = StaticSynapse(weight=0.01, delay=1)
+    syn_STNGPi = StaticSynapse(weight=0.111111, delay=2)
+    syn_GPeGPi = StaticSynapse(weight=0.111111, delay=2)
+    syn_GPiThalamic = StaticSynapse(weight=3.0, delay=2)
+    syn_ThalamicCortical = StaticSynapse(weight=5, delay=2)
+    syn_CorticalThalamic = StaticSynapse(weight=0.0, delay=2)
 
     # Load network topology from file
     prj_CorticalAxon_Interneuron =\
@@ -136,10 +198,11 @@ def load_network():
     # Load GPe stimulation order
     GPe_stimulation_order = np.loadtxt('GPe_Stimulation_Order.txt',
                                        delimiter=',')
+    GPe_stimulation_order = [int(index) for index in GPe_stimulation_order]
 
-    return (striatal_spike_times, cortical_modulation_current,
-            Cortical_Neuron_x_Positions, Cortical_Neuron_y_Positions,
-            STN_Neuron_x_Positions, STN_Neuron_y_Positions,
+    return (striatal_spike_times,
+            Cortical_Pop, Interneuron_Pop, STN_Pop, GPe_Pop, GPi_Pop,
+            Striatal_Pop, Thalamic_Pop,
             prj_CorticalAxon_Interneuron, prj_Interneuron_CorticalSoma,
             prj_CorticalSTN, prj_STNGPe, prj_GPeGPe, prj_GPeSTN,
             prj_StriatalGPe, prj_STNGPi, prj_GPeGPi, prj_GPiThalamic,
@@ -147,8 +210,9 @@ def load_network():
 
 
 if __name__ == '__main__':
+    rng_seed = 3695
     # Setup simulation
-    setup(timestep=0.01, rngseed=3695)
+    setup(timestep=0.01, rngseed=rng_seed)
     steady_state_duration = 6000.0  # Duration of simulation steady state
     # TODO: Fix the steady_state restore error when
     # simulation_runtime < steady_state_duration - 1
@@ -189,51 +253,15 @@ if __name__ == '__main__':
 
     # Save spike times so they can be reloaded
     # np.save('Striatal_Spike_Times.npy', striatal_spike_times)
-    # Load spike times from file
-    striatal_spike_times = np.load('Striatal_Spike_Times.npy',
-                                   allow_pickle=True)
-    for i in range(0, Pop_size):
-        spike_times = striatal_spike_times[i][0].value
-        spike_times = spike_times[spike_times > steady_state_duration]
-        striatal_spike_times[i][0] = Sequence(spike_times)
 
-    # Generate the cortico-basal ganglia neuron populations
-    Cortical_Pop =\
-        Population(Pop_size,
-                   Cortical_Neuron_Type(soma_bias_current_amp=0.245),
-                   structure=STN_space, label='Cortical Neurons')
-    Interneuron_Pop =\
-        Population(Pop_size, Interneuron_Type(bias_current_amp=0.070),
-                   initial_values={'v': v_init}, label='Interneurons')
-    STN_Pop = Population(Pop_size, STN_Neuron_Type(bias_current=-0.125),
-                         structure=STN_space, initial_values={'v': v_init},
-                         label='STN Neurons')
-    # GPe/i have the same parameters, but different bias currents
-    GPe_Pop = Population(Pop_size, GP_Neuron_Type(bias_current=-0.009),
-                         initial_values={'v': v_init}, label='GPe Neurons')
-    GPi_Pop = Population(Pop_size, GP_Neuron_Type(bias_current=0.006),
-                         initial_values={'v': v_init}, label='GPi Neurons')
-    Striatal_Pop =\
-        Population(Pop_size,
-                   SpikeSourceArray(spike_times=striatal_spike_times[0][0]),
-                   label='Striatal Neuron Spike Source')
-    Thalamic_Pop =\
-        Population(Pop_size, Thalamic_Neuron_Type(),
-                   initial_values={'v': v_init}, label='Thalamic Neurons')
-
-    # Update the spike times for the striatal populations
-    for i in range(0, Pop_size):
-        Striatal_Pop[i].spike_times = striatal_spike_times[i][0]
-
-    # Load Cortical bias currents for beta burst modulation
-    burst_times_script = "burst_times_1.txt"
-    burst_level_script = "burst_level_1.txt"
-    modulation_times = np.loadtxt(burst_times_script, delimiter=',')
-    modulation_signal = np.loadtxt(burst_level_script, delimiter=',')
-    modulation_signal = 0.02 * modulation_signal  # Scale the modulation signal
-    cortical_modulation_current =\
-        StepCurrentSource(times=modulation_times, amplitudes=modulation_signal)
-    Cortical_Pop.inject(cortical_modulation_current)
+    (striatal_spike_times,
+     Cortical_Pop, Interneuron_Pop, STN_Pop, GPe_Pop, GPi_Pop,
+     Striatal_Pop, Thalamic_Pop,
+     prj_CorticalAxon_Interneuron, prj_Interneuron_CorticalSoma,
+     prj_CorticalSTN, prj_STNGPe, prj_GPeGPe, prj_GPeSTN,
+     prj_StriatalGPe, prj_STNGPi, prj_GPeGPi, prj_GPiThalamic,
+     prj_ThalamicCortical, prj_CorticalThalamic, GPe_stimulation_order) =\
+        load_network(Pop_size)
 
     # Generate Noisy current sources for cortical pyramidal and interneuron
     # populations
@@ -255,28 +283,6 @@ if __name__ == '__main__':
     for Interneuron, Interneuron_Membrane_Noise\
             in zip(Interneuron_Pop, Interneuron_Pop_Membrane_Noise):
         Interneuron.inject(Interneuron_Membrane_Noise)
-
-    # Load cortical positions - Comment/Remove to generate new positions
-    Cortical_Neuron_xy_Positions = np.loadtxt('cortical_xy_pos.txt',
-                                              delimiter=',')
-    Cortical_Neuron_x_Positions = Cortical_Neuron_xy_Positions[0, :]
-    Cortical_Neuron_y_Positions = Cortical_Neuron_xy_Positions[1, :]
-
-    # Set cortical xy positions to those loaded in
-    for cell_id, Cortical_cell in enumerate(Cortical_Pop):
-        Cortical_cell.position[0] = Cortical_Neuron_x_Positions[cell_id]
-        Cortical_cell.position[1] = Cortical_Neuron_y_Positions[cell_id]
-
-    # Load STN positions - Comment/Remove to generate new positions
-    STN_Neuron_xy_Positions = np.loadtxt('STN_xy_pos.txt', delimiter=',')
-    STN_Neuron_x_Positions = STN_Neuron_xy_Positions[0, :]
-    STN_Neuron_y_Positions = STN_Neuron_xy_Positions[1, :]
-
-    # Set STN xy positions to those loaded in
-    for cell_id, STN_cell in enumerate(STN_Pop):
-        STN_cell.position[0] = STN_Neuron_x_Positions[cell_id]
-        STN_cell.position[1] = STN_Neuron_y_Positions[cell_id]
-        STN_cell.position[2] = 500
 
     '''
     # Position Check -
@@ -327,31 +333,6 @@ if __name__ == '__main__':
     # np.savetxt('cortical_collateral_electrode_distances.txt',
     #            Cortical_Collateral_stimulating_electrode_distances,
     #            delimiter=',')
-
-    # Synaptic Connections
-    # Add variability to Cortical connections - cortical interneuron
-    # connection weights are random from uniform distribution
-    gCtxInt_max_weight = 2.5e-3  # Ctx -> Int max coupling value
-    gIntCtx_max_weight = 6.0e-3  # Int -> Ctx max coupling value
-    gCtxInt = RandomDistribution('uniform', (0, gCtxInt_max_weight),
-                                 rng=NumpyRNG(seed=3695))
-    gIntCtx = RandomDistribution('uniform', (0, gIntCtx_max_weight),
-                                 rng=NumpyRNG(seed=3695))
-
-    # Define other synaptic connection weights and delays
-    syn_CorticalAxon_Interneuron = StaticSynapse(weight=gCtxInt, delay=2)
-    syn_Interneuron_CorticalSoma = StaticSynapse(weight=gIntCtx, delay=2)
-    syn_CorticalSpikeSourceCorticalAxon = StaticSynapse(weight=0.25, delay=0)
-    syn_CorticalCollateralSTN = StaticSynapse(weight=0.12, delay=1)
-    syn_STNGPe = StaticSynapse(weight=0.111111, delay=4)
-    syn_GPeGPe = StaticSynapse(weight=0.015, delay=4)
-    syn_GPeSTN = StaticSynapse(weight=0.111111, delay=3)
-    syn_StriatalGPe = StaticSynapse(weight=0.01, delay=1)
-    syn_STNGPi = StaticSynapse(weight=0.111111, delay=2)
-    syn_GPeGPi = StaticSynapse(weight=0.111111, delay=2)
-    syn_GPiThalamic = StaticSynapse(weight=3.0, delay=2)
-    syn_ThalamicCortical = StaticSynapse(weight=5, delay=2)
-    syn_CorticalThalamic = StaticSynapse(weight=0.0, delay=2)
 
     # # Create new network topology Connections
     # prj_CorticalAxon_Interneuron =\
@@ -420,60 +401,6 @@ if __name__ == '__main__':
     #                                        allow_self_connections=False),
     #                syn_CorticalThalamic, source='soma(0.5)',
     #                receptor_type='AMPA')
-
-    # Load network topology from file
-    prj_CorticalAxon_Interneuron =\
-        Projection(Cortical_Pop, Interneuron_Pop,
-                   FromFileConnector("CorticalAxonInterneuron_Connections.txt"),
-                   syn_CorticalAxon_Interneuron, source='middle_axon_node',
-                   receptor_type='AMPA')
-    prj_Interneuron_CorticalSoma =\
-        Projection(Interneuron_Pop, Cortical_Pop,
-                   FromFileConnector("InterneuronCortical_Connections.txt"),
-                   syn_Interneuron_CorticalSoma, receptor_type='GABAa')
-    prj_CorticalSTN =\
-        Projection(Cortical_Pop, STN_Pop,
-                   FromFileConnector("CorticalSTN_Connections.txt"),
-                   syn_CorticalCollateralSTN, source='collateral(0.5)',
-                   receptor_type='AMPA')
-    prj_STNGPe = Projection(STN_Pop, GPe_Pop,
-                            FromFileConnector("STNGPe_Connections.txt"),
-                            syn_STNGPe, source='soma(0.5)',
-                            receptor_type='AMPA')
-    prj_GPeGPe = Projection(GPe_Pop, GPe_Pop,
-                            FromFileConnector("GPeGPe_Connections.txt"),
-                            syn_GPeGPe,
-                            source='soma(0.5)', receptor_type='GABAa')
-    prj_GPeSTN = Projection(GPe_Pop, STN_Pop,
-                            FromFileConnector("GPeSTN_Connections.txt"),
-                            syn_GPeSTN, source='soma(0.5)',
-                            receptor_type='GABAa')
-    prj_StriatalGPe =\
-        Projection(Striatal_Pop, GPe_Pop,
-                   FromFileConnector("StriatalGPe_Connections.txt"),
-                   syn_StriatalGPe, source='soma(0.5)', receptor_type='GABAa')
-    prj_STNGPi =\
-        Projection(STN_Pop, GPi_Pop,
-                   FromFileConnector("STNGPi_Connections.txt"), syn_STNGPi,
-                   source='soma(0.5)', receptor_type='AMPA')
-    prj_GPeGPi =\
-        Projection(GPe_Pop, GPi_Pop,
-                   FromFileConnector("GPeGPi_Connections.txt"), syn_GPeGPi,
-                   source='soma(0.5)', receptor_type='GABAa')
-    prj_GPiThalamic =\
-        Projection(GPi_Pop, Thalamic_Pop,
-                   FromFileConnector("GPiThalamic_Connections.txt"),
-                   syn_GPiThalamic, source='soma(0.5)', receptor_type='GABAa')
-    prj_ThalamicCortical =\
-        Projection(Thalamic_Pop, Cortical_Pop,
-                   FromFileConnector("ThalamicCorticalSoma_Connections.txt"),
-                   syn_ThalamicCortical, source='soma(0.5)',
-                   receptor_type='AMPA')
-    prj_CorticalThalamic =\
-        Projection(Cortical_Pop, Thalamic_Pop,
-                   FromFileConnector("CorticalSomaThalamic_Connections.txt"),
-                   syn_CorticalThalamic, source='soma(0.5)',
-                   receptor_type='AMPA')
 
     """
     # Save the network topology so it can be reloaded
@@ -619,9 +546,6 @@ if __name__ == '__main__':
                                       1.75, 2, 2.25, 2.50, 3, 4, 5])
     interp_collaterals_entrained = np.array([0, 0, 0, 1, 4, 8, 19, 30, 43, 59,
                                              82, 100, 100, 100])
-    GPe_stimulation_order = np.loadtxt('GPe_Stimulation_Order.txt',
-                                       delimiter=',')
-    GPe_stimulation_order = [int(index) for index in GPe_stimulation_order]
 
     # Make new GPe DBS vector for each GPe neuron - each GPe neuron needs a
     # pointer to its own DBS signal
@@ -664,9 +588,12 @@ if __name__ == '__main__':
     # Variables for writing simulation data
     last_write_time = steady_state_duration
 
+    print('Loaded the network, loading the steady state')
     # Load the steady state
     run_until(steady_state_duration + simulator.state.dt,
               run_from_steady_state=True)
+    print('Success!')
+    exit()
 
     # Reload striatal spike times after loading the steady state
     for i in range(0, Pop_size):
