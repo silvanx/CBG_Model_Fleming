@@ -42,7 +42,9 @@ def load_controller_data(dir: Path, parameter: str)\
         controller_t = np.array([float(r[0]) for r in csv.reader(f)])
     with open(dir / ('controller_%s_values.csv' % parameter), 'r') as f:
         controller_p = np.array([float(r[0]) for r in csv.reader(f)])
-    return controller_t, controller_p
+    with open(dir / 'controller_beta_values.csv', 'r') as f:
+        controller_b = np.array([float(r[0]) for r in csv.reader(f)])
+    return controller_t, controller_p, controller_b
 
 
 def time_to_sample(tt: np.ndarray, t: float) -> int:
@@ -54,9 +56,10 @@ def time_to_sample(tt: np.ndarray, t: float) -> int:
 def plot_controller_result(plot_start_t: float, plot_end_t: float,
                            parameter: str, time: dict, dbs: dict,
                            controller_t: np.ndarray, controller_p: np.ndarray,
+                           controller_b: np.ndarray,
                            lfp_time, lfp, axs: list[plt.Axes] = None):
     if axs is None:
-        fig, axs = plt.subplots(3, 1, figsize=(15, 8))
+        fig, axs = plt.subplots(4, 1, figsize=(15, 8))
     s = time_to_sample(time['signal'], plot_start_t)
     e = time_to_sample(time['signal'], plot_end_t) - 1
     axs[0].plot(time['signal'][s:e], dbs['signal'][s: e])
@@ -70,12 +73,16 @@ def plot_controller_result(plot_start_t: float, plot_end_t: float,
     axs[1].set_ylabel(parameter)
     axs[1].set_xlabel('Time [ms]')
 
+    axs[2].plot(controller_t[s:e], controller_b[s: e])
+    axs[2].set_ylabel('Beta')
+    axs[2].set_xlabel('Time [ms]')
+
     s = time_to_sample(lfp_time, plot_start_t)
     e = time_to_sample(lfp_time, plot_end_t) - 1
-    axs[2].plot(lfp_time[s:e], lfp['signal'][s: e])
-    axs[2].set_ylabel('Local field potential [%s]' % lfp['signal_units'][0])
-    axs[2].set_xlabel('Time [ms]')
-    plt.subplots_adjust(hspace=0.3)
+    axs[3].plot(lfp_time[s:e], lfp['signal'][s: e])
+    axs[3].set_ylabel('Local field potential [%s]' % lfp['signal_units'][0])
+    axs[3].set_xlabel('Time [ms]')
+    plt.subplots_adjust(hspace=0.42)
     return axs
 
 
@@ -93,7 +100,8 @@ def load_and_plot(dirname: Union[str, list[str]], parameter: str,
         directory = Path(d)
         time, dbs = load_dbs_output(directory)
         lfp_time, lfp = load_stn_lfp(directory, steady_state_time, sim_time)
-        controller_t, controller_p = load_controller_data(directory, parameter)
+        controller_t, controller_p, controller_b =\
+            load_controller_data(directory, parameter)
         axs = plot_controller_result(plot_start_t, plot_end_t, parameter, time,
-                                     dbs, controller_t, controller_p, lfp_time,
-                                     lfp, axs)
+                                     dbs, controller_t, controller_p,
+                                     controller_b, lfp_time, lfp, axs)
