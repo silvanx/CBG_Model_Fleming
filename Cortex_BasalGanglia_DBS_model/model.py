@@ -12,14 +12,10 @@ from utils import generate_poisson_spike_times
 
 def create_network(Pop_size, steady_state_duration, simulation_duration,
                    simulation_runtime, v_init, rng_seed=3695):
-    # Create random distribution for cell membrane noise current
-    r_init = RandomDistribution('uniform', (0, Pop_size))
-
-    # Create Spaces for STN Population
-    STN_Electrode_space = space.Space(axes='xy')
 
     # Sphere with radius 2000 um
-    STN_space = space.RandomStructure(boundary=space.Sphere(2000))
+    STN_space = space.RandomStructure(boundary=space.Sphere(2000),
+                                      rng=NumpyRNG(seed=rng_seed))
 
     # Generate Poisson-distributed Striatal Spike trains
     striatal_spike_times =\
@@ -252,14 +248,9 @@ def create_network(Pop_size, steady_state_duration, simulation_duration,
 
 def load_network(Pop_size, steady_state_duration, simulation_duration,
                  simulation_runtime, v_init, rng_seed=3695):
-    # Create random distribution for cell membrane noise current
-    r_init = RandomDistribution('uniform', (0, Pop_size))
-
-    # Create Spaces for STN Population
-    STN_Electrode_space = space.Space(axes='xy')
-
     # Sphere with radius 2000 um
-    STN_space = space.RandomStructure(boundary=space.Sphere(2000))
+    STN_space = space.RandomStructure(boundary=space.Sphere(2000),
+                                      rng=NumpyRNG(seed=rng_seed))
 
     # Load striatal spike times from file
     striatal_spike_times = np.load('Striatal_Spike_Times.npy',
