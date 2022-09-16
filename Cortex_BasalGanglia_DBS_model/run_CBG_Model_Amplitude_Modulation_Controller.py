@@ -86,7 +86,8 @@ if __name__ == '__main__':
      prj_CorticalSTN, prj_STNGPe, prj_GPeGPe, prj_GPeSTN,
      prj_StriatalGPe, prj_STNGPi, prj_GPeGPi, prj_GPiThalamic,
      prj_ThalamicCortical, prj_CorticalThalamic, GPe_stimulation_order) =\
-        load_network(Pop_size, steady_state_duration, v_init)
+        load_network(Pop_size, steady_state_duration, simulation_duration,
+                     simulation_runtime, v_init)
 
     # # Generate Noisy current sources for cortical pyramidal and interneuron
     # # populations
