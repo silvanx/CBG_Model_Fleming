@@ -25,6 +25,7 @@ import quantities as pq
 import numpy as np
 import math
 import datetime
+import sys
 from utils import make_beta_cheby1_filter, calculate_avg_beta_power
 from model import load_network
 
@@ -41,7 +42,13 @@ if __name__ == '__main__':
     steady_state_duration = 6000.0  # Duration of simulation steady state
     # TODO: Fix the steady_state restore error when
     # simulation_runtime < steady_state_duration - 1
-    simulation_runtime = 32000.0  # Duration of simulation from steady state
+    # Duration of simulation from steady state
+    if len(sys.argv) < 2:
+        simulation_runtime = 32000.0
+    else:
+        simulation_runtime = float(sys.argv[1])
+    print("Running simulation for %.0f ms from steady state" %
+          simulation_runtime)
     simulation_duration = (steady_state_duration + simulation_runtime +
                            simulator.state.dt)  # Total simulation time
     rec_sampling_interval = 0.5  # Signals are sampled every 0.5 ms
