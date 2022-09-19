@@ -17,7 +17,7 @@ Description: Cortico-Basal Ganglia Network Model implemented in PyNN using the
 import neuron
 from pyNN.neuron import setup, run_until, end, simulator
 from pyNN.parameters import Sequence
-from Controllers import StandardPIDController
+from Controllers import StandardPIDController, ZeroController
 import neo.io
 import quantities as pq
 import numpy as np
@@ -44,8 +44,12 @@ if __name__ == '__main__':
         simulation_runtime = 32000.0
     else:
         simulation_runtime = float(sys.argv[1])
-    print("Running simulation for %.0f ms from steady state" %
-          simulation_runtime)
+    if len(sys.argv) >= 3:
+        controller_type = sys.argv[2]
+    else:
+        controller_type = "PID"
+    print("Running simulation for %.0f ms from steady state with %s control" %
+          simulation_runtime, controller_type)
     sim_total_time = (steady_state_duration + simulation_runtime +
                       timestep)  # Total simulation time
     rec_sampling_interval = 0.5  # Signals are sampled every 0.5 ms
@@ -154,29 +158,15 @@ if __name__ == '__main__':
 
     # Initialize the Controller being used:
     # Controller sampling period, Ts, is in sec
-    # Constant Amplitude Controller:
-    # controller = Constant_Controller(SetPoint=1.0414e-04, MinValue=0.0,
-    #                                  MaxValue=3.0, ConstantValue=2.5,
-    #                                  Ts=0.02)
-    # On-Off Controller:
-    # controller = ON_OFF_Controller(SetPoint=1.0414e-04, MinValue=0.0,
-    #                                MaxValue=3.0, RampDuration=0.25, Ts=0.02)
-    # Dual-threshold Controller:
-    # controller = Dual_Threshold_Controller(LowerThreshold=1.0414e-04,
-    #                                        UpperThreshold=1.5261e-04,
-    #                                        MinValue=0.0, MaxValue=3.0,
-    #                                        RampDuration=0.25, Ts=0.02)
-    # P Controller:
-    # controller = standard_PID_Controller(SetPoint=1.0414e-04, Kp=5.0, Ti=0,
-    #                                      Td=0, Ts=0.02, MinValue=0.0,
-    #                                      MaxValue=3.0)
-    # PI Controller:
-    controller = StandardPIDController(SetPoint=1.0414e-04, Kp=0.23, Ti=0.2,
-                                       Td=0, Ts=0.02, MinValue=0.0,
-                                       MaxValue=3.0)
     start_timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    simulation_identifier = controller.get_label() + "-" + start_timestamp
+    if controller_type == 'zero':
+        controller = ZeroController(setpoint=0, Ts=0)
+    else:
+        controller = StandardPIDController(SetPoint=1.0414e-04, Kp=0.23,
+                                           Ti=0.2, Td=0, Ts=0.02, MinValue=0.0,
+                                           MaxValue=3.0)
     output_prefix = 'Simulation_Output_Results/Controller_Simulations/Amp/'
+    simulation_identifier = controller.get_label() + "-" + start_timestamp
     simulation_output_dir = output_prefix + simulation_identifier
 
     # Generate a square wave which represents the DBS signal
