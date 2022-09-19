@@ -16,8 +16,6 @@ Description: Cortico-Basal Ganglia Network Model implemented in PyNN using the
 """
 import neuron
 from pyNN.neuron import setup, run_until, end, simulator
-from Electrode_Distances import distances_to_electrode,\
-    collateral_distances_to_electrode
 from pyNN.parameters import Sequence
 from Controllers import StandardPIDController
 import neo.io
@@ -27,7 +25,7 @@ import math
 import datetime
 import sys
 from utils import make_beta_cheby1_filter, calculate_avg_beta_power
-from model import load_network
+from model import load_network, electrode_distance
 
 # Import global variables for GPe DBS
 import Global_Variables as GV
@@ -37,8 +35,7 @@ h = neuron.h
 
 if __name__ == '__main__':
     rng_seed = 3695
-    # Setup simulation
-    setup(timestep=0.01, rngseed=rng_seed)
+    timestep = 0.01
     steady_state_duration = 6000.0  # Duration of simulation steady state
     # TODO: Fix the steady_state restore error when
     # simulation_runtime < steady_state_duration - 1
@@ -49,10 +46,13 @@ if __name__ == '__main__':
         simulation_runtime = float(sys.argv[1])
     print("Running simulation for %.0f ms from steady state" %
           simulation_runtime)
-    simulation_duration = (steady_state_duration + simulation_runtime +
-                           simulator.state.dt)  # Total simulation time
+    sim_total_time = (steady_state_duration + simulation_runtime +
+                      timestep)  # Total simulation time
     rec_sampling_interval = 0.5  # Signals are sampled every 0.5 ms
     Pop_size = 100
+
+    # Setup simulation
+    setup(timestep=timestep, rngseed=rng_seed)
 
     # Make beta band filter centred on 25Hz (cutoff frequencies are 21-29 Hz)
     # for biomarker estimation
@@ -77,27 +77,8 @@ if __name__ == '__main__':
      prj_CorticalSTN, prj_STNGPe, prj_GPeGPe, prj_GPeSTN,
      prj_StriatalGPe, prj_STNGPi, prj_GPeGPi, prj_GPiThalamic,
      prj_ThalamicCortical, prj_CorticalThalamic, GPe_stimulation_order,
-     _, _) = load_network(Pop_size, steady_state_duration, simulation_duration,
+     _, _) = load_network(Pop_size, steady_state_duration, sim_total_time,
                           simulation_runtime, v_init)
-
-    # Assign Positions for recording and stimulating electrode point sources
-    recording_electrode_1_position = np.array([0, -1500, 250])
-    recording_electrode_2_position = np.array([0, 1500, 250])
-    stimulating_electrode_position = np.array([0, 0, 250])
-
-    # Calculate STN cell distances to each recording electrode
-    # using only xy coordinates for distance calculations
-    STN_recording_electrode_1_distances =\
-        distances_to_electrode(recording_electrode_1_position, STN_Pop)
-    STN_recording_electrode_2_distances =\
-        distances_to_electrode(recording_electrode_2_position, STN_Pop)
-
-    # Calculate Cortical Collateral distances from the stimulating electrode -
-    # using xyz coordinates for distance
-    # calculation - these distances need to be in um for xtra mechanism
-    Cortical_Collateral_stimulating_electrode_distances =\
-        collateral_distances_to_electrode(stimulating_electrode_position,
-                                          Cortical_Pop, L=500, nseg=11)
 
     # Define state variables to record from each population
     Cortical_Pop.record('soma(0.5).v',
@@ -119,6 +100,18 @@ if __name__ == '__main__':
                    sampling_interval=rec_sampling_interval)
     Thalamic_Pop.record('soma(0.5).v',
                         sampling_interval=rec_sampling_interval)
+
+    # Assign Positions for recording and stimulating electrode point sources
+    recording_electrode_1_position = np.array([0, -1500, 250])
+    recording_electrode_2_position = np.array([0, 1500, 250])
+    stimulating_electrode_position = np.array([0, 0, 250])
+
+    (STN_recording_electrode_1_distances,
+     STN_recording_electrode_2_distances,
+     Cortical_Collateral_stimulating_electrode_distances
+     ) = electrode_distance(recording_electrode_1_position,
+                            recording_electrode_2_position, STN_Pop,
+                            stimulating_electrode_position, Cortical_Pop)
 
     # Conductivity and resistivity values for homogenous, isotropic medium
     sigma = 0.27  # Latikka et al. 2001 - Conductivity of Brain tissue S/m
@@ -156,7 +149,7 @@ if __name__ == '__main__':
     controller_sampling_time = 20.0  # ms
     controller_start = (steady_state_duration + controller_window_length +
                         controller_sampling_time)
-    controller_call_times = np.arange(controller_start, simulation_duration,
+    controller_call_times = np.arange(controller_start, sim_total_time,
                                       controller_sampling_time)
 
     # Initialize the Controller being used:
@@ -192,7 +185,7 @@ if __name__ == '__main__':
     DBS_Signal, DBS_times, next_DBS_pulse_time, _ =\
         controller.generate_dbs_signal(
             start_time=steady_state_duration + 10 + simulator.state.dt,
-            stop_time=simulation_duration,
+            stop_time=sim_total_time,
             dt=simulator.state.dt,
             amplitude=-1.0, frequency=130.0, pulse_width=0.06, offset=0)
 
@@ -236,7 +229,7 @@ if __name__ == '__main__':
         GPe_DBS_Signal, GPe_DBS_times, GPe_next_DBS_pulse_time, _ =\
             controller.generate_dbs_signal(
                 start_time=steady_state_duration + 10 + simulator.state.dt,
-                stop_time=simulation_duration,
+                stop_time=sim_total_time,
                 dt=simulator.state.dt,
                 amplitude=100.0, frequency=130.0, pulse_width=0.06, offset=0)
 

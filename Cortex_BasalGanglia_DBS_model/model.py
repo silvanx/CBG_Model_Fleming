@@ -7,6 +7,8 @@ from pyNN.neuron import Population, StepCurrentSource, SpikeSourceArray,\
 from pyNN.random import RandomDistribution, NumpyRNG
 from Cortical_Basal_Ganglia_Cell_Classes import Cortical_Neuron_Type,\
     Interneuron_Type, STN_Neuron_Type, GP_Neuron_Type, Thalamic_Neuron_Type
+from Electrode_Distances import distances_to_electrode,\
+    collateral_distances_to_electrode
 from utils import generate_poisson_spike_times
 
 
@@ -369,7 +371,8 @@ def load_network(Pop_size, steady_state_duration, simulation_duration,
     # Load network topology from file
     prj_CorticalAxon_Interneuron =\
         Projection(Cortical_Pop, Interneuron_Pop,
-                   FromFileConnector("CorticalAxonInterneuron_Connections.txt"),
+                   FromFileConnector(
+                       "CorticalAxonInterneuron_Connections.txt"),
                    syn_CorticalAxon_Interneuron, source='middle_axon_node',
                    receptor_type='AMPA')
     prj_Interneuron_CorticalSoma =\
@@ -433,3 +436,25 @@ def load_network(Pop_size, steady_state_duration, simulation_duration,
             prj_StriatalGPe, prj_STNGPi, prj_GPeGPi, prj_GPiThalamic,
             prj_ThalamicCortical, prj_CorticalThalamic, GPe_stimulation_order,
             Cortical_Pop_Membrane_Noise, Interneuron_Pop_Membrane_Noise)
+
+
+def electrode_distance(recording_electrode_1_position,
+                       recording_electrode_2_position, STN_Pop,
+                       stimulating_electrode_position, Cortical_Pop):
+    # Calculate STN cell distances to each recording electrode
+    # using only xy coordinates for distance calculations
+    STN_recording_electrode_1_distances =\
+        distances_to_electrode(recording_electrode_1_position, STN_Pop)
+    STN_recording_electrode_2_distances =\
+        distances_to_electrode(recording_electrode_2_position, STN_Pop)
+
+    # Calculate Cortical Collateral distances from the stimulating electrode -
+    # using xyz coordinates for distance
+    # calculation - these distances need to be in um for xtra mechanism
+    Cortical_Collateral_stimulating_electrode_distances =\
+        collateral_distances_to_electrode(stimulating_electrode_position,
+                                          Cortical_Pop, L=500, nseg=11)
+
+    return (STN_recording_electrode_1_distances,
+            STN_recording_electrode_2_distances,
+            Cortical_Collateral_stimulating_electrode_distances)
