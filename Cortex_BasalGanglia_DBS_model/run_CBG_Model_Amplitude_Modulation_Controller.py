@@ -49,7 +49,7 @@ if __name__ == '__main__':
     else:
         controller_type = "PID"
     print("Running simulation for %.0f ms from steady state with %s control" %
-          simulation_runtime, controller_type)
+          (simulation_runtime, controller_type))
     sim_total_time = (steady_state_duration + simulation_runtime +
                       timestep)  # Total simulation time
     rec_sampling_interval = 0.5  # Signals are sampled every 0.5 ms
