@@ -12,6 +12,7 @@ from utils import generate_poisson_spike_times
 
 def create_network(Pop_size, steady_state_duration, simulation_duration,
                    simulation_runtime, v_init, rng_seed=3695):
+    np.random.seed(rng_seed)
 
     # Sphere with radius 2000 um
     STN_space = space.RandomStructure(boundary=space.Sphere(2000),
@@ -243,11 +244,13 @@ def create_network(Pop_size, steady_state_duration, simulation_duration,
             prj_CorticalAxon_Interneuron, prj_Interneuron_CorticalSoma,
             prj_CorticalSTN, prj_STNGPe, prj_GPeGPe, prj_GPeSTN,
             prj_StriatalGPe, prj_STNGPi, prj_GPeGPi, prj_GPiThalamic,
-            prj_ThalamicCortical, prj_CorticalThalamic, GPe_stimulation_order)
+            prj_ThalamicCortical, prj_CorticalThalamic, GPe_stimulation_order,
+            Cortical_Pop_Membrane_Noise, Interneuron_Pop_Membrane_Noise)
 
 
 def load_network(Pop_size, steady_state_duration, simulation_duration,
                  simulation_runtime, v_init, rng_seed=3695):
+    np.random.seed(rng_seed)
     # Sphere with radius 2000 um
     STN_space = space.RandomStructure(boundary=space.Sphere(2000),
                                       rng=NumpyRNG(seed=rng_seed))
@@ -428,4 +431,5 @@ def load_network(Pop_size, steady_state_duration, simulation_duration,
             prj_CorticalAxon_Interneuron, prj_Interneuron_CorticalSoma,
             prj_CorticalSTN, prj_STNGPe, prj_GPeGPe, prj_GPeSTN,
             prj_StriatalGPe, prj_STNGPi, prj_GPeGPi, prj_GPiThalamic,
-            prj_ThalamicCortical, prj_CorticalThalamic, GPe_stimulation_order)
+            prj_ThalamicCortical, prj_CorticalThalamic, GPe_stimulation_order,
+            Cortical_Pop_Membrane_Noise, Interneuron_Pop_Membrane_Noise)

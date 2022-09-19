@@ -69,9 +69,9 @@ if __name__ == '__main__':
      prj_CorticalAxon_Interneuron, prj_Interneuron_CorticalSoma,
      prj_CorticalSTN, prj_STNGPe, prj_GPeGPe, prj_GPeSTN,
      prj_StriatalGPe, prj_STNGPi, prj_GPeGPi, prj_GPiThalamic,
-     prj_ThalamicCortical, prj_CorticalThalamic, GPe_stimulation_order) =\
-        load_network(Pop_size, steady_state_duration, simulation_duration,
-                     simulation_runtime, v_init)
+     prj_ThalamicCortical, prj_CorticalThalamic, GPe_stimulation_order,
+     _, _) = load_network(Pop_size, steady_state_duration, simulation_duration,
+                          simulation_runtime, v_init)
 
     # Assign Positions for recording and stimulating electrode point sources
     recording_electrode_1_position = np.array([0, -1500, 250])
