@@ -48,6 +48,15 @@ if __name__ == '__main__':
         controller_type = sys.argv[2]
     else:
         controller_type = "PID"
+
+    if controller_type == "PID" and len(sys.argv) == 6:
+        kp = float(sys.argv[3])
+        ti = float(sys.argv[4])
+        td = float(sys.argv[5])
+    else:
+        kp = 0.23
+        ti = 0.2
+        td = 0
     print("Running simulation for %.0f ms from steady state with %s control" %
           (simulation_runtime, controller_type))
     sim_total_time = (steady_state_duration + simulation_runtime +
