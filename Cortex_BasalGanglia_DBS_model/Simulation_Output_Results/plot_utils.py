@@ -35,13 +35,16 @@ def load_stn_lfp(dir: Path, steady_state_time: float, sim_time: float)\
     return lfp_t, lfp
 
 
-def load_controller_data(dir: Path, parameter: str)\
+def load_controller_data(dir: Path, parameter: str = None)\
         -> tuple[NDArray[np.float32], NDArray[np.float32]]:
     '''Reads controller data from CSV files'''
     with open(dir / 'controller_sample_times.csv', 'r') as f:
         controller_t = np.array([float(r[0]) for r in csv.reader(f)])
-    with open(dir / ('controller_%s_values.csv' % parameter), 'r') as f:
-        controller_p = np.array([float(r[0]) for r in csv.reader(f)])
+    if parameter is not None:
+        with open(dir / ('controller_%s_values.csv' % parameter), 'r') as f:
+            controller_p = np.array([float(r[0]) for r in csv.reader(f)])
+    else:
+        controller_p = None
     with open(dir / 'controller_beta_values.csv', 'r') as f:
         controller_b = np.array([float(r[0]) for r in csv.reader(f)])
     return controller_t, controller_p, controller_b
@@ -105,3 +108,27 @@ def load_and_plot(dirname: Union[str, list[str]], parameter: str,
         axs = plot_controller_result(plot_start_t, plot_end_t, parameter, time,
                                      dbs, controller_t, controller_p,
                                      controller_b, lfp_time, lfp, axs)
+
+
+def compute_mse(lfp_time, lfp, setpoint=1.0414E-4):
+    duration = lfp_time[-1] - lfp_time[0]
+    error = lfp - setpoint
+    mse = np.trapz(error ** 2, lfp_time) / duration
+    return mse
+
+
+def plot_mse_dir(dir, setpoint=1.0414E-4):
+    directory = Path(dir)
+    for result_dir in directory.iterdir():
+        if not result_dir.is_dir():
+            continue
+        controller_t, _, controller_b =\
+            load_controller_data(result_dir, None)
+        mse = compute_mse(controller_t, controller_b, setpoint)
+        fig = plt.figure(figsize=(20, 10))
+        plt.plot(controller_t, controller_b)
+        plt.axhline(setpoint, linestyle='--', color='k')
+        plt.title('%s (MSE = %.2E)' % (result_dir.name, mse))
+        fig.savefig(directory / ('%s.png' % result_dir.name),
+                    bbox_inches='tight', facecolor='white')
+        plt.close(fig)
