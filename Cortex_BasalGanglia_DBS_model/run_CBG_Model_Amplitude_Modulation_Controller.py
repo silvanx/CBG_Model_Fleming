@@ -56,8 +56,9 @@ if __name__ == '__main__':
         kp = float(sys.argv[3])
         ti = float(sys.argv[4])
         td = float(sys.argv[5])
-    print("Running simulation for %.0f ms from steady state with %s control" %
-          (simulation_runtime, controller_type))
+    print("INFO: Running simulation for %.0f ms after steady state (%.0f ms) \
+with %s control" %
+          (simulation_runtime, steady_state_duration, controller_type))
     sim_total_time = (steady_state_duration + simulation_runtime +
                       timestep)  # Total simulation time
     rec_sampling_interval = 0.5  # Signals are sampled every 0.5 ms
