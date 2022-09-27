@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from typing import Union, Any
 from numpy.typing import NDArray
+from scipy.interpolate import griddata
 
 
 def mat_to_dict(obj: Any) -> dict:
@@ -128,7 +129,49 @@ def plot_mse_dir(dir, setpoint=1.0414E-4):
         fig = plt.figure(figsize=(20, 10))
         plt.plot(controller_t, controller_b)
         plt.axhline(setpoint, linestyle='--', color='k')
+        plt.ylim([0, 4E-4])
         plt.title('%s (MSE = %.2E)' % (result_dir.name, mse))
         fig.savefig(directory / ('%s.png' % result_dir.name),
                     bbox_inches='tight', facecolor='white')
         plt.close(fig)
+
+
+def plot_mse_pi_params(dir, setpoint=1.0414E-4):
+    directory = Path(dir)
+    mse_list = []
+    for result_dir in directory.iterdir():
+        res = dict()
+        if not result_dir.is_dir():
+            continue
+        controller_t, _, controller_b = load_controller_data(result_dir,
+                                                             None)
+        mse = compute_mse(controller_t, controller_b, 1.0414E-4)
+        params_string = result_dir.name.split('-')[0].split(',')
+        for p in params_string:
+            p = p.strip()
+            k, v = p.split('=')
+            res[k] = float(v)
+        res['mse'] = mse
+        mse_list.append(res)
+    x = []
+    y = []
+    z = []
+    for e in mse_list:
+        x.append(e['Kp'])
+        y.append(e['Ti'])
+        z.append(e['mse'])
+    x = np.array(x)
+    y = np.array(y)
+    z = np.array(z)
+    xi = yi = np.arange(0, 2.01, 0.01)
+    xi, yi = np.meshgrid(xi, yi)
+    zi = griddata((x, y), z, (xi, yi), method='cubic')
+    plt.figure(figsize=(12, 7))
+    plt.contourf(xi, yi, zi)
+    plt.colorbar()
+    plt.scatter(x, y, c='k', s=5)
+    plt.xlabel('Kp')
+    plt.ylabel('Ti')
+    plt.xlim([0.04, 2.01])
+    plt.ylim([0.09, 2.01])
+    plt.title('Mean Square Error of beta power when using PI controller')
