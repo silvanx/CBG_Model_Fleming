@@ -9,9 +9,9 @@ COPY ./Cortex_BasalGanglia_DBS_model/*.mod ./
 COPY ./Cortex_BasalGanglia_DBS_model/*.o ./
 COPY ./Cortex_BasalGanglia_DBS_model/*.html ./
 COPY ./Cortex_BasalGanglia_DBS_model/*.bin ./
-COPY ./Cortex_BasalGanglia_DBS_model/*.bin ./
+
 COPY ./Cortex_BasalGanglia_DBS_model/*.npy ./
-COPY ./Cortex_BasalGanglia_DBS_model/Updated_PyNN_Files/ ./
+COPY ./Cortex_BasalGanglia_DBS_model/Updated_PyNN_Files/pynn-steady-state.patch ./
 
 
 RUN pip3 install numpy==1.23.1 scipy==1.9.0 PyNN==0.10.0
@@ -20,3 +20,11 @@ RUN pip3 install nrnutils==0.2.0
 
 RUN nrnivmodl
 
+WORKDIR /usr/local/lib/python3.9
+RUN patch -p1 < /usr/app/src/CBG_Fleming_Model/pynn-steady-state.patch
+
+WORKDIR /usr/local/lib/python3.9/site-packages/pyNN/neuron/nmodl
+RUN nrnivmodl
+
+WORKDIR /usr/app/src/CBG_Fleming_Model
+ENTRYPOINT ["python3", "/usr/app/src/CBG_Fleming_Model/run_CBG_Model_to_SS.py"]
