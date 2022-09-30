@@ -143,8 +143,12 @@ def plot_mse_pi_params(dir, setpoint=1.0414E-4):
         res = dict()
         if not result_dir.is_dir():
             continue
-        controller_t, _, controller_b = load_controller_data(result_dir,
-                                                             None)
+        try:
+            controller_t, _, controller_b = load_controller_data(result_dir,
+                                                                 None)
+        except FileNotFoundError:
+            print('Not found: %s' % (result_dir.name))
+            continue
         mse = compute_mse(controller_t, controller_b, 1.0414E-4)
         params_string = result_dir.name.split('-')[0].split(',')
         for p in params_string:
@@ -163,7 +167,8 @@ def plot_mse_pi_params(dir, setpoint=1.0414E-4):
     x = np.array(x)
     y = np.array(y)
     z = np.array(z)
-    xi = yi = np.arange(0, 2.01, 0.01)
+    max_value = max(x.max(), y.max()) + 0.01
+    xi = yi = np.arange(0, max_value, 0.01)
     xi, yi = np.meshgrid(xi, yi)
     zi = griddata((x, y), z, (xi, yi), method='cubic')
     plt.figure(figsize=(12, 7))
@@ -172,6 +177,6 @@ def plot_mse_pi_params(dir, setpoint=1.0414E-4):
     plt.scatter(x, y, c='k', s=5)
     plt.xlabel('Kp')
     plt.ylabel('Ti')
-    plt.xlim([0.04, 2.01])
-    plt.ylim([0.09, 2.01])
+    plt.xlim([0.04, x.max() + 0.01])
+    plt.ylim([0.09, y.max() + 0.01])
     plt.title('Mean Square Error of beta power when using PI controller')
