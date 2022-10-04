@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Union, Any
 from numpy.typing import NDArray
 from scipy.interpolate import griddata
+from matplotlib import cm
 
 
 def mat_to_dict(obj: Any) -> dict:
@@ -136,7 +137,8 @@ def plot_mse_dir(dir, setpoint=1.0414E-4):
         plt.close(fig)
 
 
-def plot_mse_pi_params(dir, setpoint=1.0414E-4):
+def plot_mse_pi_params(dir, setpoint=1.0414E-4, three_d=False,
+                       cmap=cm.gist_rainbow):
     directory = Path(dir)
     mse_list = []
     for result_dir in directory.iterdir():
@@ -171,12 +173,20 @@ def plot_mse_pi_params(dir, setpoint=1.0414E-4):
     xi = yi = np.arange(0, max_value, 0.01)
     xi, yi = np.meshgrid(xi, yi)
     zi = griddata((x, y), z, (xi, yi), method='cubic')
-    plt.figure(figsize=(12, 7))
-    plt.contourf(xi, yi, zi)
-    plt.colorbar()
-    plt.scatter(x, y, c='k', s=5)
+    if three_d:
+        fig, ax = plt.subplots(figsize=(12, 7),
+                               subplot_kw={"projection": "3d"})
+        surf = ax.plot_surface(xi, yi, zi, cmap=cmap,
+                               antialiased=True)
+        fig.colorbar(surf)
+        ax.scatter(x, y, z, c='k', s=3)
+    else:
+        fig = plt.figure(figsize=(12, 7))
+        contours = plt.contourf(xi, yi, zi, cmap=cmap)
+        plt.scatter(x, y, c='k', s=5)
+        fig.colorbar(contours)
     plt.xlabel('Kp')
     plt.ylabel('Ti')
-    plt.xlim([0.04, x.max() + 0.01])
-    plt.ylim([0.09, y.max() + 0.01])
+    plt.xlim([-0.01, x.max() + 0.01])
+    plt.ylim([-0.01, y.max() + 0.01])
     plt.title('Mean Square Error of beta power when using PI controller')
