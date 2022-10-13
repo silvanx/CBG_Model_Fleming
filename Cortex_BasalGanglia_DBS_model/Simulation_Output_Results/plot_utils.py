@@ -137,56 +137,112 @@ def plot_mse_dir(dir, setpoint=1.0414E-4):
         plt.close(fig)
 
 
-def plot_mse_pi_params(dir, setpoint=1.0414E-4, three_d=False,
-                       cmap=cm.gist_rainbow):
+def compute_teed(lfp_time, lfp, pulse_width, f_stimulation, impedance):
+    recording_length = lfp_time.max() - lfp_time.min()
+    power = np.square(lfp) * pulse_width * f_stimulation * impedance
+    teed = np.trapz(power, lfp_time) / recording_length
+    return teed
+
+
+def plot_fitness_pi_params(dir, setpoint=1.0414E-4, three_d=False,
+                           cmap=cm.gist_rainbow):
     directory = Path(dir)
-    mse_list = []
+    fitness_list = []
     for result_dir in directory.iterdir():
         res = dict()
         if not result_dir.is_dir():
             continue
         try:
-            controller_t, _, controller_b = load_controller_data(result_dir,
-                                                                 None)
+            controller_t, controller_p, controller_b = \
+                load_controller_data(result_dir, 'amplitude')
         except FileNotFoundError:
             print('Not found: %s' % (result_dir.name))
             continue
-        mse = compute_mse(controller_t, controller_b, 1.0414E-4)
+        mse = compute_mse(controller_t, controller_b, setpoint)
+        teed = compute_teed(controller_t, controller_p, 80, 130, 1)
         params_string = result_dir.name.split('-')[0].split(',')
         for p in params_string:
             p = p.strip()
             k, v = p.split('=')
             res[k] = float(v)
         res['mse'] = mse
-        mse_list.append(res)
+        res['teed'] = teed
+        fitness_list.append(res)
     x = []
     y = []
-    z = []
-    for e in mse_list:
+    mse = []
+    teed = []
+    for e in fitness_list:
         x.append(e['Kp'])
         y.append(e['Ti'])
-        z.append(e['mse'])
+        mse.append(e['mse'])
+        teed.append(e['teed'])
     x = np.array(x)
     y = np.array(y)
-    z = np.array(z)
+    mse = np.array(mse)
+    teed = np.array(teed)
+    fitness = 0.5 * ((teed - teed.min()) / teed.max() + (mse - mse.min()) / mse.max())
     max_value = max(x.max(), y.max()) + 0.01
     xi = yi = np.arange(0, max_value, 0.01)
     xi, yi = np.meshgrid(xi, yi)
-    zi = griddata((x, y), z, (xi, yi), method='cubic')
+    mse_zi = griddata((x, y), mse, (xi, yi), method='cubic')
+    teed_zi = griddata((x, y), teed, (xi, yi), method='cubic')
+    fitness_zi = griddata((x, y), fitness, (xi, yi), method='cubic')
     if three_d:
-        fig, ax = plt.subplots(figsize=(12, 7),
-                               subplot_kw={"projection": "3d"})
-        surf = ax.plot_surface(xi, yi, zi, cmap=cmap,
-                               antialiased=True)
-        fig.colorbar(surf)
-        ax.scatter(x, y, z, c='k', s=3)
+        mse_fig, mse_ax = plt.subplots(figsize=(12, 7),
+                                       subplot_kw={"projection": "3d"})
+        surf = mse_ax.plot_surface(xi, yi, mse_zi, cmap=cmap,
+                                   antialiased=True)
+        mse_fig.colorbar(surf)
+        mse_ax.scatter(x, y, mse, c='k', s=3)
+
+        teed_fig, teed_ax = plt.subplots(figsize=(12, 7),
+                                         subplot_kw={"projection": "3d"})
+        surf = teed_ax.plot_surface(xi, yi, teed_zi, cmap=cmap,
+                                    antialiased=True)
+        teed_fig.colorbar(surf)
+        teed_ax.scatter(x, y, teed, c='k', s=3)
+
+        fit_fig, fit_ax = plt.subplots(figsize=(12, 7),
+                                       subplot_kw={"projection": "3d"})
+        surf = fit_ax.plot_surface(xi, yi, fitness_zi, cmap=cmap,
+                                   antialiased=True)
+        fit_fig.colorbar(surf)
+        # fit_ax.scatter(x, y, fitness, c='k', s=3)
+
+        mse_ax.view_init(azim=60, elev=45)
+        teed_ax.view_init(azim=80, elev=45)
+        fit_ax.view_init(azim=80, elev=45)
     else:
-        fig = plt.figure(figsize=(12, 7))
-        contours = plt.contourf(xi, yi, zi, cmap=cmap)
+        mse_fig = plt.figure(figsize=(12, 7))
+        mse_ax = plt.gca()
+        contours = plt.contourf(xi, yi, mse_zi, cmap=cmap)
         plt.scatter(x, y, c='k', s=5)
-        fig.colorbar(contours)
-    plt.xlabel('Kp')
-    plt.ylabel('Ti')
-    plt.xlim([-0.01, x.max() + 0.01])
-    plt.ylim([-0.01, y.max() + 0.01])
-    plt.title('Mean Square Error of beta power when using PI controller')
+        mse_fig.colorbar(contours)
+
+        teed_fig = plt.figure(figsize=(12, 7))
+        teed_ax = plt.gca()
+        contours = plt.contourf(xi, yi, teed_zi, cmap=cmap)
+        plt.scatter(x, y, c='k', s=5)
+        teed_fig.colorbar(contours)
+
+        fit_fig = plt.figure(figsize=(12, 7))
+        fit_ax = plt.gca()
+        contours = plt.contourf(xi, yi, fitness_zi, cmap=cmap)
+        plt.scatter(x, y, c='k', s=5)
+        fit_fig.colorbar(contours)
+    mse_ax.set_xlabel('Kp')
+    teed_ax.set_xlabel('Kp')
+    fit_ax.set_xlabel('Kp')
+    mse_ax.set_ylabel('Ti')
+    teed_ax.set_ylabel('Ti')
+    fit_ax.set_ylabel('Ti')
+    mse_ax.set_xlim([-0.01, x.max() + 0.01])
+    teed_ax.set_xlim([-0.01, x.max() + 0.01])
+    fit_ax.set_xlim([-0.01, x.max() + 0.01])
+    mse_ax.set_ylim([-0.01, y.max() + 0.01])
+    teed_ax.set_ylim([-0.01, y.max() + 0.01])
+    fit_ax.set_ylim([-0.01, y.max() + 0.01])
+    mse_ax.set_title('Mean Square Error of beta power when using PI controller')
+    teed_ax.set_title('TEED when using PI controller')
+    fit_ax.set_title('Fitness of the PI parameters (weighted average of MSE + TEED)')
