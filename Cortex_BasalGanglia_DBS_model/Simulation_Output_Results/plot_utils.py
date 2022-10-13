@@ -181,7 +181,8 @@ def plot_fitness_pi_params(dir, setpoint=1.0414E-4, three_d=False,
     y = np.array(y)
     mse = np.array(mse)
     teed = np.array(teed)
-    fitness = 0.5 * ((teed - teed.min()) / teed.max() + (mse - mse.min()) / mse.max())
+    fitness = 0.5 * ((teed - teed.min()) / teed.max() +
+                     (mse - mse.min()) / mse.max())
     max_value = max(x.max(), y.max()) + 0.01
     xi = yi = np.arange(0, max_value, 0.01)
     xi, yi = np.meshgrid(xi, yi)
@@ -243,6 +244,8 @@ def plot_fitness_pi_params(dir, setpoint=1.0414E-4, three_d=False,
     mse_ax.set_ylim([-0.01, y.max() + 0.01])
     teed_ax.set_ylim([-0.01, y.max() + 0.01])
     fit_ax.set_ylim([-0.01, y.max() + 0.01])
-    mse_ax.set_title('Mean Square Error of beta power when using PI controller')
+    mse_ax.set_title(
+        'Mean Square Error of beta power when using PI controller')
     teed_ax.set_title('TEED when using PI controller')
-    fit_ax.set_title('Fitness of the PI parameters (weighted average of MSE + TEED)')
+    fit_ax.set_title(
+        'Fitness of the PI parameters (weighted average of MSE + TEED)')

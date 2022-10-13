@@ -811,7 +811,7 @@ class IterativeFeedbackTuningPIController():
         self.current_time = current_time
         elapsed_time = (current_time - self.stage_start_time) / 1000
         setpoint = self.reference_signal(elapsed_time)
-        print('Stage: %d, Elapsed time: %.23f s, Reference: %.4f' %
+        print('Stage: %d, Elapsed time: %.3f s, Reference: %.5f' %
               (self.iteration_stage, elapsed_time, setpoint))
         if self.iteration_stage == 0:
             sample = int(elapsed_time / self.ts)
