@@ -747,3 +747,192 @@ class StandardPIDController:
 
     def get_label(self):
         return self.label
+
+
+class IterativeFeedbackTuningPIController():
+
+    def __init__(self, stage_length, setpoint=0.0, kp_init=0.0, ti_init=0.0,
+                 ts=0.02, min_value=0.0, max_value=1e9, step_gain=1):
+
+        self.setpoint = setpoint
+        self.stage_length = stage_length
+        self.kp = kp_init
+        self.ti = ti_init
+        self.step_gain = step_gain
+        self.iteration_stage = 2
+
+        # Set output value bounds
+        self.min_value = min_value
+        self.max_value = max_value
+
+        self.label = "iterative_feedback_tuning_PI_Controller"
+
+        self.ts = ts
+        self.current_time = 0.0  # (sec)
+        self.last_time = 0.0
+        self.stage_start_time = 0.0
+
+        # Initialize controller terms
+        self.integral_term = 0.0
+        self.last_error = 0.0
+        self.last_output_value = 0.0
+
+        # Initialize the output value of the controller
+        self.output_value = 0.0
+
+        self.state_history = []
+        self.error_history = []
+        self.output_history = []
+        self.sample_times = []
+        self.iteration_history = []
+        self.reference_history = []
+        self.recorded_output = np.zeros(int(np.ceil(stage_length / ts)) + 1)
+
+    def clear(self):
+        self.integral_term = 0.0
+        self.last_error = 0.0
+
+        self.state_history = []
+        self.error_history = []
+        self.output_history = []
+        self.sample_times = []
+        self.iteration_history = []
+
+        self.output_value = 0.0
+
+    def reference_signal(self, elapsed_time):
+        sample = int(elapsed_time / self.ts)
+        if self.iteration_stage != 1:
+            return self.setpoint
+        else:
+            return self.recorded_output[sample]
+
+    def update(self, state_value, current_time):
+        self.current_time = current_time
+        elapsed_time = (current_time - self.stage_start_time) / 1000
+        setpoint = self.reference_signal(elapsed_time)
+        print('Stage: %d, Elapsed time: %.23f s, Reference: %.4f' %
+              (self.iteration_stage, elapsed_time, setpoint))
+        if self.iteration_stage == 0:
+            sample = int(elapsed_time / self.ts)
+            self.recorded_output[sample] = state_value
+        if setpoint != 0:
+            error = (state_value - setpoint) / setpoint
+        else:
+            error = state_value
+
+        if elapsed_time >= self.stage_length:
+            self.stage_start_time = self.current_time
+            self.iteration_stage = (self.iteration_stage + 1) % 3
+            print('Stage change, now at stage %d' % self.iteration_stage)
+
+        self.integral_term += error * self.ts
+
+        # Calculate u(t)
+        try:
+            u = self.kp * (error + ((1.0 / self.ti) * self.integral_term))
+        except ZeroDivisionError:
+            u = self.Kp * (error + (0.0 * self.integral_term))
+
+        # Bound the controller output
+        if u > self.max_value:
+            self.OutputValue = self.max_value
+            # Back-calculate the integral error
+            self.integral_term -= error * self.ts
+        elif u < self.min_value:
+            self.OutputValue = self.min_value
+            # Back-calculate the integral error
+            self.integral_term -= error * self.ts
+        else:
+            self.output = u
+
+        self.state_history.append(state_value)
+        self.error_history.append(error)
+        self.iteration_history.append(self.iteration_stage)
+        self.reference_history.append(setpoint)
+        self.sample_times.append(current_time / 1000)
+        self.output_history.append(self.output)
+
+        return self.output
+
+    def generate_dbs_signal(self, start_time, stop_time, dt, amplitude,
+                            frequency, pulse_width, offset,
+                            last_pulse_time_prior=0):
+        """Generate monophasic square-wave DBS signal
+
+        Example inputs:
+            start_time = 0                # ms
+            stop_time = 12000            # ms
+            dt = 0.01                    # ms
+            amplitude = -1.0            # mA (<0 = cathodic, >0 = anodic)
+            frequency = 130.0            # Hz
+            pulse_width    = 0.06            # ms
+            offset = 0                    # mA
+        """
+
+        times = np.round(np.arange(start_time, stop_time, dt), 2)
+        tmp = np.arange(0, stop_time - start_time, dt) / 1000.0
+
+        if frequency == 0:
+            dbs_signal = np.zeros(len(tmp))
+            last_pulse_time = last_pulse_time_prior
+            next_pulse_time = 1e9
+        else:
+            # Calculate the duty cycle of the DBS signal
+            isi = 1000.0 / frequency  # time is in ms
+            duty_cycle = pulse_width / isi
+            tt = 2.0 * np.pi * frequency * tmp
+            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt,
+                                                             duty=duty_cycle))
+            dbs_signal[-1] = 0.0
+
+            # Calculate the time for the first pulse of the next segment
+            try:
+                last_pulse_index = np.where(np.diff(dbs_signal) < 0)[0][-1]
+                next_pulse_time = times[last_pulse_index] + isi - pulse_width
+
+                # Track when the last pulse was
+                last_pulse_time = times[last_pulse_index]
+
+            except IndexError:
+                # Catch times when signal may be flat
+                last_pulse_index = len(dbs_signal) - 1
+                next_pulse_time = times[last_pulse_index] + isi - pulse_width
+
+            # Rescale amplitude
+            dbs_signal *= amplitude
+
+        return dbs_signal, times, next_pulse_time, last_pulse_time
+
+    def set_setpoint(self, setpoint):
+        """Set target set point value"""
+        self.setpoint = setpoint
+
+    def set_max_value(self, max_value):
+        """Sets the upper bound for the controller output"""
+        self.max_value = max_value
+
+    def set_min_value(self, min_value):
+        """Sets the lower bound for the controller output"""
+        self.min_value = min_value
+
+    def get_state_history(self):
+        return self.state_history
+
+    def get_error_history(self):
+        return self.error_history
+
+    def get_output_history(self):
+        return self.output_history
+
+    def get_sample_times(self):
+        return self.sample_times
+
+    def get_iteration_history(self):
+        return self.iteration_history
+
+    def get_reference_history(self):
+        return self.reference_history
+
+    def get_label(self):
+        return self.label
