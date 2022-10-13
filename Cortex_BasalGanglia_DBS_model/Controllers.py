@@ -836,24 +836,24 @@ class IterativeFeedbackTuningPIController():
 
         # Bound the controller output
         if u > self.max_value:
-            self.OutputValue = self.max_value
+            self.output_value = self.max_value
             # Back-calculate the integral error
             self.integral_term -= error * self.ts
         elif u < self.min_value:
-            self.OutputValue = self.min_value
+            self.output_value = self.min_value
             # Back-calculate the integral error
             self.integral_term -= error * self.ts
         else:
-            self.output = u
+            self.output_value = u
 
         self.state_history.append(state_value)
         self.error_history.append(error)
         self.iteration_history.append(self.iteration_stage)
         self.reference_history.append(setpoint)
         self.sample_times.append(current_time / 1000)
-        self.output_history.append(self.output)
+        self.output_history.append(self.output_value)
 
-        return self.output
+        return self.output_value
 
     def generate_dbs_signal(self, start_time, stop_time, dt, amplitude,
                             frequency, pulse_width, offset,
