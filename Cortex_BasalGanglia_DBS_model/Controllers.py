@@ -804,6 +804,18 @@ class IterativeFeedbackTuningPIController():
 
         self.output_value = 0.0
 
+    def compute_fitness_gradient(self):
+        # TODO Gradient computation
+        return np.array([[-0.05], [-0.05]])
+
+    def new_controller_parameters(self):
+        rho = np.array([[self.kp], [self.ti]])
+        gamma = 1.0
+        r = np.identity(2)
+        grad = self.compute_fitness_gradient()
+        new_rho = rho - gamma * np.dot(r, grad)
+        return new_rho[0][0], new_rho[1][0]
+
     def reference_signal(self, elapsed_time):
         sample = int(elapsed_time / self.ts)
         if self.iteration_stage != 1:
@@ -826,6 +838,8 @@ class IterativeFeedbackTuningPIController():
             error = state_value
 
         if elapsed_time >= self.stage_length:
+            if self.iteration_stage == 2:
+                self.kp, self.ti = self.new_controller_parameters()
             self.stage_start_time = self.current_time
             self.iteration_stage = (self.iteration_stage + 1) % 3
             print('Stage change, now at stage %d' % self.iteration_stage)
