@@ -16,15 +16,15 @@ RUN nrnivmodl
 WORKDIR /usr/app/src/CBG_Fleming_Model
 
 COPY ./Cortex_BasalGanglia_DBS_model/*.txt ./
-COPY ./Cortex_BasalGanglia_DBS_model/*.py ./
+
 COPY ./Cortex_BasalGanglia_DBS_model/*.c ./
 COPY ./Cortex_BasalGanglia_DBS_model/*.mod ./
 COPY ./Cortex_BasalGanglia_DBS_model/*.o ./
 COPY ./Cortex_BasalGanglia_DBS_model/*.html ./
 COPY ./Cortex_BasalGanglia_DBS_model/steady_state_docker.bin ./steady_state.bin
-
-COPY ./Cortex_BasalGanglia_DBS_model/*.npy ./
-
 RUN nrnivmodl
+
+COPY ./Cortex_BasalGanglia_DBS_model/*.py ./
+COPY ./Cortex_BasalGanglia_DBS_model/*.npy ./
 
 ENTRYPOINT ["python3", "/usr/app/src/CBG_Fleming_Model/run_CBG_Model_IFT.py"]
