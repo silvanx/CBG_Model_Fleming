@@ -159,7 +159,7 @@ if __name__ == '__main__':
         stage_length=0.4, setpoint=1.0414e-04, kp_init=0.4, ti_init=0.2,
         ts=0.02, min_value=0.0, max_value=3.0)
     output_prefix = 'Simulation_Output_Results/Controller_Simulations/IFT/'
-    simulation_identifier = controller.get_label() + "-" + start_timestamp
+    simulation_identifier = controller.label + "-" + start_timestamp
     simulation_output_dir = output_prefix + simulation_identifier
 
     # Generate a square wave which represents the DBS signal
@@ -389,28 +389,32 @@ if __name__ == '__main__':
 
     # Write controller values to csv files
     controller_measured_beta_values =\
-        np.asarray(controller.get_state_history())
+        np.asarray(controller.state_history)
     controller_measured_error_values =\
-        np.asarray(controller.get_error_history())
-    controller_output_values = np.asarray(controller.get_output_history())
-    controller_sample_times = np.asarray(controller.get_sample_times())
+        np.asarray(controller.error_history)
+    controller_output_values = np.asarray(controller.output_history)
+    controller_sample_times = np.asarray(controller.sample_times)
     controller_reference_history =\
-        np.asarray(controller.get_reference_history())
+        np.asarray(controller.reference_history)
     controller_iteration_history =\
-        np.asarray(controller.get_iteration_history())
+        np.asarray(controller.iteration_history)
+    controller_parameter_history =\
+        np.asarray(controller.parameter_history)
 
-    np.savetxt(simulation_output_dir + "/controller_beta_values.csv",
+    np.savetxt(simulation_output_dir + '/controller_beta_values.csv',
                controller_measured_beta_values, delimiter=',')
-    np.savetxt(simulation_output_dir + "/controller_error_values.csv",
+    np.savetxt(simulation_output_dir + '/controller_error_values.csv',
                controller_measured_error_values, delimiter=',')
-    np.savetxt(simulation_output_dir + "/controller_amplitude_values.csv",
+    np.savetxt(simulation_output_dir + '/controller_amplitude_values.csv',
                controller_output_values, delimiter=',')
-    np.savetxt(simulation_output_dir + "/controller_sample_times.csv",
+    np.savetxt(simulation_output_dir + '/controller_sample_times.csv',
                controller_sample_times, delimiter=',')
-    np.savetxt(simulation_output_dir + "/controller_iteration_values.csv",
+    np.savetxt(simulation_output_dir + '/controller_iteration_values.csv',
                controller_iteration_history, delimiter=',')
-    np.savetxt(simulation_output_dir + "/controller_reference_values.csv",
+    np.savetxt(simulation_output_dir + '/controller_reference_values.csv',
                controller_reference_history, delimiter=',')
+    np.savetxt(simulation_output_dir + 'controller_parameter_values.csv',
+               controller_parameter_history, delimiter=',')
 
     # Write the STN LFP to .mat file
     STN_LFP_Block = neo.Block(name='STN_LFP')
@@ -421,7 +425,7 @@ if __name__ == '__main__':
                                           simulator.state.dt, '1/ms'))
     STN_LFP_seg.analogsignals.append(STN_LFP_signal)
 
-    w = neo.io.NeoMatlabIO(filename=simulation_output_dir + "/STN_LFP.mat")
+    w = neo.io.NeoMatlabIO(filename=simulation_output_dir + '/STN_LFP.mat')
     w.write_block(STN_LFP_Block)
 
     # # Write LFP AMPA and GABAa conmponents to file
@@ -465,9 +469,9 @@ if __name__ == '__main__':
                                      1.0 / simulator.state.dt, '1/ms'))
     DBS_Signal_seg.analogsignals.append(DBS_times)
 
-    w = neo.io.NeoMatlabIO(filename=simulation_output_dir + "/DBS_Signal.mat")
+    w = neo.io.NeoMatlabIO(filename=simulation_output_dir + '/DBS_Signal.mat')
     w.write_block(DBS_Block)
 
-    print("Simulation Done!")
+    print('Simulation Done!')
 
     end()

@@ -780,23 +780,27 @@ class IterativeFeedbackTuningPIController():
         # Initialize the output value of the controller
         self.output_value = 0.0
 
-        self.state_history = []
-        self.error_history = []
-        self.output_history = []
-        self.sample_times = []
-        self.iteration_history = []
-        self.reference_history = []
-        self.recorded_output = np.zeros(int(np.ceil(stage_length / ts)) + 1)
+        self._state_history = []
+        self._error_history = []
+        self._output_history = []
+        self._sample_times = []
+        self._iteration_history = []
+        self._reference_history = []
+        self._parameter_history = []
+        self._recorded_output = np.zeros(int(np.ceil(stage_length / ts)) + 1)
 
     def clear(self):
         self.integral_term = 0.0
         self.last_error = 0.0
 
-        self.state_history = []
-        self.error_history = []
-        self.output_history = []
-        self.sample_times = []
-        self.iteration_history = []
+        self._state_history = []
+        self._error_history = []
+        self._output_history = []
+        self._sample_times = []
+        self._iteration_history = []
+        self._parameter_history = []
+        self._recorded_output = np.zeros(
+            int(np.ceil(self.stage_length / self.ts)) + 1)
 
         self.output_value = 0.0
 
@@ -805,7 +809,7 @@ class IterativeFeedbackTuningPIController():
         if self.iteration_stage != 1:
             return self.setpoint
         else:
-            return self.recorded_output[sample]
+            return self._recorded_output[sample]
 
     def update(self, state_value, current_time):
         self.current_time = current_time
@@ -815,7 +819,7 @@ class IterativeFeedbackTuningPIController():
               (self.iteration_stage, elapsed_time, setpoint))
         if self.iteration_stage == 0:
             sample = int(elapsed_time / self.ts)
-            self.recorded_output[sample] = state_value
+            self._recorded_output[sample] = state_value
         if setpoint != 0:
             error = (state_value - setpoint) / setpoint
         else:
@@ -832,7 +836,7 @@ class IterativeFeedbackTuningPIController():
         try:
             u = self.kp * (error + ((1.0 / self.ti) * self.integral_term))
         except ZeroDivisionError:
-            u = self.Kp * (error + (0.0 * self.integral_term))
+            u = self.kp * (error + (0.0 * self.integral_term))
 
         # Bound the controller output
         if u > self.max_value:
@@ -846,12 +850,13 @@ class IterativeFeedbackTuningPIController():
         else:
             self.output_value = u
 
-        self.state_history.append(state_value)
-        self.error_history.append(error)
-        self.iteration_history.append(self.iteration_stage)
-        self.reference_history.append(setpoint)
-        self.sample_times.append(current_time / 1000)
-        self.output_history.append(self.output_value)
+        self._state_history.append(state_value)
+        self._error_history.append(error)
+        self._iteration_history.append(self.iteration_stage)
+        self._reference_history.append(setpoint)
+        self._sample_times.append(current_time / 1000)
+        self._output_history.append(self.output_value)
+        self._parameter_history.append([self.kp, self.ti])
 
         return self.output_value
 
@@ -904,35 +909,66 @@ class IterativeFeedbackTuningPIController():
 
         return dbs_signal, times, next_pulse_time, last_pulse_time
 
-    def set_setpoint(self, setpoint):
-        """Set target set point value"""
-        self.setpoint = setpoint
+    @property
+    def label(self):
+        return self._label
 
-    def set_max_value(self, max_value):
-        """Sets the upper bound for the controller output"""
-        self.max_value = max_value
+    @label.setter
+    def label(self, value):
+        self._label = value
 
-    def set_min_value(self, min_value):
-        """Sets the lower bound for the controller output"""
-        self.min_value = min_value
+    @property
+    def setpoint(self):
+        return self._setpoint
 
-    def get_state_history(self):
-        return self.state_history
+    @setpoint.setter
+    def setpoint(self, value):
+        self._setpoint = value
 
-    def get_error_history(self):
-        return self.error_history
+    @property
+    def max_value(self):
+        return self._max_value
 
-    def get_output_history(self):
-        return self.output_history
+    @max_value.setter
+    def max_value(self, value):
+        self._max_value = value
 
-    def get_sample_times(self):
-        return self.sample_times
+    @property
+    def min_value(self):
+        return self._min_value
 
-    def get_iteration_history(self):
-        return self.iteration_history
+    @min_value.setter
+    def min_value(self, value):
+        self._min_value = value
 
-    def get_reference_history(self):
-        return self.reference_history
+    @property
+    def recorded_output(self):
+        return self._recorded_output
 
-    def get_label(self):
-        return self.label
+    @property
+    def state_history(self):
+        return self._state_history
+
+    @property
+    def error_history(self):
+        return self._error_history
+
+    @property
+    def output_history(self):
+        return self._output_history
+
+    @property
+    def sample_times(self):
+        return self._sample_times
+
+    @property
+    def iteration_history(self):
+        return self._iteration_history
+
+    @property
+    def reference_history(self):
+        return self._reference_history
+
+    @property
+    def parameter_history(self):
+        return self._parameter_history
