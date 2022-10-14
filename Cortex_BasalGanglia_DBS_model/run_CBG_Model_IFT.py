@@ -413,7 +413,7 @@ if __name__ == '__main__':
                controller_iteration_history, delimiter=',')
     np.savetxt(simulation_output_dir + '/controller_reference_values.csv',
                controller_reference_history, delimiter=',')
-    np.savetxt(simulation_output_dir + 'controller_parameter_values.csv',
+    np.savetxt(simulation_output_dir + '/controller_parameter_values.csv',
                controller_parameter_history, delimiter=',')
 
     # Write the STN LFP to .mat file
