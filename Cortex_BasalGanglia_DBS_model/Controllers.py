@@ -780,6 +780,7 @@ class IterativeFeedbackTuningPIController():
         # Initialize the output value of the controller
         self.output_value = 0.0
 
+        self._integral_term_history = []
         self._state_history = []
         self._error_history = []
         self._output_history = []
@@ -793,6 +794,7 @@ class IterativeFeedbackTuningPIController():
         self.integral_term = 0.0
         self.last_error = 0.0
 
+        self._integral_term_history = []
         self._state_history = []
         self._error_history = []
         self._output_history = []
@@ -806,7 +808,7 @@ class IterativeFeedbackTuningPIController():
 
     def compute_fitness_gradient(self):
         # TODO Gradient computation
-        return np.array([[-0.05], [-0.05]])
+        return np.array([[-0.05], [-0.8]])
 
     def new_controller_parameters(self):
         rho = np.array([[self.kp], [self.ti]])
@@ -864,6 +866,7 @@ class IterativeFeedbackTuningPIController():
         else:
             self.output_value = u
 
+        self._integral_term_history.append(self.integral_term)
         self._state_history.append(state_value)
         self._error_history.append(error)
         self._iteration_history.append(self.iteration_stage)
@@ -954,6 +957,10 @@ class IterativeFeedbackTuningPIController():
     @min_value.setter
     def min_value(self, value):
         self._min_value = value
+
+    @property
+    def integral_term_history(self):
+        return self._integral_term_history
 
     @property
     def recorded_output(self):

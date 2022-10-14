@@ -400,6 +400,8 @@ if __name__ == '__main__':
         np.asarray(controller.iteration_history)
     controller_parameter_history =\
         np.asarray(controller.parameter_history)
+    controller_integral_term_history =\
+        np.asarray(controller.integral_term_history)
 
     np.savetxt(simulation_output_dir + '/controller_beta_values.csv',
                controller_measured_beta_values, delimiter=',')
@@ -415,6 +417,8 @@ if __name__ == '__main__':
                controller_reference_history, delimiter=',')
     np.savetxt(simulation_output_dir + '/controller_parameter_values.csv',
                controller_parameter_history, delimiter=',')
+    np.savetxt(simulation_output_dir + '/controller_integral_term_values.csv',
+               controller_integral_term_history, delimiter=',')
 
     # Write the STN LFP to .mat file
     STN_LFP_Block = neo.Block(name='STN_LFP')
