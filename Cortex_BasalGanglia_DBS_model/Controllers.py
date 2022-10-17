@@ -756,6 +756,7 @@ class IterativeFeedbackTuningPIController():
 
         self.setpoint = setpoint
         self.stage_length = stage_length
+        self.stage_length_samples = int(np.ceil(stage_length / ts)) + 1
         self.kp = kp_init
         self.ti = ti_init
         self.step_gain = step_gain
@@ -788,7 +789,7 @@ class IterativeFeedbackTuningPIController():
         self._iteration_history = []
         self._reference_history = []
         self._parameter_history = []
-        self._recorded_output = np.zeros(int(np.ceil(stage_length / ts)) + 1)
+        self._recorded_output = np.zeros(self.stage_length_samples)
 
     def clear(self):
         self.integral_term = 0.0
@@ -801,17 +802,27 @@ class IterativeFeedbackTuningPIController():
         self._sample_times = []
         self._iteration_history = []
         self._parameter_history = []
-        self._recorded_output = np.zeros(
-            int(np.ceil(self.stage_length / self.ts)) + 1)
+        self._recorded_output = np.zeros(self.stage_length_samples)
 
         self.output_value = 0.0
 
     def compute_fitness_gradient(self):
-        # TODO Gradient computation
-        return np.array([[-0.05], [-0.8]])
+        # TODO: Compute signals
+        y_tilde = np.ones(self.stage_length_samples)
+        u_rho = np.ones(self.stage_length_samples)
+        du_drho = 0.02 * np.ones((2, self.stage_length_samples))
+        dy_drho = 0.05 * np.ones((2, self.stage_length_samples))
+
+        lam = 1
+        y_part = y_tilde * dy_drho
+        u_part = u_rho * du_drho
+
+        grad = (np.sum((y_part + lam * u_part), axis=1) /
+                self.stage_length_samples)
+        return grad
 
     def new_controller_parameters(self):
-        rho = np.array([[self.kp], [self.ti]])
+        rho = np.array([self.kp, self.ti])
         gamma = 1.0
         r = np.identity(2)
         grad = self.compute_fitness_gradient()
