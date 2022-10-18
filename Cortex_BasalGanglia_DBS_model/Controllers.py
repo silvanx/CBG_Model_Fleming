@@ -760,7 +760,7 @@ class IterativeFeedbackTuningPIController():
         self.kp = kp_init
         self.ti = ti_init
         self.step_gain = step_gain
-        self.iteration_stage = 2
+        self.iteration_stage = 1
 
         # Set output value bounds
         self.min_value = min_value
@@ -807,11 +807,41 @@ class IterativeFeedbackTuningPIController():
         self.output_value = 0.0
 
     def compute_fitness_gradient(self):
-        # TODO: Compute signals
-        y_tilde = np.ones(self.stage_length_samples)
-        u_rho = np.ones(self.stage_length_samples)
-        du_drho = 0.02 * np.ones((2, self.stage_length_samples))
-        dy_drho = 0.05 * np.ones((2, self.stage_length_samples))
+        y1 = self.error_history[
+            -3 * self.stage_length_samples: -2 * self.stage_length_samples]
+        y2 = self.error_history[
+            -2 * self.stage_length_samples: -self.stage_length_samples]
+        u1 = self.output_history[
+            -3 * self.stage_length_samples: -2 * self.stage_length_samples]
+        u2 = self.output_history[
+            -2 * self.stage_length_samples: -self.stage_length_samples]
+        y_tilde = np.array(y1) - self.setpoint
+        u_rho = u1
+        tstart = (self.current_time / 1000) - 2 * self.stage_length
+        tend = (self.current_time / 1000) - 1 * self.stage_length
+        kp = self.kp
+        ti = self.ti
+        _, dy_dkp, _ = signal.lsim(([ti, 1], [kp * ti, kp]),
+                                   y2,
+                                   np.linspace(tstart, tend,
+                                               self.stage_length_samples))
+        print(dy_dkp)
+        _, dy_dti, _ = signal.lsim(([-1], [ti ** 2, ti]),
+                                   y2,
+                                   np.linspace(tstart, tend,
+                                               self.stage_length_samples))
+
+        _, du_dkp, _ = signal.lsim(([ti, 1], [kp * ti, kp]),
+                                   u2,
+                                   np.linspace(tstart, tend,
+                                               self.stage_length_samples))
+        _, du_dti, _ = signal.lsim(([-1], [ti ** 2, ti]),
+                                   u2,
+                                   np.linspace(tstart, tend,
+                                               self.stage_length_samples))
+
+        du_drho = np.vstack((du_dkp, du_dti))
+        dy_drho = np.vstack((dy_dkp, dy_dti))
 
         lam = 1
         y_part = y_tilde * dy_drho
@@ -823,11 +853,12 @@ class IterativeFeedbackTuningPIController():
 
     def new_controller_parameters(self):
         rho = np.array([self.kp, self.ti])
+        # TODO: Make gamma and r controller parameters
         gamma = 1.0
         r = np.identity(2)
         grad = self.compute_fitness_gradient()
         new_rho = rho - gamma * np.dot(r, grad)
-        return new_rho[0][0], new_rho[1][0]
+        return new_rho[0], new_rho[1]
 
     def reference_signal(self, elapsed_time):
         sample = int(elapsed_time / self.ts)
@@ -851,10 +882,11 @@ class IterativeFeedbackTuningPIController():
             error = state_value
 
         if elapsed_time >= self.stage_length:
-            if self.iteration_stage == 2:
+            if self.iteration_stage == 1:
                 self.kp, self.ti = self.new_controller_parameters()
+                print(f'New params: kp={self.kp}, ti={self.ti}')
             self.stage_start_time = self.current_time
-            self.iteration_stage = (self.iteration_stage + 1) % 3
+            self.iteration_stage = (self.iteration_stage + 1) % 2
             print('Stage change, now at stage %d' % self.iteration_stage)
 
         self.integral_term += error * self.ts

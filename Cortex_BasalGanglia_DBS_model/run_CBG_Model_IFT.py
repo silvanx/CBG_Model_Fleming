@@ -44,8 +44,9 @@ if __name__ == '__main__':
         simulation_runtime = 8000.0
     else:
         simulation_runtime = float(sys.argv[1])
-    print("INFO: Running simulation for %.0f ms after steady state (%.0f ms) \
-        with IFT control" % (simulation_runtime, steady_state_duration))
+    print("INFO: Running simulation for %.0f ms after steady state "
+          "(%.0f ms) with IFT control"
+          % (simulation_runtime, steady_state_duration))
     sim_total_time = (steady_state_duration + simulation_runtime +
                       timestep)  # Total simulation time
     rec_sampling_interval = 0.5  # Signals are sampled every 0.5 ms
@@ -147,8 +148,8 @@ if __name__ == '__main__':
         int(controller_window_tail_length / rec_sampling_interval)
 
     controller_sampling_time = 20.0  # ms
-    controller_start = (steady_state_duration + controller_window_length +
-                        controller_sampling_time)
+    controller_start = (steady_state_duration + controller_window_length
+                        + controller_sampling_time)
     controller_call_times = np.arange(controller_start, sim_total_time,
                                       controller_sampling_time)
 
@@ -259,7 +260,7 @@ if __name__ == '__main__':
         # Integrate model to controller_call_time
         run_until(call_time - simulator.state.dt)
 
-        print(("Controller Called at t: %f" % simulator.state.t))
+        print(("Controller Called at t: %.2f" % simulator.state.t))
 
         # Calculate the LFP and biomarkers, etc.
         STN_AMPA_i = np.array(
@@ -270,34 +271,34 @@ if __name__ == '__main__':
 
         # STN LFP Calculation - Syn_i is in units of nA -> LFP units are mV
         STN_LFP_1 = (1 / (4 * math.pi * sigma)) * np.sum(
-            ((1 / (STN_recording_electrode_1_distances * 1e-6)) *
-             STN_Syn_i.transpose()),
+            ((1 / (STN_recording_electrode_1_distances * 1e-6))
+             * STN_Syn_i.transpose()),
             axis=0) * 1e-6
         STN_LFP_2 = (1 / (4 * math.pi * sigma)) * np.sum(
-            ((1 / (STN_recording_electrode_2_distances * 1e-6)) *
-             STN_Syn_i.transpose()),
+            ((1 / (STN_recording_electrode_2_distances * 1e-6))
+             * STN_Syn_i.transpose()),
             axis=0) * 1e-6
         STN_LFP = np.hstack((STN_LFP, STN_LFP_1 - STN_LFP_2))
 
         # STN LFP AMPA and GABAa Contributions
         STN_LFP_AMPA_1 = (1 / (4 * math.pi * sigma)) * np.sum(
-            ((1 / (STN_recording_electrode_1_distances * 1e-6)) *
-             STN_AMPA_i.transpose()),
+            ((1 / (STN_recording_electrode_1_distances * 1e-6))
+             * STN_AMPA_i.transpose()),
             axis=0) * 1e-6
         STN_LFP_AMPA_2 = (1 / (4 * math.pi * sigma)) * np.sum(
-            ((1 / (STN_recording_electrode_2_distances * 1e-6)) *
-             STN_AMPA_i.transpose()),
+            ((1 / (STN_recording_electrode_2_distances * 1e-6))
+             * STN_AMPA_i.transpose()),
             axis=0) * 1e-6
         STN_LFP_AMPA = np.hstack((STN_LFP_AMPA,
                                   STN_LFP_AMPA_1 - STN_LFP_AMPA_2))
 
         STN_LFP_GABAa_1 = (1 / (4 * math.pi * sigma)) * np.sum(
-            ((1 / (STN_recording_electrode_1_distances * 1e-6)) *
-             STN_GABAa_i.transpose()),
+            ((1 / (STN_recording_electrode_1_distances * 1e-6))
+             * STN_GABAa_i.transpose()),
             axis=0) * 1e-6
         STN_LFP_GABAa_2 = (1 / (4 * math.pi * sigma)) * np.sum(
-            ((1 / (STN_recording_electrode_2_distances * 1e-6)) *
-             STN_GABAa_i.transpose()),
+            ((1 / (STN_recording_electrode_2_distances * 1e-6))
+             * STN_GABAa_i.transpose()),
             axis=0) * 1e-6
         STN_LFP_GABAa = np.hstack((STN_LFP_GABAa,
                                    STN_LFP_GABAa_1 - STN_LFP_GABAa_2))
@@ -312,7 +313,6 @@ if __name__ == '__main__':
         # Calculate the updated DBS amplitude
         DBS_amp = controller.update(state_value=lfp_beta_average_value,
                                     current_time=simulator.state.t)
-
         # Update the DBS Signal
         if call_index + 1 < len(controller_call_times):
 
