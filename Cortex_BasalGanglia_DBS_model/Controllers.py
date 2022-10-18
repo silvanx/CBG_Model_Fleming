@@ -760,7 +760,7 @@ class IterativeFeedbackTuningPIController():
         self.kp = kp_init
         self.ti = ti_init
         self.step_gain = step_gain
-        self.iteration_stage = 1
+        self.iteration_stage = -1
 
         # Set output value bounds
         self.min_value = min_value
@@ -808,13 +808,13 @@ class IterativeFeedbackTuningPIController():
 
     def compute_fitness_gradient(self):
         y1 = self.error_history[
-            -3 * self.stage_length_samples: -2 * self.stage_length_samples]
+            -2 * self.stage_length_samples: -self.stage_length_samples]
         y2 = self.error_history[
-            -2 * self.stage_length_samples: -self.stage_length_samples]
+            -self.stage_length_samples:]
         u1 = self.output_history[
-            -3 * self.stage_length_samples: -2 * self.stage_length_samples]
-        u2 = self.output_history[
             -2 * self.stage_length_samples: -self.stage_length_samples]
+        u2 = self.output_history[
+            -self.stage_length_samples:]
         y_tilde = np.array(y1) - self.setpoint
         u_rho = u1
         tstart = (self.current_time / 1000) - 2 * self.stage_length
@@ -825,7 +825,6 @@ class IterativeFeedbackTuningPIController():
                                    y2,
                                    np.linspace(tstart, tend,
                                                self.stage_length_samples))
-        print(dy_dkp)
         _, dy_dti, _ = signal.lsim(([-1], [ti ** 2, ti]),
                                    y2,
                                    np.linspace(tstart, tend,
