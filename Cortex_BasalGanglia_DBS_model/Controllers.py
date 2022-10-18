@@ -862,10 +862,11 @@ class IterativeFeedbackTuningPIController():
 
     def reference_signal(self, elapsed_time):
         sample = int(elapsed_time / self.ts)
-        if self.iteration_stage != 1:
+        if self.iteration_stage == 0:
             return self.setpoint
-        else:
-            return self._recorded_output[sample]
+        if sample > self.stage_length_samples:
+            sample = self.stage_length_samples - 1
+        return self._recorded_output[sample]
 
     def update(self, state_value, current_time):
         self.current_time = current_time
