@@ -817,27 +817,20 @@ class IterativeFeedbackTuningPIController():
             -self.stage_length_samples:]
         y_tilde = np.array(y1) - self.setpoint
         u_rho = u1
-        tstart = (self.current_time / 1000) - 2 * self.stage_length
-        tend = (self.current_time / 1000) - 1 * self.stage_length
         kp = self.kp
         ti = self.ti
-        _, dy_dkp, _ = signal.lsim(([ti, 1], [kp * ti, kp]),
-                                   y2,
-                                   np.linspace(tstart, tend,
-                                               self.stage_length_samples))
+        _, dy_dkp, _ = signal.lsim(([ti, 1], [kp * ti, kp]), y2,
+                                   np.linspace(0, self.stage_length, len(y2)))
         _, dy_dti, _ = signal.lsim(([-1], [ti ** 2, ti]),
                                    y2,
-                                   np.linspace(tstart, tend,
-                                               self.stage_length_samples))
+                                   np.linspace(0, self.stage_length, len(y2)))
 
         _, du_dkp, _ = signal.lsim(([ti, 1], [kp * ti, kp]),
                                    u2,
-                                   np.linspace(tstart, tend,
-                                               self.stage_length_samples))
+                                   np.linspace(0, self.stage_length, len(y2)))
         _, du_dti, _ = signal.lsim(([-1], [ti ** 2, ti]),
                                    u2,
-                                   np.linspace(tstart, tend,
-                                               self.stage_length_samples))
+                                   np.linspace(0, self.stage_length, len(y2)))
 
         du_drho = np.vstack((du_dkp, du_dti))
         dy_drho = np.vstack((dy_dkp, dy_dti))
