@@ -752,14 +752,14 @@ class StandardPIDController:
 class IterativeFeedbackTuningPIController():
 
     def __init__(self, stage_length, setpoint=0.0, kp_init=0.0, ti_init=0.0,
-                 ts=0.02, min_value=0.0, max_value=1e9, step_gain=1):
+                 ts=0.02, min_value=0.0, max_value=1e9, gamma=0.1):
 
         self.setpoint = setpoint
         self.stage_length = stage_length
         self.stage_length_samples = int(np.ceil(stage_length / ts)) + 1
         self.kp = kp_init
         self.ti = ti_init
-        self.step_gain = step_gain
+        self.gamma = gamma
         self.iteration_stage = -1
 
         # Set output value bounds
@@ -837,8 +837,8 @@ class IterativeFeedbackTuningPIController():
 
     def new_controller_parameters(self):
         rho = np.array([self.kp, self.ti])
-        # TODO: Make gamma and r controller parameters
-        gamma = 1.0
+        gamma = self.gamma
+        # TODO: Make r a parameters
         r = np.identity(2)
         if len(self._error_history) > 2 * self.stage_length_samples:
             grad = self.compute_fitness_gradient()

@@ -44,9 +44,13 @@ if __name__ == '__main__':
         simulation_runtime = 8000.0
     else:
         simulation_runtime = float(sys.argv[1])
+    if len(sys.argv) < 3:
+        experiment_time = 2
+    else:
+        experiment_time = float(sys.argv[2])
     print("INFO: Running simulation for %.0f ms after steady state "
-          "(%.0f ms) with IFT control"
-          % (simulation_runtime, steady_state_duration))
+          "(%.0f ms) with IFT control (experiment time %.2f s)"
+          % (simulation_runtime, steady_state_duration, experiment_time))
     sim_total_time = (steady_state_duration + simulation_runtime +
                       timestep)  # Total simulation time
     rec_sampling_interval = 0.5  # Signals are sampled every 0.5 ms
@@ -157,8 +161,8 @@ if __name__ == '__main__':
     # Controller sampling period, Ts, is in sec
     start_timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
     controller = IterativeFeedbackTuningPIController(
-        stage_length=0.4, setpoint=1.0414e-04, kp_init=0.4, ti_init=0.2,
-        ts=0.02, min_value=0.0, max_value=3.0)
+        stage_length=experiment_time, setpoint=1.0414e-04, kp_init=0.4,
+        ti_init=0.2, ts=0.02, min_value=0.0, max_value=3.0)
     output_prefix = 'Simulation_Output_Results/Controller_Simulations/IFT/'
     simulation_identifier = controller.label + "-" + start_timestamp
     simulation_output_dir = output_prefix + simulation_identifier
