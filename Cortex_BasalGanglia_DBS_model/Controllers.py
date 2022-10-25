@@ -838,13 +838,19 @@ class IterativeFeedbackTuningPIController():
     def new_controller_parameters(self):
         rho = np.array([self.kp, self.ti])
         gamma = self.gamma
-        # TODO: Make r a parameters
+        # TODO: Make r, min_kp, min_ti parameters
+        min_kp = 0.001
+        min_ti = 0.001
         r = np.identity(2)
         if len(self._error_history) > 2 * self.stage_length_samples:
             grad = self.compute_fitness_gradient()
         else:
             grad = [0, 0]
         new_rho = rho - gamma * np.dot(r, grad)
+        if new_rho[0] < min_kp:
+            new_rho[0] = min_kp
+        if new_rho[1] < min_ti:
+            new_rho[1] = min_ti
         return new_rho[0], new_rho[1]
 
     def reference_signal(self, elapsed_time):
