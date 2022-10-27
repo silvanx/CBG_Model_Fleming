@@ -67,7 +67,6 @@ from nrnutils import Mechanism, Section
 from pyNN.neuron import NativeCellType
 from pyNN.parameters import Sequence
 import numpy as np
-from scipy import signal
 
 # Import global variables for GPe DBS
 import Global_Variables as GV
