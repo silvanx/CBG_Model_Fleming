@@ -1,18 +1,18 @@
 TITLE Potassium D-Current for Cortical Neuron Axon
 
 COMMENT
-  
-  Model Reference: 
-  
-  Foust, A.J., Yu, Y., Popovic, M., Zecevic, D. and McCormick, D.A., 
-  2011. "Somatic membrane potential and Kv1 channels control spike 
-  repolarization in cortical axon collaterals and presynaptic boutons." 
+
+  Model Reference:
+
+  Foust, A.J., Yu, Y., Popovic, M., Zecevic, D. and McCormick, D.A.,
+  2011. "Somatic membrane potential and Kv1 channels control spike
+  repolarization in cortical axon collaterals and presynaptic boutons."
   Journal of Neuroscience, 31(43), pp.15490-15498.
-  
+
   Implemented by John Fleming - john.fleming@ucdconnect.ie - 06/12/18
-  
-  Edits: 
-  
+
+  Edits:
+
 ENDCOMMENT
 
 
@@ -74,10 +74,10 @@ DERIVATIVE states {
 
 PROCEDURE settables(v) {
 	TABLE m_inf, h_inf FROM -100 TO 100 WITH 400
-	
+
 	m_inf = 1-(1/(1+exp((v-V_half_m)/q_m)))
 	h_inf = 1-(1/(1+exp((v-V_half_h)/q_h)))
-	
+
 }
 
-UNITSON 
+UNITSON

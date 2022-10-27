@@ -1,19 +1,19 @@
 TITLE Slow non-inactivating Potassium Current for Cortical Neuron Soma
 
 COMMENT
-  
-  Model Reference: 
-  
-  Pospischil, M., Toledo-Rodriguez, M., Monier, C., Piwkowska, Z., 
-  Bal, T., Frégnac, Y., Markram, H. and Destexhe, A., 2008. 
-  "Minimal Hodgkin–Huxley type models for different classes of 
-  cortical and thalamic neurons." 
+
+  Model Reference:
+
+  Pospischil, M., Toledo-Rodriguez, M., Monier, C., Piwkowska, Z.,
+  Bal, T., Frégnac, Y., Markram, H. and Destexhe, A., 2008.
+  "Minimal Hodgkin–Huxley type models for different classes of
+  cortical and thalamic neurons."
   Biological cybernetics, 99(4-5), pp.427-441.
-  
+
   Implemented by John Fleming - john.fleming@ucdconnect.ie - 06/12/18
-  
-  Edits: 
-  
+
+  Edits:
+
 ENDCOMMENT
 
 
@@ -56,7 +56,7 @@ BREAKPOINT {
 UNITSOFF
 
 INITIAL {
-	settables(v)					
+	settables(v)
 	p = p_inf
 }
 
@@ -67,9 +67,9 @@ DERIVATIVE states {
 
 PROCEDURE settables(v) {
 	TABLE p_inf, tau_p DEPEND tau_max FROM -100 TO 100 WITH 400
-	
+
 	p_inf = 1/(1+exp(-(v+35)/10))
 	tau_p = tau_max/(3.3*exp((v+35)/20)+exp(-(v+35)/20))
 }
 
-UNITSON 
+UNITSON

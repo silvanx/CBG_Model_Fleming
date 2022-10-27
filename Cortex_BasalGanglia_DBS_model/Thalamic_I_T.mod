@@ -1,19 +1,19 @@
 TITLE Low-threshold calcium current for Thalamic Neuron
 
 COMMENT
-  
-  Model Reference: 
-  
-  Rubin, J.E. and Terman, D., 2004. "High frequency stimulation 
-  of the subthalamic nucleus eliminates pathological thalamic 
+
+  Model Reference:
+
+  Rubin, J.E. and Terman, D., 2004. "High frequency stimulation
+  of the subthalamic nucleus eliminates pathological thalamic
   rhythmicity in a computational model."
   Journal of computational neuroscience, 16(3), pp.211-235.
 
-  
+
   Implemented by John Fleming - john.fleming@ucdconnect.ie - 06/12/18
-  
-  Edits: 
-  
+
+  Edits:
+
 ENDCOMMENT
 
 
@@ -44,7 +44,7 @@ ASSIGNED {
 }
 
 STATE {
-	r 
+	r
 }
 
 BREAKPOINT {
@@ -67,10 +67,10 @@ DERIVATIVE states {
 
 PROCEDURE settables(v) {
 	TABLE r_inf, p_inf, tau_r FROM -100 TO 100 WITH 400
-	
+
 	r_inf = 1/(1+exp((v+84)/4))
 	tau_r = (28+exp(-(v+25)/10.5))
 	p_inf = 1/(1+exp(-(v+60)/6.2))
 }
 
-UNITSON 
+UNITSON

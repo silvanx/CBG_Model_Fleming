@@ -16,8 +16,8 @@ COMMENT
 
   - SHORT PULSES OF TRANSMITTER (0.3 ms, 0.5 mM)
 
-    The simplified model was obtained from a detailed synaptic model that 
-    included the release of transmitter in adjacent terminals, its lateral 
+    The simplified model was obtained from a detailed synaptic model that
+    included the release of transmitter in adjacent terminals, its lateral
     diffusion and uptake, and its binding on postsynaptic receptors (Destexhe
     and Sejnowski, 1995).  Short pulses of transmitter with first-order
     kinetics were found to be the best fast alternative to represent the more
@@ -35,11 +35,11 @@ References
 
    Destexhe, A., Mainen, Z.F. and Sejnowski, T.J.  An efficient method for
    computing synaptic conductances based on a kinetic model of receptor binding
-   Neural Computation 6: 10-14, 1994.  
+   Neural Computation 6: 10-14, 1994.
 
    Destexhe, A., Mainen, Z.F. and Sejnowski, T.J. Synthesis of models for
-   excitable membranes, synaptic transmission and neuromodulation using a 
-   common kinetic formalism, Journal of Computational Neuroscience 1: 
+   excitable membranes, synaptic transmission and neuromodulation using a
+   common kinetic formalism, Journal of Computational Neuroscience 1:
    195-230, 1994.
 
 See also:
@@ -117,7 +117,7 @@ PROCEDURE release() {
 	if (on) {				: transmitter being released?
 
 	   R = gmax*Rinf + (R0 - gmax*Rinf) * exptable (- (t - tLast) / Rtau)
-				
+
 	} else {				: no release occuring
 
   	   R = R0 * exptable (- Beta * (t - tLast))
@@ -155,7 +155,7 @@ NET_RECEIVE(weight, ncType, ncPrb) {LOCAL ok, tmp
 			ok = 1
 
 		}
-		else 
+		else
 		if (collisionBlock == 0) {
 			ok = 1
 		}
@@ -170,7 +170,7 @@ NET_RECEIVE(weight, ncType, ncPrb) {LOCAL ok, tmp
 
 			nspike = nspike + 1
 			: come again in Cdur with flag = current value of nspike
-			net_send(Cdur, nspike)			
+			net_send(Cdur, nspike)
 		}
       }
 	else
@@ -181,7 +181,7 @@ NET_RECEIVE(weight, ncType, ncPrb) {LOCAL ok, tmp
 			R0 = R
 			gmax = 0
 		}
-	} 
+	}
 	else
 	if (flag == -1) {
 		collisionBlock = collisionBlock - 1
@@ -191,7 +191,7 @@ NET_RECEIVE(weight, ncType, ncPrb) {LOCAL ok, tmp
 }
 
 
-FUNCTION exptable(x) { 
+FUNCTION exptable(x) {
 	TABLE  FROM -10 TO 10 WITH 2000
 
 	if ((x > -10) && (x < 10)) {
