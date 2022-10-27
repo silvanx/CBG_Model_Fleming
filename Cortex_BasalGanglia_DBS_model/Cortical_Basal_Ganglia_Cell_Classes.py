@@ -1,63 +1,63 @@
 # -*- coding: utf-8 -*-
 """ ------------------------------------------------------------------------------------
-	Cortical Basal Ganglia Neurons: file containing classes for defining network neurons
-	------------------------------------------------------------------------------------
-	
-								Model References 
-	------------------------------------------------------------------------------------
-	Cortical Pyramical Cell Soma:
-	Pospischil, M., Toledo-Rodriguez, M., Monier, C., Piwkowska, Z., 
-	Bal, T., Frégnac, Y., Markram, H. and Destexhe, A., 2008. 
-	"Minimal Hodgkin–Huxley type models for different classes of 
-	cortical and thalamic neurons." 
-	Biological cybernetics, 99(4-5), pp.427-441.
-	
-	Cortical Pyramidal Cell Axon: 
-	Foust, A.J., Yu, Y., Popovic, M., Zecevic, D. and McCormick, D.A., 
-	2011. "Somatic membrane potential and Kv1 channels control spike 
-	repolarization in cortical axon collaterals and presynaptic boutons." 
-	Journal of Neuroscience, 31(43), pp.15490-15498.
-	
-	Cortical Interneurons:
-	Pospischil, M., Toledo-Rodriguez, M., Monier, C., Piwkowska, Z., 
-	Bal, T., Frégnac, Y., Markram, H. and Destexhe, A., 2008. 
-	"Minimal Hodgkin–Huxley type models for different classes of 
-	cortical and thalamic neurons." 
-	Biological cybernetics, 99(4-5), pp.427-441.
-  
-	STN Neurons:
-	Otsuka, T., Abe, T., Tsukagawa, T. and Song, W.J., 2004. 
-	"Conductance-based model of the voltage-dependent generation 
-	of a plateau potential in subthalamic neurons."
-	Journal of neurophysiology, 92(1), pp.255-264.
-  
-	GP Neurons:
-	Terman, D., Rubin, J.E., Yew, A.C. and Wilson, C.J., 2002. 
-	"Activity patterns in a model for the subthalamopallidal 
-	network of the basal ganglia." 
-	Journal of Neuroscience, 22(7), pp.2963-2976.
-	
-	*Note: The NEURON implementations of the STN and GP neurons are 
-		   from the following publication - 
-	Hahn, P.J. and McIntyre, C.C., 2010. 
-	"Modeling shifts in the rate and pattern of subthalamopallidal
-	network activity during deep brain stimulation." 
-	Journal of computational neuroscience, 28(3), pp.425-441.
-	
-	Thalamic Neurons:
-	Rubin, J.E. and Terman, D., 2004. High frequency stimulation of 
-	the subthalamic nucleus eliminates pathological thalamic rhythmicity 
-	in a computational model. Journal of computational neuroscience, 
-	16(3), pp.211-235.
-	
-	Model Implemented by John Fleming - john.fleming@ucdconnect.ie - 06/12/18
-	
-	Edits: 	14-02-20: Added additional getters and setters for model 
-					  neuron parameters
-			16-01-19: Created classes for cell models so they can be 
-					  utilized in PyNN.
+    Cortical Basal Ganglia Neurons: file containing classes for defining network neurons
+    ------------------------------------------------------------------------------------
 
-	Created on Tues Jan 15 12:51:26 2019
+                                Model References
+    ------------------------------------------------------------------------------------
+    Cortical Pyramical Cell Soma:
+    Pospischil, M., Toledo-Rodriguez, M., Monier, C., Piwkowska, Z.,
+    Bal, T., Frégnac, Y., Markram, H. and Destexhe, A., 2008.
+    "Minimal Hodgkin–Huxley type models for different classes of
+    cortical and thalamic neurons."
+    Biological cybernetics, 99(4-5), pp.427-441.
+
+    Cortical Pyramidal Cell Axon:
+    Foust, A.J., Yu, Y., Popovic, M., Zecevic, D. and McCormick, D.A.,
+    2011. "Somatic membrane potential and Kv1 channels control spike
+    repolarization in cortical axon collaterals and presynaptic boutons."
+    Journal of Neuroscience, 31(43), pp.15490-15498.
+
+    Cortical Interneurons:
+    Pospischil, M., Toledo-Rodriguez, M., Monier, C., Piwkowska, Z.,
+    Bal, T., Frégnac, Y., Markram, H. and Destexhe, A., 2008.
+    "Minimal Hodgkin–Huxley type models for different classes of
+    cortical and thalamic neurons."
+    Biological cybernetics, 99(4-5), pp.427-441.
+
+    STN Neurons:
+    Otsuka, T., Abe, T., Tsukagawa, T. and Song, W.J., 2004.
+    "Conductance-based model of the voltage-dependent generation
+    of a plateau potential in subthalamic neurons."
+    Journal of neurophysiology, 92(1), pp.255-264.
+
+    GP Neurons:
+    Terman, D., Rubin, J.E., Yew, A.C. and Wilson, C.J., 2002.
+    "Activity patterns in a model for the subthalamopallidal
+    network of the basal ganglia."
+    Journal of Neuroscience, 22(7), pp.2963-2976.
+
+    *Note: The NEURON implementations of the STN and GP neurons are
+           from the following publication -
+    Hahn, P.J. and McIntyre, C.C., 2010.
+    "Modeling shifts in the rate and pattern of subthalamopallidal
+    network activity during deep brain stimulation."
+    Journal of computational neuroscience, 28(3), pp.425-441.
+
+    Thalamic Neurons:
+    Rubin, J.E. and Terman, D., 2004. High frequency stimulation of
+    the subthalamic nucleus eliminates pathological thalamic rhythmicity
+    in a computational model. Journal of computational neuroscience,
+    16(3), pp.211-235.
+
+    Model Implemented by John Fleming - john.fleming@ucdconnect.ie - 06/12/18
+
+    Edits: 	14-02-20: Added additional getters and setters for model
+                      neuron parameters
+            16-01-19: Created classes for cell models so they can be
+                      utilized in PyNN.
+
+    Created on Tues Jan 15 12:51:26 2019
 
 """
 
@@ -617,14 +617,14 @@ class Thalamic_Neuron(object):
         )
 
         """
-		# Note: Thalamic current has no bias current in original paper, i.e. bias_current_density = 0
-		#       Can be added in if required.
-		# insert current source
-		self.stim = h.IClamp(0.5, sec=self.soma)
-		self.stim.delay = 0
-		self.stim.dur = 1e12
-		self.stim.amp = parameters['bias_current_density']*(self.area())*(0.001) 	# (0.001 or 1e-3) is conversion factor so pA -> nA
-		"""
+        # Note: Thalamic current has no bias current in original paper, i.e. bias_current_density = 0
+        #       Can be added in if required.
+        # insert current source
+        self.stim = h.IClamp(0.5, sec=self.soma)
+        self.stim.delay = 0
+        self.stim.dur = 1e12
+        self.stim.amp = parameters['bias_current_density']*(self.area())*(0.001) 	# (0.001 or 1e-3) is conversion factor so pA -> nA
+        """
 
         # insert synaptic noise
         self.noise = h.SynNoise(0.5, sec=self.soma)

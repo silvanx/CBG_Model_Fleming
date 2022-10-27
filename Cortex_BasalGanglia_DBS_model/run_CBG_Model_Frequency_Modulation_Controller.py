@@ -420,7 +420,7 @@ if __name__ == "__main__":
     )
 
     """
-    # Save the network topology so it can be reloaded 
+    # Save the network topology so it can be reloaded
     #prj_CorticalSpikeSourceCorticalSoma.saveConnections(file="CorticalSpikeSourceCorticalSoma_Connections.txt")
     prj_CorticalAxon_Interneuron.saveConnections(file="CorticalAxonInterneuron_Connections.txt")
     prj_Interneuron_CorticalSoma.saveConnections(file="InterneuronCortical_Connections.txt")

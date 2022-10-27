@@ -2,12 +2,12 @@
 """
 Created on Wed April 03 14:27:26 2019
 
-Description: Functions for calculating cell distances to electrode. Distance is 
-			 calculated similar to space.distance, but distance is now between 
-			 a cell position and a point for an electrode rather than between two cell positions
+Description: Functions for calculating cell distances to electrode. Distance is
+             calculated similar to space.distance, but distance is now between
+             a cell position and a point for an electrode rather than between two cell positions
 
 Edits:
-	10-01-18: Created electrode_distance function
+    10-01-18: Created electrode_distance function
 
 @author: John Fleming, john.fleming@ucdconnect.ie
 
