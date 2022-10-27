@@ -1,0 +1,3 @@
+[flake8]
+extend-ignore = E501,E402,W503,E203,W605,E722
+exclude = .git,__pycache__,Updated_PyNN_Files
