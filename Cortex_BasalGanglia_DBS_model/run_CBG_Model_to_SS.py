@@ -14,6 +14,7 @@ Description: Cortico-Basal Ganglia Network Model implemented in PyNN using the
 @author: John Fleming, john.fleming@ucdconnect.ie
 """
 
+import os
 import neuron
 from pyNN.neuron import setup, run_to_steady_state, end, simulator
 from pyNN.parameters import Sequence
@@ -27,19 +28,25 @@ import Global_Variables as GV
 from utils import make_beta_cheby1_filter
 from model import load_network, electrode_distance
 
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+
 h = neuron.h
 
 
 if __name__ == "__main__":
+
     rng_seed = 3695
     timestep = 0.01
     save_sim_data = False
     # Setup simulation
-    setup(timestep=timestep, rngseed=rng_seed)
+    rank = setup(timestep=timestep, rngseed=rng_seed)
+    if rank == 0:
+        print("\nSetting up simulation...")
     steady_state_duration = 6000.0  # Duration of simulation steady state
     simulation_duration = steady_state_duration  # Total simulation time
     rec_sampling_interval = 0.5  # Fs = 2000Hz
-    Pop_size = 100
 
     # Make beta band filter centred on 25Hz (cutoff frequencies are 21-29 Hz)
     # for biomarker estimation
@@ -57,6 +64,7 @@ if __name__ == "__main__":
     v_init = -68
 
     (
+        Pop_size,
         striatal_spike_times,
         Cortical_Pop,
         Interneuron_Pop,
@@ -78,10 +86,7 @@ if __name__ == "__main__":
         prj_ThalamicCortical,
         prj_CorticalThalamic,
         GPe_stimulation_order,
-        _,
-        _,
     ) = load_network(
-        Pop_size,
         steady_state_duration,
         simulation_duration,
         simulation_duration,
@@ -132,13 +137,15 @@ if __name__ == "__main__":
 
     # Convert ndarray to array of Sequence objects - needed to set cortical
     # collateral transfer resistances
-    collateral_rx_seq = np.ndarray(shape=(1, Pop_size), dtype=Sequence).flatten()
-    for ii in range(0, Pop_size):
+    collateral_rx_seq = np.ndarray(
+        shape=(1, Cortical_Pop.local_size), dtype=Sequence
+    ).flatten()
+    for ii in range(0, Cortical_Pop.local_size):
         collateral_rx_seq[ii] = Sequence(collateral_rx[ii, :].flatten())
 
     # Assign transfer resistances values to collaterals
-    for ii, cortical_neuron in enumerate(Cortical_Pop):
-        cortical_neuron.collateral_rx = collateral_rx_seq[ii]
+    for ii, cell in enumerate(Cortical_Pop):
+        cell.collateral_rx = collateral_rx_seq[ii]
 
     # Initialise STN LFP list
     STN_LFP = []
@@ -159,7 +166,8 @@ if __name__ == "__main__":
     GPe_DBS_Signal_neuron = []
     GPe_DBS_times_neuron = []
     updated_GPe_DBS_signal = []
-    for i in range(0, Pop_size):
+    for i in range(0, Cortical_Pop.local_size):
+
         # Neuron vector of GPe DBS signals
         GPe_DBS_Signal_neuron.append(h.Vector([0, 0]))
         GPe_DBS_times_neuron.append(h.Vector([0, steady_state_duration + 10]))
@@ -170,11 +178,21 @@ if __name__ == "__main__":
         )
 
     # Run the model to the steady state
+    if rank == 0:
+        print("Running model to steady state...")
+
     run_to_steady_state(steady_state_duration)
 
+    if rank == 0:
+        print("Done.")
+
     # Calculate the LFP and biomarkers, etc.
-    STN_AMPA_i = np.array(STN_Pop.get_data("AMPA.i").segments[0].analogsignals[0])
-    STN_GABAa_i = np.array(STN_Pop.get_data("GABAa.i").segments[0].analogsignals[0])
+    STN_AMPA_i = np.array(
+        STN_Pop.get_data("AMPA.i", gather=False).segments[0].analogsignals[0]
+    )
+    STN_GABAa_i = np.array(
+        STN_Pop.get_data("GABAa.i", gather=False).segments[0].analogsignals[0]
+    )
     STN_Syn_i = STN_AMPA_i + STN_GABAa_i
 
     # STN LFP Calculation - Syn_i is in units of nA -> LFP units are mV
@@ -187,6 +205,7 @@ if __name__ == "__main__":
         axis=0,
     )
     STN_LFP = STN_LFP_1 - STN_LFP_2
+    STN_LFP = comm.allreduce(STN_LFP, op=MPI.SUM)
 
     # STN LFP AMPA and GABAa Contributions
     STN_LFP_AMPA_1 = (1e-6 / (4 * math.pi * sigma)) * np.sum(
@@ -198,6 +217,7 @@ if __name__ == "__main__":
         axis=0,
     )
     STN_LFP_AMPA = STN_LFP_AMPA_1 - STN_LFP_AMPA_2
+    STN_LFP_AMPA = comm.allreduce(STN_LFP_AMPA, op=MPI.SUM)
     STN_LFP_GABAa_1 = (1e-6 / (4 * math.pi * sigma)) * np.sum(
         (1 / (STN_recording_electrode_1_distances * 1e-6)) * STN_GABAa_i.transpose(),
         axis=0,
@@ -207,13 +227,17 @@ if __name__ == "__main__":
         axis=0,
     )
     STN_LFP_GABAa = STN_LFP_GABAa_1 - STN_LFP_GABAa_2
+    STN_LFP_GABAa = comm.allreduce(STN_LFP_GABAa, op=MPI.SUM)
 
     # Simulation Label for writing model output data - uncomment to write the
     # specified variables to file
     simulation_label = "Steady_State_Simulation"
-    simulation_output_dir = "Simulation_Output_Results/" + simulation_label
+    output_dirname = os.environ.get("PYNN_OUTPUT_DIRNAME", "Simulation_Output_Results")
+    simulation_output_dir = f"{output_dirname}/" + simulation_label
 
     if save_sim_data:
+        if rank == 0:
+            print("Writing data...")
         # Write population membrane voltage data to file
         Cortical_Pop.write_data(
             simulation_output_dir + "/Cortical_Pop/Cortical_Collateral_v.mat",
@@ -287,6 +311,7 @@ if __name__ == "__main__":
         w = neo.io.NeoMatlabIO(filename=simulation_output_dir + "/STN_LFP_GABAa.mat")
         w.write_block(STN_LFP_GABAa_Block)
 
-    print("Steady State Simulation Done!")
+    if rank == 0:
+        print("Steady State Simulation Done!")
 
     end()

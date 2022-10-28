@@ -50,12 +50,11 @@ def distances_to_electrode(src_electrode, tgt_pop, coordinate_mask=None):
     'src_electrode' is the electrode positon in xyz co-ordinates.
     'tgt_pop' is the population of cells that the distance will be calculated to.
     """
-    row_size, col_size = tgt_pop.positions.shape
-    cell_electrode_distances = numpy.zeros((col_size, 1))
+    cell_electrode_distances = numpy.zeros((tgt_pop.local_size, 1))
     cell_electrode_distances.flatten()
 
-    for cell_id, tgt_cell in enumerate(tgt_pop):
-        cell_electrode_distances[cell_id] = distance_to_electrode(
+    for ii, tgt_cell in enumerate(tgt_pop):
+        cell_electrode_distances[ii] = distance_to_electrode(
             src_electrode, tgt_cell, mask=coordinate_mask
         )
 
@@ -78,8 +77,7 @@ def collateral_distances_to_electrode(src_electrode, tgt_pop, L, nseg):
     segment to the stimulating electrode. Each row corresponds to a collateral of a single
     cortical cell. Each column corresponds to a segment of the collateral.
     """
-    row_size, col_size = tgt_pop.positions.shape
-    segment_electrode_distances = numpy.zeros((col_size, nseg))
+    segment_electrode_distances = numpy.zeros((tgt_pop.local_size, nseg))
 
     segment_centres = numpy.arange(0, nseg + 3 - 1) * (1 / nseg)
     segment_centres = segment_centres - (1 / (2 * nseg))
@@ -90,12 +88,12 @@ def collateral_distances_to_electrode(src_electrode, tgt_pop, L, nseg):
     z_coordinate = L * segment_centres - L / 2
     # print(z_coordinate)
 
-    for cell_id, tgt_cell in enumerate(tgt_pop):
+    for ii, tgt_cell in enumerate(tgt_pop):
         for seg in numpy.arange(nseg):
             tgt_cell.position = numpy.array(
                 [tgt_cell.position[0], tgt_cell.position[1], z_coordinate[seg]]
             )
-            segment_electrode_distances[cell_id][seg] = distance_to_electrode(
+            segment_electrode_distances[ii][seg] = distance_to_electrode(
                 src_electrode, tgt_cell
             )
 

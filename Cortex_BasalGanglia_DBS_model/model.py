@@ -99,8 +99,7 @@ def create_network(
         label="Thalamic Neurons",
     )
 
-    for i in range(0, Pop_size):
-        Striatal_Pop[i].spike_times = striatal_spike_times[i][0]
+    Striatal_Pop.set(spike_times=striatal_spike_times[:, 0])
 
     # Load burst times
     burst_times_script = "burst_times_1.txt"
@@ -113,40 +112,29 @@ def create_network(
     )
     Cortical_Pop.inject(cortical_modulation_current)
 
-    # Generate Noisy current sources for cortical pyramidal and interneuron
-    # populations
-    Cortical_Pop_Membrane_Noise = [
-        NoisyCurrentSource(
-            mean=0,
-            stdev=0.005,
-            start=steady_state_duration,
-            stop=simulation_duration,
-            dt=1.0,
+    # Generate Noisy current sources for cortical pyramidal and interneuron populations
+    # Inject each membrane noise current into each cortical and interneuron in network
+    for cell in Cortical_Pop:
+        cell.inject(
+            NoisyCurrentSource(
+                mean=0,
+                stdev=0.005,
+                start=steady_state_duration,
+                stop=simulation_duration,
+                dt=1.0,
+            )
         )
-        for _ in range(Pop_size)
-    ]
-    Interneuron_Pop_Membrane_Noise = [
-        NoisyCurrentSource(
-            mean=0,
-            stdev=0.005,
-            start=steady_state_duration,
-            stop=simulation_duration,
-            dt=1.0,
+
+    for cell in Interneuron_Pop:
+        cell.inject(
+            NoisyCurrentSource(
+                mean=0,
+                stdev=0.005,
+                start=steady_state_duration,
+                stop=simulation_duration,
+                dt=1.0,
+            )
         )
-        for _ in range(Pop_size)
-    ]
-
-    # Inject each membrane noise current into each cortical and interneuron in
-    # network
-    for Cortical_Neuron, Cortical_Neuron_Membrane_Noise in zip(
-        Cortical_Pop, Cortical_Pop_Membrane_Noise
-    ):
-        Cortical_Neuron.inject(Cortical_Neuron_Membrane_Noise)
-
-    for Interneuron, Interneuron_Membrane_Noise in zip(
-        Interneuron_Pop, Interneuron_Pop_Membrane_Noise
-    ):
-        Interneuron.inject(Interneuron_Membrane_Noise)
 
     # Position Check -
     # 1) Make sure cells are bounded in 4mm space in x, y coordinates
@@ -346,13 +334,10 @@ def create_network(
         prj_ThalamicCortical,
         prj_CorticalThalamic,
         GPe_stimulation_order,
-        Cortical_Pop_Membrane_Noise,
-        Interneuron_Pop_Membrane_Noise,
     )
 
 
 def load_network(
-    Pop_size,
     steady_state_duration,
     simulation_duration,
     simulation_runtime,
@@ -367,6 +352,7 @@ def load_network(
 
     # Load striatal spike times from file
     striatal_spike_times = np.load("Striatal_Spike_Times.npy", allow_pickle=True)
+    Pop_size = len(striatal_spike_times[:, 0])
     for i in range(0, Pop_size):
         spike_times = striatal_spike_times[i][0].value
         spike_times = spike_times[spike_times > steady_state_duration]
@@ -417,43 +403,31 @@ def load_network(
         label="Thalamic Neurons",
     )
 
-    for i in range(0, Pop_size):
-        Striatal_Pop[i].spike_times = striatal_spike_times[i][0]
+    Striatal_Pop.set(spike_times=striatal_spike_times[:, 0])
 
-    # Generate Noisy current sources for cortical pyramidal and interneuron
-    # populations
-    Cortical_Pop_Membrane_Noise = [
-        NoisyCurrentSource(
-            mean=0,
-            stdev=0.005,
-            start=steady_state_duration,
-            stop=simulation_duration,
-            dt=1.0,
+    # Generate Noisy current sources for cortical pyramidal and interneuron populations
+    # Inject each membrane noise current into each cortical and interneuron in network
+    for cell in Cortical_Pop:
+        cell.inject(
+            NoisyCurrentSource(
+                mean=0,
+                stdev=0.005,
+                start=steady_state_duration,
+                stop=simulation_duration,
+                dt=1.0,
+            )
         )
-        for _ in range(Pop_size)
-    ]
-    Interneuron_Pop_Membrane_Noise = [
-        NoisyCurrentSource(
-            mean=0,
-            stdev=0.005,
-            start=steady_state_duration,
-            stop=simulation_duration,
-            dt=1.0,
+
+    for cell in Interneuron_Pop:
+        cell.inject(
+            NoisyCurrentSource(
+                mean=0,
+                stdev=0.005,
+                start=steady_state_duration,
+                stop=simulation_duration,
+                dt=1.0,
+            )
         )
-        for _ in range(Pop_size)
-    ]
-
-    # Inject each membrane noise current into each cortical and interneuron in
-    # network
-    for Cortical_Neuron, Cortical_Neuron_Membrane_Noise in zip(
-        Cortical_Pop, Cortical_Pop_Membrane_Noise
-    ):
-        Cortical_Neuron.inject(Cortical_Neuron_Membrane_Noise)
-
-    for Interneuron, Interneuron_Membrane_Noise in zip(
-        Interneuron_Pop, Interneuron_Pop_Membrane_Noise
-    ):
-        Interneuron.inject(Interneuron_Membrane_Noise)
 
     # Load burst times
     burst_times_script = "burst_times_1.txt"
@@ -470,20 +444,22 @@ def load_network(
     Cortical_Neuron_xy_Positions = np.loadtxt("cortical_xy_pos.txt", delimiter=",")
     Cortical_Neuron_x_Positions = Cortical_Neuron_xy_Positions[0, :]
     Cortical_Neuron_y_Positions = Cortical_Neuron_xy_Positions[1, :]
+
     # Set cortical xy positions to those loaded in
-    for cell_id, Cortical_cell in enumerate(Cortical_Pop):
-        Cortical_cell.position[0] = Cortical_Neuron_x_Positions[cell_id]
-        Cortical_cell.position[1] = Cortical_Neuron_y_Positions[cell_id]
+    for ii, cell in enumerate(Cortical_Pop):
+        cell.position[0] = Cortical_Neuron_x_Positions[ii]
+        cell.position[1] = Cortical_Neuron_y_Positions[ii]
 
     # Load STN positions - Comment/Remove to generate new positions
     STN_Neuron_xy_Positions = np.loadtxt("STN_xy_pos.txt", delimiter=",")
     STN_Neuron_x_Positions = STN_Neuron_xy_Positions[0, :]
     STN_Neuron_y_Positions = STN_Neuron_xy_Positions[1, :]
 
-    for cell_id, STN_cell in enumerate(STN_Pop):
-        STN_cell.position[0] = STN_Neuron_x_Positions[cell_id]
-        STN_cell.position[1] = STN_Neuron_y_Positions[cell_id]
-        STN_cell.position[2] = 500
+    # Set STN xy positions to those loaded in
+    for ii, cell in enumerate(STN_Pop):
+        cell.position[0] = STN_Neuron_x_Positions[ii]
+        cell.position[1] = STN_Neuron_y_Positions[ii]
+        cell.position[2] = 500
 
     # Synaptic Connections
     # Add variability to Cortical connections - cortical interneuron
@@ -614,6 +590,7 @@ def load_network(
     GPe_stimulation_order = [int(index) for index in GPe_stimulation_order]
 
     return (
+        Pop_size,
         striatal_spike_times,
         Cortical_Pop,
         Interneuron_Pop,
@@ -635,8 +612,6 @@ def load_network(
         prj_ThalamicCortical,
         prj_CorticalThalamic,
         GPe_stimulation_order,
-        Cortical_Pop_Membrane_Noise,
-        Interneuron_Pop_Membrane_Noise,
     )
 
 
