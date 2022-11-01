@@ -190,21 +190,21 @@ def plot_fitness_pi_params(dir, setpoint=1.0414E-4, three_d=False,
     teed_zi = griddata((x, y), teed, (xi, yi), method='cubic')
     fitness_zi = griddata((x, y), fitness, (xi, yi), method='cubic')
     if three_d:
-        mse_fig, mse_ax = plt.subplots(figsize=(12, 7),
+        mse_fig, mse_ax = plt.subplots(figsize=(25, 12),
                                        subplot_kw={"projection": "3d"})
         surf = mse_ax.plot_surface(xi, yi, mse_zi, cmap=cmap,
                                    antialiased=True)
         mse_fig.colorbar(surf)
-        mse_ax.scatter(x, y, mse, c='k', s=3)
+        mse_ax.scatter(x, 1.01 * y, mse, c='k', s=3)
 
-        teed_fig, teed_ax = plt.subplots(figsize=(12, 7),
+        teed_fig, teed_ax = plt.subplots(figsize=(25, 12),
                                          subplot_kw={"projection": "3d"})
         surf = teed_ax.plot_surface(xi, yi, teed_zi, cmap=cmap,
                                     antialiased=True)
         teed_fig.colorbar(surf)
-        teed_ax.scatter(x, y, teed, c='k', s=3)
+        teed_ax.scatter(x, 1.01 * y, teed, c='k', s=3)
 
-        fit_fig, fit_ax = plt.subplots(figsize=(12, 7),
+        fit_fig, fit_ax = plt.subplots(figsize=(25, 12),
                                        subplot_kw={"projection": "3d"})
         surf = fit_ax.plot_surface(xi, yi, fitness_zi, cmap=cmap,
                                    antialiased=True)
@@ -230,7 +230,6 @@ def plot_fitness_pi_params(dir, setpoint=1.0414E-4, three_d=False,
         fit_fig = plt.figure(figsize=(12, 7))
         fit_ax = plt.gca()
         contours = plt.contourf(xi, yi, fitness_zi, cmap=cmap)
-        plt.scatter(x, y, c='k', s=5)
         fit_fig.colorbar(contours)
     mse_ax.set_xlabel('Kp')
     teed_ax.set_xlabel('Kp')
@@ -245,7 +244,67 @@ def plot_fitness_pi_params(dir, setpoint=1.0414E-4, three_d=False,
     teed_ax.set_ylim([-0.01, y.max() + 0.01])
     fit_ax.set_ylim([-0.01, y.max() + 0.01])
     mse_ax.set_title(
-        'Mean Square Error of beta power when using PI controller')
-    teed_ax.set_title('TEED when using PI controller')
+        'Beta power under PI control')
+    teed_ax.set_title('Stimulation power')
     fit_ax.set_title(
-        'Fitness of the PI parameters (weighted average of MSE + TEED)')
+        'Fitness of the PI parameters')
+
+
+def plot_ift_trajectory(pi_fitness_dir, parameters, setpoint=1.0414E-4,
+                        cmap=cm.RdBu_r):
+    directory = Path(pi_fitness_dir)
+    fitness_list = []
+    for result_dir in directory.iterdir():
+        res = dict()
+        if not result_dir.is_dir():
+            continue
+        try:
+            controller_t, controller_p, controller_b = \
+                load_controller_data(result_dir, 'amplitude')
+        except FileNotFoundError:
+            print('Not found: %s' % (result_dir.name))
+            continue
+        mse = compute_mse(controller_t, controller_b, setpoint)
+        teed = compute_teed(controller_t, controller_p, 80, 130, 1)
+        params_string = result_dir.name.split('-')[0].split(',')
+        for p in params_string:
+            p = p.strip()
+            k, v = p.split('=')
+            res[k] = float(v)
+        res['mse'] = mse
+        res['teed'] = teed
+        fitness_list.append(res)
+    x = []
+    y = []
+    mse = []
+    teed = []
+    for e in fitness_list:
+        x.append(e['Kp'])
+        y.append(e['Ti'])
+        mse.append(e['mse'])
+        teed.append(e['teed'])
+    x = np.array(x)
+    y = np.array(y)
+    mse = np.array(mse)
+    teed = np.array(teed)
+    fitness = 0.5 * ((teed - teed.min()) / teed.max() +
+                     (mse - mse.min()) / mse.max())
+    max_value = max(x.max(), y.max()) + 0.01
+    xi = yi = np.arange(0, max_value, 0.01)
+    xi, yi = np.meshgrid(xi, yi)
+    fitness_zi = griddata((x, y), fitness, (xi, yi), method='cubic')
+    fit_fig = plt.figure(figsize=(12, 7))
+    fit_ax = plt.gca()
+    contours = plt.contourf(xi, yi, fitness_zi, cmap=cmap)
+    fit_fig.colorbar(contours)
+    abase = parameters[np.where(np.diff(parameters[:, 0]))[0]]
+    ad = np.diff(abase, axis=0)
+    for i in range(len(ad)):
+        fit_ax.arrow(abase[i, 0], abase[i, 1], ad[i, 0], ad[i, 1],
+                     width=0.01, head_width=0.04)
+    fit_ax.set_xlabel('Kp')
+    fit_ax.set_ylabel('Ti')
+    fit_ax.set_xlim([-0.01, x.max() + 0.01])
+    fit_ax.set_ylim([-0.01, y.max() + 0.01])
+    fit_ax.set_title(
+        'Fitness of the PI parameters')
