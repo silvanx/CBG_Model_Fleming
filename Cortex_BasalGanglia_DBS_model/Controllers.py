@@ -806,6 +806,19 @@ class IterativeFeedbackTuningPIController():
 
         self.output_value = 0.0
 
+    def dc_drho(self, s):
+        kp = self.kp
+        ti = self.ti
+        ts = self.ts
+        yout_kp = np.zeros(len(s) + 1)
+        yout_ti = np.zeros(len(s) + 1)
+        for i, u in enumerate(s):
+            yout_kp[i + 1] = u / kp
+            yout_ti[i + 1] = ((ti ** 2 * yout_ti[i] - ts * u)
+                              / (ti ** 2 + ti * ts))
+
+        return yout_kp[1:], yout_ti[1:]
+
     def compute_fitness_gradient(self):
         y1 = self.error_history[
             -2 * self.stage_length_samples: -self.stage_length_samples]
@@ -813,16 +826,18 @@ class IterativeFeedbackTuningPIController():
         u1 = self.output_history[
             -2 * self.stage_length_samples: -self.stage_length_samples]
         u2 = self.output_history[-self.stage_length_samples:]
-        y_tilde = np.array(y1) - self.setpoint
+        y_tilde = np.array(y1)
         u_rho = u1
-        kp = self.kp
-        ti = self.ti
-        tt = np.linspace(0, self.stage_length, len(y2))
-        _, dy_dkp, _ = signal.lsim(([1], [kp]), y2, tt)
-        _, dy_dti, _ = signal.lsim(([-1], [ti ** 2, ti]), y2, tt)
+        # kp = self.kp
+        # ti = self.ti
+        # tt = np.linspace(0, self.stage_length, len(y2))
+        # _, dy_dkpc, _ = signal.lsim(([1], [kp]), y2, tt)
+        # _, dy_dtic, _ = signal.lsim(([-1], [ti ** 2, ti]), y2, tt)
 
-        _, du_dkp, _ = signal.lsim(([1], [kp]), u2, tt)
-        _, du_dti, _ = signal.lsim(([-1], [ti ** 2, ti]), u2, tt)
+        # _, du_dkpc, _ = signal.lsim(([1], [kp]), u2, tt)
+        # _, du_dtic, _ = signal.lsim(([-1], [ti ** 2, ti]), u2, tt)
+        dy_dkp, dy_dti = self.dc_drho(y2)
+        du_dkp, du_dti = self.dc_drho(u2)
 
         dy_drho = np.vstack((dy_dkp, dy_dti))
         du_drho = np.vstack((du_dkp, du_dti))
@@ -844,8 +859,10 @@ class IterativeFeedbackTuningPIController():
         r = np.identity(2)
         if len(self._error_history) > 2 * self.stage_length_samples:
             grad = self.compute_fitness_gradient()
+            print(f'Gradient: ({grad[0]}, {grad[1]})\'')
         else:
             grad = [0, 0]
+            print('Too few samples, skipping update')
         new_rho = rho - gamma * np.dot(r, grad)
         if new_rho[0] < min_kp:
             new_rho[0] = min_kp
