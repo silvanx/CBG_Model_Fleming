@@ -102,7 +102,7 @@ if __name__ == "__main__":
         _,
         _,
     ) = load_network(
-        Pop_size, steady_state_duration, sim_total_time, simulation_runtime, v_init
+        steady_state_duration, sim_total_time, simulation_runtime, v_init, rng_seed
     )
 
     # Define state variables to record from each population
