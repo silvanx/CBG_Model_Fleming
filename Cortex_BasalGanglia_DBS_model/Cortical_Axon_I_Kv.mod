@@ -1,18 +1,18 @@
 TITLE Delayed-rectifier Potassium Current for Cortical Neuron Axon
 
 COMMENT
-  
-  Model Reference: 
-  
-  Foust, A.J., Yu, Y., Popovic, M., Zecevic, D. and McCormick, D.A., 
-  2011. "Somatic membrane potential and Kv1 channels control spike 
-  repolarization in cortical axon collaterals and presynaptic boutons." 
+
+  Model Reference:
+
+  Foust, A.J., Yu, Y., Popovic, M., Zecevic, D. and McCormick, D.A.,
+  2011. "Somatic membrane potential and Kv1 channels control spike
+  repolarization in cortical axon collaterals and presynaptic boutons."
   Journal of Neuroscience, 31(43), pp.15490-15498.
-  
+
   Implemented by John Fleming - john.fleming@ucdconnect.ie - 06/12/18
-  
-  Edits: 
-  
+
+  Edits:
+
 ENDCOMMENT
 
 
@@ -68,10 +68,10 @@ DERIVATIVE states {
 
 PROCEDURE settables(v) {
 	TABLE alpha_n, beta_n, n_inf, tau_n FROM -100 TO 100 WITH 400
-	
+
 	alpha_n = Q_s*0.01*vtrap(-(v-30),9)
 	beta_n = Q_s*0.002*vtrap((v-30),9)
-	
+
 	n_inf = alpha_n/(alpha_n+beta_n)
 	tau_n = 1/(alpha_n+beta_n)
 }
@@ -84,4 +84,4 @@ FUNCTION vtrap(x,y) {
 	}
 }
 
-UNITSON 
+UNITSON

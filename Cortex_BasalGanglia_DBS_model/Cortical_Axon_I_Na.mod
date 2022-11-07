@@ -1,18 +1,18 @@
 TITLE Sodium Current for Cortical Neuron Axon
 
 COMMENT
-  
-  Model Reference: 
-  
-  Foust, A.J., Yu, Y., Popovic, M., Zecevic, D. and McCormick, D.A., 
-  2011. "Somatic membrane potential and Kv1 channels control spike 
-  repolarization in cortical axon collaterals and presynaptic boutons." 
+
+  Model Reference:
+
+  Foust, A.J., Yu, Y., Popovic, M., Zecevic, D. and McCormick, D.A.,
+  2011. "Somatic membrane potential and Kv1 channels control spike
+  repolarization in cortical axon collaterals and presynaptic boutons."
   Journal of Neuroscience, 31(43), pp.15490-15498.
-  
+
   Implemented by John Fleming - john.fleming@ucdconnect.ie - 06/12/18
-  
-  Edits: 
-  
+
+  Edits:
+
 ENDCOMMENT
 
 
@@ -44,7 +44,7 @@ ASSIGNED {
 	beta_h
 	m_inf
 	tau_m (ms)
-	h_inf 
+	h_inf
 	tau_h (ms)
 }
 
@@ -74,12 +74,12 @@ DERIVATIVE states {
 
 PROCEDURE settables(v) {
 	TABLE alpha_m, beta_m, alpha_h, beta_h, m_inf, tau_m, h_inf, tau_h FROM -100 TO 100 WITH 400
-	
+
 	alpha_m = Q_s*0.182*vtrap(-(v+30),8)
 	beta_m = Q_s*0.124*vtrap((v+30),8)
 	alpha_h = Q_s*0.028*vtrap(-(v+45),6)
 	beta_h = Q_s*0.0091*vtrap((v+70),6)
-	
+
 	m_inf = alpha_m/(alpha_m+beta_m)
 	tau_m = 1/(alpha_m+beta_m)
 	h_inf = 1/(1+exp((v+60)/6.2))
@@ -94,4 +94,4 @@ FUNCTION vtrap(x,y) {
 	}
 }
 
-UNITSON 
+UNITSON

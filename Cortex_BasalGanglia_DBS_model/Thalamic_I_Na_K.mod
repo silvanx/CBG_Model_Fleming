@@ -1,19 +1,19 @@
 TITLE Sodium and Potassium Currents for Thalamic Neuron
 
 COMMENT
-  
-  Model Reference: 
-  
-  Rubin, J.E. and Terman, D., 2004. "High frequency stimulation 
-  of the subthalamic nucleus eliminates pathological thalamic 
+
+  Model Reference:
+
+  Rubin, J.E. and Terman, D., 2004. "High frequency stimulation
+  of the subthalamic nucleus eliminates pathological thalamic
   rhythmicity in a computational model."
   Journal of computational neuroscience, 16(3), pp.211-235.
 
-  
+
   Implemented by John Fleming - john.fleming@ucdconnect.ie - 06/12/18
-  
-  Edits: 
-  
+
+  Edits:
+
 ENDCOMMENT
 
 
@@ -50,7 +50,7 @@ ASSIGNED {
 }
 
 STATE {
-	h 
+	h
 }
 
 BREAKPOINT {
@@ -75,10 +75,10 @@ DERIVATIVE states {
 
 PROCEDURE settables(v) {
 	TABLE h_inf, m_inf, tau_h FROM -100 TO 100 WITH 400
-	
+
 	h_inf = 1/(1+exp((v+41)/4))
 	tau_h = 1/((0.128*exp(-(v+46)/18))+(4/(1+exp(-(v+23)/5))))
 	m_inf = 1/(1+exp(-(v+37)/7))
 }
 
-UNITSON 
+UNITSON
