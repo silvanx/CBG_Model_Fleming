@@ -1,19 +1,19 @@
 TITLE Passive Leak Current for Thalamic Neuron
 
 COMMENT
-  
-  Model Reference: 
-  
-  Rubin, J.E. and Terman, D., 2004. "High frequency stimulation 
-  of the subthalamic nucleus eliminates pathological thalamic 
+
+  Model Reference:
+
+  Rubin, J.E. and Terman, D., 2004. "High frequency stimulation
+  of the subthalamic nucleus eliminates pathological thalamic
   rhythmicity in a computational model."
   Journal of computational neuroscience, 16(3), pp.211-235.
 
-  
+
   Implemented by John Fleming - john.fleming@ucdconnect.ie - 06/12/18
-  
-  Edits: 
-  
+
+  Edits:
+
 ENDCOMMENT
 
 
@@ -35,7 +35,7 @@ PARAMETER {
 }
 
 ASSIGNED {
-	v (mV)	
+	v (mV)
 	i_l (mA/cm2)
 }
 

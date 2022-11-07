@@ -35,9 +35,9 @@ from operator import itemgetter
 logger = logging.getLogger("PyNN")
 name = "NEURON"  # for use in annotating output data
 
-# Instead of starting the projection var-GID range from 0, the first _MIN_PROJECTION_VARGID are 
+# Instead of starting the projection var-GID range from 0, the first _MIN_PROJECTION_VARGID are
 # reserved for other potential uses
-_MIN_PROJECTION_VARGID = 1000000 
+_MIN_PROJECTION_VARGID = 1000000
 
 # --- Internal NEURON functionality --------------------------------------------
 
@@ -211,7 +211,7 @@ class _State(common.control.BaseState):
         # Check if gid is along the main axon of collateral neuron
         if gid>2e6:
             self.parallel_context.threshold(gid, -10)
-        
+
         self.gid_sources.append(source)  # gid_clear (in _State.reset()) will cause a
                                         # segmentation fault if any of the sources
                                         # registered using pc.cell() no longer exist, so
@@ -272,11 +272,11 @@ class _State(common.control.BaseState):
         self._pre_run()
         self.parallel_context.set_maxstep(self.default_maxstep)
         self.tstop = tstop
-        
+
         # check if we need to load the steady state for our simulation
         if run_from_steady_state:
             h.stdinit()
-        
+
             ns = h.SaveState()
             sf = h.File('steady_state.bin')
             ns.fread(sf)
@@ -284,43 +284,43 @@ class _State(common.control.BaseState):
             ns.restore(0)
             #print("Time after restore = %g ms" % h.t)
             h.cvode_active(0)
-        
+
         #logger.info("Running the simulation until %g ms" % tstop)
         if self.tstop > self.t:
             self.parallel_context.psolve(self.tstop)
-        
+
     def run_to_steady_state(self, tstop):
         self._update_current_sources(tstop)
         self._pre_run()
         self.parallel_context.set_maxstep(self.default_maxstep)
         self.tstop = tstop
-        
+
         #logger.info("Running the simulation until steady state: %g ms" % tstop)
         if self.tstop > self.t:
             self.parallel_context.psolve(self.tstop)
         # Make object to save the model state
         svstate = h.SaveState()
-        
+
         # Save the model state and write it to file
         svstate.save()
         f = h.File("steady_state.bin")
         svstate.fwrite(f)
         #print("Steady State written to file!")
-        
+
     def run_from_steady_state(self, tstop):
         self._update_current_sources(tstop)
         self._pre_run()
         self.parallel_context.set_maxstep(self.default_maxstep)
         self.tstop = tstop
-        
+
         h.stdinit()
-        
+
         ns = h.SaveState()
         sf = h.File('steady_state.bin')
         ns.fread(sf)
         #print("Time before restore = %g ms" % h.t)
         ns.restore(0)
-        
+
         h.cvode_active(0)
         #print("Time after restore = %g ms" % h.t)
         #logger.info("Running the simulation until %g ms" % tstop)
@@ -337,8 +337,8 @@ class _State(common.control.BaseState):
 
     def get_vargids(self, projection, pre_idx, post_idx):
         """
-        Get new "variable"-GIDs (as opposed to the "cell"-GIDs) for a given pre->post connection 
-        pair for a given projection. 
+        Get new "variable"-GIDs (as opposed to the "cell"-GIDs) for a given pre->post connection
+        pair for a given projection.
 
         `projection`  -- projection
         `pre_idx`     -- index of the presynaptic cell
@@ -350,12 +350,12 @@ class _State(common.control.BaseState):
             # Get the projection with the current maximum vargid offset
             if len(self.vargid_offsets):
                 newest_proj, offset = max(self.vargid_offsets.items(), key=itemgetter(1))
-                # Allocate it a large enough range for a mutual all-to-all connection (assumes that 
+                # Allocate it a large enough range for a mutual all-to-all connection (assumes that
                 # there are no duplicate pre_idx->post_idx connections for the same projection. If
                 # that is really desirable a new projection will need to be used)
                 offset += 2 * len(newest_proj.pre) * len(newest_proj.post)
             else:
-                offset = _MIN_PROJECTION_VARGID 
+                offset = _MIN_PROJECTION_VARGID
             self.vargid_offsets[projection] = offset
         pre_post_vargid = offset + 2 * (pre_idx + post_idx * len(projection.pre))
         post_pre_vargid = pre_post_vargid + 1
@@ -385,7 +385,7 @@ class ID(int, common.IDMixin):
         """
         gid = int(self)
         self._cell = cell_model(**cell_parameters)          # create the cell object
-        
+
         # Check if _cell.source is a dictionary
         if isinstance(self._cell.source, dict):
             for k, v in self._cell.source.items():
@@ -397,7 +397,7 @@ class ID(int, common.IDMixin):
                     state.register_gid(gid, self._cell.source['collateral'], section=self._cell.source_section['collateral'])
         else:
             state.register_gid(gid, self._cell.source, section=self._cell.source_section)
-        
+
         if hasattr(self._cell, "get_threshold"):            # this is not adequate, since the threshold may be changed after cell creation
             state.parallel_context.threshold(int(self), self._cell.get_threshold())  # the problem is that self._cell does not know its own gid
 
@@ -432,7 +432,7 @@ class Connection(common.Connection):
             self.presynaptic_cell = projection.pre[pre] + 2e6
         else:
             self.presynaptic_cell = projection.pre[pre]
-        
+
         self.postsynaptic_cell = projection.post[post]
         if "." in projection.receptor_type:
             section, target = projection.receptor_type.split(".")
@@ -544,46 +544,46 @@ class GapJunction(object):
         self.postsynaptic_index = post
         segment_name = projection.receptor_type
         # Strip 'gap' string from receptor_type (not sure about this, it is currently appended to
-        # the available synapse types in the NCML model segments but is not really necessary and 
+        # the available synapse types in the NCML model segments but is not really necessary and
         # it feels a bit hacky but it makes the list of receptor types more comprehensible)
-        if segment_name.endswith('.gap'): 
+        if segment_name.endswith('.gap'):
             segment_name = segment_name[:-4]
         self.segment = getattr(projection.post[post]._cell, segment_name)
         pre_post_vargid, post_pre_vargid = state.get_vargids(projection, pre, post)
-        self._make_connection(self.segment, parameters.pop('weight'), pre_post_vargid,   
+        self._make_connection(self.segment, parameters.pop('weight'), pre_post_vargid,
                               post_pre_vargid, projection.pre[pre], projection.post[post])
-        
+
     def _make_connection(self, segment, weight, local_to_remote_vargid, remote_to_local_vargid,
-                         local_gid, remote_gid):       
+                         local_gid, remote_gid):
         logger.debug("Setting source_var on local cell {} to connect to target_var on remote "
                      "cell {} with vargid {} on process {}"
-                    .format(local_gid, remote_gid, local_to_remote_vargid, 
+                    .format(local_gid, remote_gid, local_to_remote_vargid,
                             state.mpi_rank))
-        # Set up the source reference for the local->remote connection 
-        state.parallel_context.source_var(segment(0.5)._ref_v, local_to_remote_vargid)              
+        # Set up the source reference for the local->remote connection
+        state.parallel_context.source_var(segment(0.5)._ref_v, local_to_remote_vargid)
         # Create the gap_junction and set its weight
         self.gap = h.Gap(0.5, sec=segment)
         self.gap.g = weight
         # Connect the gap junction with the source_var
         logger.debug("Setting target_var on local cell {} to connect to source_var on remote "
                      "cell {} with vargid {} on process {}"
-                    .format(local_gid, remote_gid, remote_to_local_vargid, 
+                    .format(local_gid, remote_gid, remote_to_local_vargid,
                             state.mpi_rank))
         # set up the target reference for the remote->local connection
         state.parallel_context.target_var(self.gap._ref_vgap, remote_to_local_vargid)
-        
+
     def _set_weight(self, w):
         self.gap.g = w
 
     def _get_weight(self):
         """Gap junction conductance in µS."""
         return self.gap.g
-    
+
     weight = property(_get_weight, _set_weight)
-    
+
     def as_tuple(self, *attribute_names):
         return tuple(getattr(self, name) for name in attribute_names)
-    
+
 
 class GapJunctionPresynaptic(GapJunction):
     """
@@ -591,19 +591,19 @@ class GapJunctionPresynaptic(GapJunction):
     so it shares its functionality with the GapJunction connection object, with the exception that
     the pre and post synaptic cells are switched
     """
-    
+
     def __init__(self, projection, pre, post, **parameters):
         self.presynaptic_index = pre
         self.postsynaptic_index = post
-        if projection.source.endswith('.gap'): 
+        if projection.source.endswith('.gap'):
             segment_name = projection.source[:-4]
         else:
             segment_name = projection.source
         self.segment = getattr(projection.pre[pre]._cell, segment_name)
         pre_post_vargid, post_pre_vargid = state.get_vargids(projection, pre, post)
-        self._make_connection(self.segment, parameters.pop('weight'), post_pre_vargid, 
+        self._make_connection(self.segment, parameters.pop('weight'), post_pre_vargid,
                               pre_post_vargid, projection.post[post], projection.pre[pre])
-    
+
 
 def generate_synapse_property(name):
     def _get(self):

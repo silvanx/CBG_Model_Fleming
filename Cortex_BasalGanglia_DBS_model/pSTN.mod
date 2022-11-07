@@ -1,8 +1,8 @@
 TITLE  STN ion channels for single compartment model
 
 :
-: Na+, K, CaT, CaL, A and AHP current 
-: 
+: Na+, K, CaT, CaL, A and AHP current
+:
 
 
 NEURON {
@@ -38,15 +38,15 @@ PARAMETER {
 	celsius		(degC)
 
 :Fast Na channel
-	gnabar   = 49e-3 (S/cm2) 
+	gnabar   = 49e-3 (S/cm2)
 	theta_m = -40 (mV)
-	theta_h = -45.5 (mV) 
-	k_m = -8 (mV)    
-	k_h = 6.4 (mV)   
+	theta_h = -45.5 (mV)
+	k_m = -8 (mV)
+	k_h = 6.4 (mV)
 	tau_m0 = 0.2 (ms)
 	tau_m1 = 3 (ms)
 	tau_h0 = 0 (ms)
-	tau_h1 = 24.5 (ms) 
+	tau_h1 = 24.5 (ms)
 	tht_m = -53 (mV)
 	tht_h1 = -50 (mV)
 	tht_h2 = -50 (mV)
@@ -55,11 +55,11 @@ PARAMETER {
 	sig_h2 = 16 (mV)
 
 : Delayed rectifier K
-	gkdrbar  = 57e-3	(S/cm2)  
+	gkdrbar  = 57e-3	(S/cm2)
 	theta_n = -41 (mV)
-	k_n = -14 (mV)     
+	k_n = -14 (mV)
 	tau_n0 = 0 (ms)
-	tau_n1 = 11 (ms) 
+	tau_n1 = 11 (ms)
 	tht_n1 = -40 (mV)
 	tht_n2 = -40 (mV)
 	sig_n1 = -40 (mV)
@@ -76,15 +76,15 @@ PARAMETER {
       caGain = .1
 
 :T-type ca current
-	gcatbar   = 5e-3 (S/cm2)  
+	gcatbar   = 5e-3 (S/cm2)
 	theta_p = -56 (mV)
-	theta_q = -85 (mV) 
-	k_p = -6.7 (mV)    
-	k_q = 5.8 (mV)  
+	theta_q = -85 (mV)
+	k_p = -6.7 (mV)
+	k_q = 5.8 (mV)
 	tau_p0 = 5 (ms)
 	tau_p1 = 0.33 (ms)
 	tau_q0 = 0 (ms)
-	tau_q1 = 400 (ms) 
+	tau_q1 = 400 (ms)
 	tht_p1 = -27 (mV)
 	tht_p2 = -102 (mV)
 	tht_q1 = -50 (mV)
@@ -95,7 +95,7 @@ PARAMETER {
 	sig_q2 = 16 (mV)
 
 :Ca L current
-	gcalbar   = 15e-3 (S/cm2) 
+	gcalbar   = 15e-3 (S/cm2)
 	theta_c = -30.6 (mV)
 	theta_d1 = -60 (mV)
 	theta_d2 = 0.1e-3 (mM)
@@ -118,15 +118,15 @@ PARAMETER {
 	tau_d2 = 130 (ms)
 
 :A current
-	gkabar  = 5e-3	(S/cm2)  
+	gkabar  = 5e-3	(S/cm2)
 	theta_a = -45 (mV)
-	theta_b = -90 (mV) 
-	k_a = -14.7 (mV)    
-	k_b = 7.5 (mV)   
+	theta_b = -90 (mV)
+	k_a = -14.7 (mV)
+	k_b = 7.5 (mV)
 	tau_a0 = 1 (ms)
 	tau_a1 = 1 (ms)
 	tau_b0 = 0 (ms)
-	tau_b1 = 200 (ms) 
+	tau_b1 = 200 (ms)
 	tht_a = -40 (mV)
 	tht_b1 = -60 (mV)
 	tht_b2 = -40 (mV)
@@ -135,23 +135,23 @@ PARAMETER {
 	sig_b2 = 10 (mV)
 
 :AHP current (Ca dependent K current)
-	gkcabar   = 1e-3 (S/cm2) 
+	gkcabar   = 1e-3 (S/cm2)
 	theta_r = 0.17e-3 (mM)
 	k_r = -0.08e-3 (mM)
 	tau_r = 2 (ms)
 	power_r = 2
-	
+
 }
 
 ASSIGNED {
 	v	(mV)
 	ina	(mA/cm2)
-	ik	(mA/cm2) 
-	ikD	(mA/cm2)   
-	ikA	(mA/cm2) 
-	ikAHP	(mA/cm2)  
-	ica	(mA/cm2) 
-	icaT	(mA/cm2) 
+	ik	(mA/cm2)
+	ikD	(mA/cm2)
+	ikA	(mA/cm2)
+	ikAHP	(mA/cm2)
+	ica	(mA/cm2)
+	icaT	(mA/cm2)
 	icaL 	(mA/cm2)
 	ilk	(mA/cm2)
 
@@ -160,7 +160,7 @@ ASSIGNED {
 	tau_h	(ms)
 	m_inf
 	tau_m	(ms)
-	ena           (mV)   := 60  
+	ena           (mV)   := 60
 
 :Delayed rectifier
 	n_inf
@@ -194,7 +194,7 @@ ASSIGNED {
 
 STATE {
 	m h n
-	p q 
+	p q
 	c d1 d2
 	cai (mM) <1e-10>
 	cao (mM) <1e-10>
@@ -202,7 +202,7 @@ STATE {
 	nao (mM) <1e-10>
 	ki (mM) <1e-10>
 	ko (mM) <1e-10>
-	a b 
+	a b
       r
 }
 
@@ -228,7 +228,7 @@ BREAKPOINT {
 
 }
 
-DERIVATIVE states {   
+DERIVATIVE states {
 	evaluate_fct(v)
 	h' = (h_inf - h)/tau_h
 	m' = (m_inf - m)/tau_m
@@ -256,55 +256,55 @@ UNITSOFF
 INITIAL {
 
 	evaluate_fct(v)
-	m = m_inf 
-	h = h_inf   
-	n = n_inf   
-	p = p_inf 
-	q = q_inf  
+	m = m_inf
+	h = h_inf
+	n = n_inf
+	p = p_inf
+	q = q_inf
 
 	evaluate_fct2(cai)
-	c = c_inf 
-	d1 = d1_inf  
-	d2 = d2_inf   
+	c = c_inf
+	d1 = d1_inf
+	d2 = d2_inf
 
-	a = a_inf 
-	b = b_inf   
+	a = a_inf
+	b = b_inf
 
-	r = r_inf 
+	r = r_inf
 }
 
-PROCEDURE evaluate_fct(v(mV)) { 
+PROCEDURE evaluate_fct(v(mV)) {
 :Fast Na current
 	h_inf = 1/(1+exp((v-theta_h)/k_h))
 	m_inf = 1/(1+exp((v-theta_m)/k_m))
-	tau_h = tau_h0 + tau_h1/(exp(-(v-tht_h1)/sig_h1) + exp(-(v-tht_h2)/sig_h2)) 
-	tau_m = tau_m0 + tau_m1/(1+exp(-(v-tht_m)/sig_m)) 
+	tau_h = tau_h0 + tau_h1/(exp(-(v-tht_h1)/sig_h1) + exp(-(v-tht_h2)/sig_h2))
+	tau_m = tau_m0 + tau_m1/(1+exp(-(v-tht_m)/sig_m))
 
 :Delayed rectifier K
 	n_inf = 1/(1+exp((v-theta_n)/k_n))
-	tau_n = tau_n0 + tau_n1/(exp(-(v-tht_n1)/sig_n1) + exp(-(v-tht_n2)/sig_n2)) 
+	tau_n = tau_n0 + tau_n1/(exp(-(v-tht_n1)/sig_n1) + exp(-(v-tht_n2)/sig_n2))
 
 :Ca T current
 	p_inf = 1/(1+exp((v-theta_p)/k_p))
 	q_inf = 1/(1+exp((v-theta_q)/k_q))
-	tau_p = tau_p0 + tau_p1/(exp(-(v-tht_p1)/sig_p1) + exp(-(v-tht_p2)/sig_p2)) 
+	tau_p = tau_p0 + tau_p1/(exp(-(v-tht_p1)/sig_p1) + exp(-(v-tht_p2)/sig_p2))
 	tau_q = tau_q0 + tau_q1/(exp(-(v-tht_q1)/sig_q1) + exp(-(v-tht_q2)/sig_q2))
 
 :Ca L current
 	c_inf = 1/(1+exp((v-theta_c)/k_c))
 	d1_inf = 1/(1+exp((v-theta_d1)/k_d1))
-	tau_c = tau_c0 + tau_c1/(exp(-(v-tht_c1)/sig_c1) + exp(-(v-tht_c2)/sig_c2))  
-	tau_d1 = tau_d10 + tau_d11/(exp(-(v-tht_d11)/sig_d11) + exp(-(v-tht_d12)/sig_d12))  
+	tau_c = tau_c0 + tau_c1/(exp(-(v-tht_c1)/sig_c1) + exp(-(v-tht_c2)/sig_c2))
+	tau_d1 = tau_d10 + tau_d11/(exp(-(v-tht_d11)/sig_d11) + exp(-(v-tht_d12)/sig_d12))
 
 :A current
 	a_inf = 1/(1+exp((v-theta_a)/k_a))
 	b_inf = 1/(1+exp((v-theta_b)/k_b))
 	tau_a = tau_a0 + tau_a1/(1+exp(-(v-tht_a)/sig_a))
-	tau_b = tau_b0 + tau_b1/(exp(-(v-tht_b1)/sig_b1) + exp(-(v-tht_b2)/sig_b2))  
+	tau_b = tau_b0 + tau_b1/(exp(-(v-tht_b1)/sig_b1) + exp(-(v-tht_b2)/sig_b2))
 
 }
 
-PROCEDURE evaluate_fct2(cai(mM)) { 
+PROCEDURE evaluate_fct2(cai(mM)) {
 :Ca L current
 	d2_inf = 1/(1+exp((cai-theta_d2)/k_d2))
 

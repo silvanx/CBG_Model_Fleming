@@ -1,19 +1,19 @@
 TITLE Sodium Current for Cortical Neuron Soma
 
 COMMENT
-  
-  Model Reference: 
-  
-  Pospischil, M., Toledo-Rodriguez, M., Monier, C., Piwkowska, Z., 
-  Bal, T., Frégnac, Y., Markram, H. and Destexhe, A., 2008. 
-  "Minimal Hodgkin–Huxley type models for different classes of 
-  cortical and thalamic neurons." 
+
+  Model Reference:
+
+  Pospischil, M., Toledo-Rodriguez, M., Monier, C., Piwkowska, Z.,
+  Bal, T., Frégnac, Y., Markram, H. and Destexhe, A., 2008.
+  "Minimal Hodgkin–Huxley type models for different classes of
+  cortical and thalamic neurons."
   Biological cybernetics, 99(4-5), pp.427-441.
-  
+
   Implemented by John Fleming - john.fleming@ucdconnect.ie - 06/12/18
-  
-  Edits: 
-  
+
+  Edits:
+
 ENDCOMMENT
 
 
@@ -71,7 +71,7 @@ DERIVATIVE states {
 
 PROCEDURE settables(v) {
 	TABLE alpha_m, beta_m, alpha_h, beta_h DEPEND V_T FROM -100 TO 100 WITH 400
-	
+
 	alpha_m = 0.32*vtrap(-(v-V_T-13),4)
 	beta_m = 0.28*vtrap((v-V_T-40),5)
 	alpha_h = 0.128*exp(-(v-V_T-17)/18)
@@ -86,4 +86,4 @@ FUNCTION vtrap(x,y) {
 	}
 }
 
-UNITSON 
+UNITSON

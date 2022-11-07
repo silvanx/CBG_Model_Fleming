@@ -1,22 +1,22 @@
 TITLE Passive Leak Current for Cortical Interneuron
 
 COMMENT
-  
-  Model Reference: 
-  
-  Pospischil, M., Toledo-Rodriguez, M., Monier, C., Piwkowska, Z., 
-  Bal, T., Frégnac, Y., Markram, H. and Destexhe, A., 2008. 
-  "Minimal Hodgkin–Huxley type models for different classes of 
-  cortical and thalamic neurons." 
+
+  Model Reference:
+
+  Pospischil, M., Toledo-Rodriguez, M., Monier, C., Piwkowska, Z.,
+  Bal, T., Frégnac, Y., Markram, H. and Destexhe, A., 2008.
+  "Minimal Hodgkin–Huxley type models for different classes of
+  cortical and thalamic neurons."
   Biological cybernetics, 99(4-5), pp.427-441.
-  
+
   Original Code Link:
   https://senselab.med.yale.edu/ModelDB/showmodel.cshtml?model=123623
-  
+
   Implemented by John Fleming - john.fleming@ucdconnect.ie - 06/12/18
-  
-  Edits: 
-  
+
+  Edits:
+
 ENDCOMMENT
 
 
@@ -38,7 +38,7 @@ PARAMETER {
 }
 
 ASSIGNED {
-	v (mV)	
+	v (mV)
 	i_l (mA/cm2)
 }
 
