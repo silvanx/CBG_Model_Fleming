@@ -78,6 +78,7 @@ if __name__ == "__main__":
     v_init = -68
 
     (
+        Pop_size,
         striatal_spike_times,
         Cortical_Pop,
         Interneuron_Pop,
@@ -98,11 +99,13 @@ if __name__ == "__main__":
         prj_GPiThalamic,
         prj_ThalamicCortical,
         prj_CorticalThalamic,
-        GPe_stimulation_order,
-        _,
-        _,
+        GPe_stimulation_order
     ) = load_network(
-        steady_state_duration, sim_total_time, simulation_runtime, v_init, rng_seed
+        steady_state_duration,
+        sim_total_time,
+        simulation_runtime,
+        v_init,
+        rng_seed
     )
 
     # Define state variables to record from each population

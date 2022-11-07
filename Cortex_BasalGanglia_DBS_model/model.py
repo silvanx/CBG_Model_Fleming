@@ -611,7 +611,7 @@ def load_network(
         prj_GPiThalamic,
         prj_ThalamicCortical,
         prj_CorticalThalamic,
-        GPe_stimulation_order,
+        GPe_stimulation_order
     )
 
 
