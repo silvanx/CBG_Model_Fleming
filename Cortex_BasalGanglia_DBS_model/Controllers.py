@@ -961,12 +961,17 @@ class IterativeFeedbackTuningPIController:
             error = state_value
 
         if elapsed_time >= self.stage_length:
-            if self.iteration_stage == 1:
-                self.kp, self.ti = self.new_controller_parameters()
-                print(f"New params: kp={self.kp}, ti={self.ti}")
-            self.stage_start_time = self.current_time
-            self.iteration_stage = (self.iteration_stage + 1) % 2
-            print("Stage change, now at stage %d" % self.iteration_stage)
+            if self.iteration_stage == 0 and len(self._error_history) < self.stage_length_samples:
+                print('Extending stage 0 to gather more samples')
+            elif self.iteration_stage == 1 and len(self._error_history) < 2 * self.stage_length_samples:
+                print('Extending stage 1 to gather more samples')
+            else:
+                if self.iteration_stage == 1:
+                    self.kp, self.ti = self.new_controller_parameters()
+                    print(f"New params: kp={self.kp}, ti={self.ti}")
+                self.stage_start_time = self.current_time
+                self.iteration_stage = (self.iteration_stage + 1) % 2
+                print("Stage change, now at stage %d" % self.iteration_stage)
 
         self.integral_term += error * self.ts
 
