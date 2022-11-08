@@ -230,11 +230,17 @@ if __name__ == "__main__":
     output_prefix = "Simulation_Output_Results/Controller_Simulations/IFT/"
     simulation_identifier = controller.label + "-" + start_timestamp
     simulation_output_dir = output_prefix + simulation_identifier
+    print(f'Saving results to {simulation_output_dir}')
 
     # Generate a square wave which represents the DBS signal
     # Needs to be initialized to zero when unused to prevent
     # open-circuit of cortical collateral extracellular mechanism
-    DBS_Signal, DBS_times, next_DBS_pulse_time, _ = controller.generate_dbs_signal(
+    (
+        DBS_Signal,
+        DBS_times,
+        next_DBS_pulse_time,
+        _
+    ) = controller.generate_dbs_signal(
         start_time=steady_state_duration + 10 + simulator.state.dt,
         stop_time=sim_total_time,
         dt=simulator.state.dt,
