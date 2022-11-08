@@ -822,15 +822,16 @@ class IterativeFeedbackTuningPIController:
         ts=0.02,
         min_value=0.0,
         max_value=1e9,
-        gamma=0.1,
+        gamma=0.005,
+        lam=1e-8
     ):
-
         self.setpoint = setpoint
         self.stage_length = stage_length
         self.stage_length_samples = int(np.ceil(stage_length / ts)) + 1
         self.kp = kp_init
         self.ti = ti_init
         self.gamma = gamma
+        self.lam = lam
         self.iteration_stage = -1
 
         # Set output value bounds
@@ -901,21 +902,13 @@ class IterativeFeedbackTuningPIController:
         u2 = self.output_history[-self.stage_length_samples:]
         y_tilde = np.array(y1)
         u_rho = u1
-        # kp = self.kp
-        # ti = self.ti
-        # tt = np.linspace(0, self.stage_length, len(y2))
-        # _, dy_dkpc, _ = signal.lsim(([1], [kp]), y2, tt)
-        # _, dy_dtic, _ = signal.lsim(([-1], [ti ** 2, ti]), y2, tt)
-
-        # _, du_dkpc, _ = signal.lsim(([1], [kp]), u2, tt)
-        # _, du_dtic, _ = signal.lsim(([-1], [ti ** 2, ti]), u2, tt)
         dy_dkp, dy_dti = self.dc_drho(y2)
         du_dkp, du_dti = self.dc_drho(u2)
 
         dy_drho = np.vstack((dy_dkp, dy_dti))
         du_drho = np.vstack((du_dkp, du_dti))
 
-        lam = 1
+        lam = self.lam
         y_part = y_tilde * dy_drho
         u_part = u_rho * du_drho
 

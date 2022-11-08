@@ -48,6 +48,22 @@ if __name__ == "__main__":
         experiment_time = 2
     else:
         experiment_time = float(sys.argv[2])
+    if len(sys.argv) < 4:
+        kp_init = 1.0
+    else:
+        kp_init = float(sys.argv[3])
+    if len(sys.argv) < 5:
+        ti_init = 0.2
+    else:
+        ti_init = float(sys.argv[4])
+    if len(sys.argv) < 6:
+        gamma = 0.01
+    else:
+        gamma = float(sys.argv[5])
+    if len(sys.argv) < 7:
+        lam = 1e-8
+    else:
+        kp_init = float(sys.argv[6])
     print(
         "INFO: Running simulation for %.0f ms after steady state "
         "(%.0f ms) with IFT control (experiment time %.2f s)"
@@ -65,7 +81,12 @@ if __name__ == "__main__":
     # Make beta band filter centred on 25Hz (cutoff frequencies are 21-29 Hz)
     # for biomarker estimation
     fs = 1000.0 / rec_sampling_interval
-    beta_b, beta_a = make_beta_cheby1_filter(fs=fs, n=4, rp=0.5, low=21, high=29)
+    beta_b, beta_a = make_beta_cheby1_filter(
+        fs=fs,
+        n=4,
+        rp=0.5,
+        low=21,
+        high=29)
 
     # Use CVode to calculate i_membrane_ for fast LFP calculation
     cvode = h.CVode()
@@ -109,16 +130,26 @@ if __name__ == "__main__":
     )
 
     # Define state variables to record from each population
-    Cortical_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
-    Cortical_Pop.record("collateral(0.5).v", sampling_interval=rec_sampling_interval)
-    Interneuron_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
-    STN_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
-    STN_Pop.record("AMPA.i", sampling_interval=rec_sampling_interval)
-    STN_Pop.record("GABAa.i", sampling_interval=rec_sampling_interval)
-    Striatal_Pop.record("spikes")
-    GPe_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
-    GPi_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
-    Thalamic_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
+    Cortical_Pop.record(
+        "soma(0.5).v", sampling_interval=rec_sampling_interval)
+    Cortical_Pop.record(
+        "collateral(0.5).v", sampling_interval=rec_sampling_interval)
+    Interneuron_Pop.record(
+        "soma(0.5).v", sampling_interval=rec_sampling_interval)
+    STN_Pop.record(
+        "soma(0.5).v", sampling_interval=rec_sampling_interval)
+    STN_Pop.record(
+        "AMPA.i", sampling_interval=rec_sampling_interval)
+    STN_Pop.record(
+        "GABAa.i", sampling_interval=rec_sampling_interval)
+    Striatal_Pop.record(
+        "spikes")
+    GPe_Pop.record(
+        "soma(0.5).v", sampling_interval=rec_sampling_interval)
+    GPi_Pop.record(
+        "soma(0.5).v", sampling_interval=rec_sampling_interval)
+    Thalamic_Pop.record(
+        "soma(0.5).v", sampling_interval=rec_sampling_interval)
 
     # Assign Positions for recording and stimulating electrode point sources
     recording_electrode_1_position = np.array([0, -1500, 250])
@@ -188,11 +219,13 @@ if __name__ == "__main__":
     controller = IterativeFeedbackTuningPIController(
         stage_length=experiment_time,
         setpoint=1.0414e-04,
-        kp_init=0.4,
-        ti_init=0.2,
+        kp_init=kp_init,
+        ti_init=ti_init,
         ts=0.02,
         min_value=0.0,
         max_value=3.0,
+        gamma=gamma,
+        lam=lam
     )
     output_prefix = "Simulation_Output_Results/Controller_Simulations/IFT/"
     simulation_identifier = controller.label + "-" + start_timestamp
