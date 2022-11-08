@@ -923,7 +923,7 @@ class IterativeFeedbackTuningPIController:
         min_kp = 0.001
         min_ti = 0.001
         r = np.identity(2)
-        if len(self._error_history) > 2 * self.stage_length_samples:
+        if len(self._error_history) >= 2 * self.stage_length_samples:
             grad = self.compute_fitness_gradient()
             print(f'Gradient: ({grad[0]}, {grad[1]})\'')
         else:
@@ -952,13 +952,6 @@ class IterativeFeedbackTuningPIController:
             "Stage: %d, Elapsed time: %.3f s, Reference: %.5f"
             % (self.iteration_stage, elapsed_time, setpoint)
         )
-        if self.iteration_stage == 0:
-            sample = int(elapsed_time / self.ts)
-            self._recorded_output[sample] = state_value
-        if setpoint != 0:
-            error = (state_value - setpoint) / setpoint
-        else:
-            error = state_value
 
         if elapsed_time >= self.stage_length:
             if self.iteration_stage == 0 and len(self._error_history) < self.stage_length_samples:
@@ -970,8 +963,17 @@ class IterativeFeedbackTuningPIController:
                     self.kp, self.ti = self.new_controller_parameters()
                     print(f"New params: kp={self.kp}, ti={self.ti}")
                 self.stage_start_time = self.current_time
+                elapsed_time = 0
                 self.iteration_stage = (self.iteration_stage + 1) % 2
                 print("Stage change, now at stage %d" % self.iteration_stage)
+
+        if self.iteration_stage == 0:
+            sample = int(elapsed_time / self.ts)
+            self._recorded_output[sample] = state_value
+        if setpoint != 0:
+            error = (state_value - setpoint) / setpoint
+        else:
+            error = state_value
 
         self.integral_term += error * self.ts
 
