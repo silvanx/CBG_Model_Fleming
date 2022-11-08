@@ -63,7 +63,7 @@ if __name__ == "__main__":
     if len(sys.argv) < 7:
         lam = 1e-8
     else:
-        kp_init = float(sys.argv[6])
+        lam = float(sys.argv[6])
     print(
         "INFO: Running simulation for %.0f ms after steady state "
         "(%.0f ms) with IFT control (experiment time %.2f s)"
