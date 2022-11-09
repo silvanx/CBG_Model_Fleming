@@ -51,7 +51,12 @@ if __name__ == "__main__":
     # Make beta band filter centred on 25Hz (cutoff frequencies are 21-29 Hz)
     # for biomarker estimation
     fs = 1000 / rec_sampling_interval
-    beta_b, beta_a = make_beta_cheby1_filter(fs=fs, n=4, rp=0.5, low=21, high=29)
+    beta_b, beta_a = make_beta_cheby1_filter(
+        fs=fs,
+        n=4,
+        rp=0.5,
+        low=21,
+        high=29)
 
     # Use CVode to calculate i_membrane_ for fast LFP calculation
     cvode = h.CVode()
@@ -91,6 +96,7 @@ if __name__ == "__main__":
         simulation_duration,
         simulation_duration,
         v_init,
+        rng_seed=rng_seed
     )
 
     # Define state variables to record from each population
