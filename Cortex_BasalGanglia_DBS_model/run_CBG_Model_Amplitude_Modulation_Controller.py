@@ -86,6 +86,7 @@ with %s control"
     v_init = -68
 
     (
+        Pop_size,
         striatal_spike_times,
         Cortical_Pop,
         Interneuron_Pop,
@@ -106,11 +107,13 @@ with %s control"
         prj_GPiThalamic,
         prj_ThalamicCortical,
         prj_CorticalThalamic,
-        GPe_stimulation_order,
-        _,
-        _,
+        GPe_stimulation_order
     ) = load_network(
-        Pop_size, steady_state_duration, sim_total_time, simulation_runtime, v_init
+        steady_state_duration,
+        sim_total_time,
+        simulation_runtime,
+        v_init,
+        rng_seed=rng_seed
     )
 
     # Define state variables to record from each population
