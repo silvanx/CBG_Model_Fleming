@@ -64,10 +64,21 @@ if __name__ == "__main__":
         lam = 1e-8
     else:
         lam = float(sys.argv[6])
+    if len(sys.argv) < 8:
+        kp_min = 0.01
+    else:
+        kp_min = float(sys.argv[7])
+    if len(sys.argv) < 9:
+        ti_min = 0.01
+    else:
+        ti_min = float(sys.argv[8])
     print(
         "INFO: Running simulation for %.0f ms after steady state "
-        "(%.0f ms) with IFT control (experiment time %.2f s)"
-        % (simulation_runtime, steady_state_duration, experiment_time)
+        "(%.0f ms) with IFT control (experiment time %.2f s)\n"
+        "Kp: init=%f min=%f\tTi: init=%f min=%f\n"
+        "gamma=%e, lambda=%e"
+        % (simulation_runtime, steady_state_duration, experiment_time,
+           kp_init, kp_min, ti_init, ti_min, gamma, lam)
     )
     sim_total_time = (
         steady_state_duration + simulation_runtime + timestep
@@ -225,7 +236,9 @@ if __name__ == "__main__":
         min_value=0.0,
         max_value=3.0,
         gamma=gamma,
-        lam=lam
+        lam=lam,
+        min_kp=kp_min,
+        min_ti=ti_min
     )
     output_prefix = "Simulation_Output_Results/Controller_Simulations/IFT/"
     simulation_identifier = controller.label + "-" + start_timestamp

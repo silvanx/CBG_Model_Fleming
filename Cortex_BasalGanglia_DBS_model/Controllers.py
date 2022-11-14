@@ -823,7 +823,9 @@ class IterativeFeedbackTuningPIController:
         min_value=0.0,
         max_value=1e9,
         gamma=0.005,
-        lam=1e-8
+        lam=1e-8,
+        min_kp=0,
+        min_ti=0
     ):
         self.setpoint = setpoint
         self.stage_length = stage_length
@@ -833,6 +835,8 @@ class IterativeFeedbackTuningPIController:
         self.gamma = gamma
         self.lam = lam
         self.iteration_stage = -1
+        self.min_kp = min_kp
+        self.min_ti = min_ti
 
         # Set output value bounds
         self.min_value = min_value
@@ -920,8 +924,6 @@ class IterativeFeedbackTuningPIController:
         rho = np.array([self.kp, self.ti])
         gamma = self.gamma
         # TODO: Make r, min_kp, min_ti parameters
-        min_kp = 0.001
-        min_ti = 0.001
         r = np.identity(2)
         if len(self._error_history) >= 2 * self.stage_length_samples:
             grad = self.compute_fitness_gradient()
@@ -930,10 +932,10 @@ class IterativeFeedbackTuningPIController:
             grad = [0, 0]
             print('Too few samples, skipping update')
         new_rho = rho - gamma * np.dot(r, grad)
-        if new_rho[0] < min_kp:
-            new_rho[0] = min_kp
-        if new_rho[1] < min_ti:
-            new_rho[1] = min_ti
+        if new_rho[0] < self.min_kp:
+            new_rho[0] = self.min_kp
+        if new_rho[1] < self.min_ti:
+            new_rho[1] = self.min_ti
         return new_rho[0], new_rho[1]
 
     def reference_signal(self, elapsed_time):
