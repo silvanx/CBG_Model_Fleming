@@ -15,6 +15,7 @@ Description: Cortico-Basal Ganglia Network Model implemented in PyNN using the
 """
 
 import os
+from mpi4py import MPI
 import neuron
 from pyNN.neuron import setup, run_to_steady_state, end, simulator
 from pyNN.parameters import Sequence
@@ -27,8 +28,6 @@ import quantities as pq
 import Global_Variables as GV
 from utils import make_beta_cheby1_filter
 from model import load_network, electrode_distance
-
-from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
 
@@ -44,7 +43,7 @@ if __name__ == "__main__":
     rank = setup(timestep=timestep, rngseed=rng_seed)
     if rank == 0:
         print("\nSetting up simulation...")
-    steady_state_duration = 6000.0  # Duration of simulation steady state
+    steady_state_duration = 500.0  # Duration of simulation steady state
     simulation_duration = steady_state_duration  # Total simulation time
     rec_sampling_interval = 0.5  # Fs = 2000Hz
 
