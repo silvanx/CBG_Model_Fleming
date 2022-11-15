@@ -52,14 +52,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog=__file__, description="CBG Model with amplitude modulation"
     )
-    parser.add_argument("-t", "--time", default=8000.0, help="simulation runtime")
-    parser.add_argument("-e", "--experiment-time", default=2.0)
-    parser.add_argument("--kp-init", default=1.0)
-    parser.add_argument("--ti-init", default=0.2)
-    parser.add_argument("--gamma", default=0.01)
-    parser.add_argument("--lam", default=1e-8)
-    parser.add_argument("--kp-min", default=0.01)
-    parser.add_argument("--ti-min", default=0.01)
+    parser.add_argument("-t", "--time", default=8000.0,
+                        help="simulation runtime after steady state",
+                        type=float)
+    parser.add_argument("-e", "--experiment-time", default=2.0, type=float)
+    parser.add_argument("--kp-init", default=1.0, type=float)
+    parser.add_argument("--ti-init", default=0.2, type=float)
+    parser.add_argument("--gamma", default=0.01, type=float)
+    parser.add_argument("--lam", default=1e-8, type=float)
+    parser.add_argument("--kp-min", default=0.01, type=float)
+    parser.add_argument("--ti-min", default=0.01, type=float)
 
     # Necessary to manually remove nrniv and __file__ when script is called via nrniv
     args = sys.argv
