@@ -117,8 +117,7 @@ class ZeroController:
             isi = 1000.0 / frequency  # time is in ms
             duty_cycle = pulse_width / isi
             tt = 2.0 * np.pi * frequency * tmp
-            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt,
-                                                             duty=duty_cycle))
+            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt, duty=duty_cycle))
             dbs_signal[-1] = 0.0
 
             # Calculate the time for the first pulse of the next segment
@@ -178,8 +177,7 @@ class ConstantController:
         self.ConstantValue = ConstantValue
         self.Ts = Ts  # should be in sec as per above
         self.units = units
-        self.label = "Constant_Controller/%f%s" % (self.ConstantValue,
-                                                   self.units)
+        self.label = "Constant_Controller/%f%s" % (self.ConstantValue, self.units)
 
         # Set output value
         self.OutputValue = 0
@@ -274,12 +272,7 @@ class OnOffController:
     """On-Off Controller Class"""
 
     def __init__(
-        self,
-        SetPoint=0.0,
-        MinValue=0.0,
-        MaxValue=1e9,
-        RampDuration=0.25,
-        Ts=0.02
+        self, SetPoint=0.0, MinValue=0.0, MaxValue=1e9, RampDuration=0.25, Ts=0.02
     ):
         # Initial Controller Values
         self.SetPoint = SetPoint
@@ -293,8 +286,9 @@ class OnOffController:
 
         # Calculate how much controller output value will change each
         # controller call
-        self.OutputValueIncrement = ((self.MaxValue - self.MinValue)
-                                     / math.ceil(self.RampDuration / self.Ts))
+        self.OutputValueIncrement = (self.MaxValue - self.MinValue) / math.ceil(
+            self.RampDuration / self.Ts
+        )
 
         # Initialize the output value of the controller
         self.LastOutputValue = 0
@@ -436,8 +430,9 @@ class DualThresholdController:
 
         # Calculate how much controller output value will change
         # each controller call
-        self.OutputValueIncrement = ((self.MaxValue - self.MinValue)
-                                     / math.ceil(self.RampDuration / self.Ts))
+        self.OutputValueIncrement = (self.MaxValue - self.MinValue) / math.ceil(
+            self.RampDuration / self.Ts
+        )
 
         # Initialize the output value of the controller
         self.LastOutputValue = 0.0
@@ -573,14 +568,7 @@ class StandardPIDController:
     """Standard PID Controller Class"""
 
     def __init__(
-        self,
-        SetPoint=0.0,
-        Kp=0.0,
-        Ti=0.0,
-        Td=0.0,
-        Ts=0.02,
-        MinValue=0.0,
-        MaxValue=1e9
+        self, SetPoint=0.0, Kp=0.0, Ti=0.0, Td=0.0, Ts=0.02, MinValue=0.0, MaxValue=1e9
     ):
 
         self.SetPoint = SetPoint
@@ -732,8 +720,7 @@ class StandardPIDController:
             isi = 1000.0 / frequency  # time is in ms
             duty_cycle = pulse_width / isi
             tt = 2.0 * np.pi * frequency * tmp
-            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt,
-                                                             duty=duty_cycle))
+            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt, duty=duty_cycle))
             dbs_signal[-1] = 0.0
 
             # Calculate the time for the first pulse of the next segment
@@ -825,7 +812,7 @@ class IterativeFeedbackTuningPIController:
         gamma=0.005,
         lam=1e-8,
         min_kp=0,
-        min_ti=0
+        min_ti=0,
     ):
         self.setpoint = setpoint
         self.stage_length = stage_length
@@ -890,20 +877,19 @@ class IterativeFeedbackTuningPIController:
         yout_ti = np.zeros(len(s) + 1)
         for i, u in enumerate(s):
             yout_kp[i + 1] = u / kp
-            yout_ti[i + 1] = ((ti ** 2 * yout_ti[i] - ts * u)
-                              / (ti ** 2 + ti * ts))
+            yout_ti[i + 1] = (ti**2 * yout_ti[i] - ts * u) / (ti**2 + ti * ts)
 
         return yout_kp[1:], yout_ti[1:]
 
     def compute_fitness_gradient(self):
         y1 = self.error_history[
-            -2 * self.stage_length_samples: -self.stage_length_samples
+            -2 * self.stage_length_samples : -self.stage_length_samples
         ]
-        y2 = self.error_history[-self.stage_length_samples:]
+        y2 = self.error_history[-self.stage_length_samples :]
         u1 = self.output_history[
-            -2 * self.stage_length_samples: -self.stage_length_samples
+            -2 * self.stage_length_samples : -self.stage_length_samples
         ]
-        u2 = self.output_history[-self.stage_length_samples:]
+        u2 = self.output_history[-self.stage_length_samples :]
         y_tilde = np.array(y1)
         u_rho = u1
         dy_dkp, dy_dti = self.dc_drho(y2)
@@ -916,8 +902,7 @@ class IterativeFeedbackTuningPIController:
         y_part = y_tilde * dy_drho
         u_part = u_rho * du_drho
 
-        grad = (np.sum((y_part + lam * u_part), axis=1)
-                / self.stage_length_samples)
+        grad = np.sum((y_part + lam * u_part), axis=1) / self.stage_length_samples
         return grad
 
     def new_controller_parameters(self):
@@ -927,10 +912,10 @@ class IterativeFeedbackTuningPIController:
         r = np.identity(2)
         if len(self._error_history) >= 2 * self.stage_length_samples:
             grad = self.compute_fitness_gradient()
-            print(f'Gradient: ({grad[0]}, {grad[1]})\'')
+            print(f"Gradient: ({grad[0]}, {grad[1]})'")
         else:
             grad = [0, 0]
-            print('Too few samples, skipping update')
+            print("Too few samples, skipping update")
         new_rho = rho - gamma * np.dot(r, grad)
         if new_rho[0] < self.min_kp:
             new_rho[0] = self.min_kp
@@ -956,10 +941,16 @@ class IterativeFeedbackTuningPIController:
         )
 
         if elapsed_time >= self.stage_length:
-            if self.iteration_stage == 0 and len(self._error_history) < self.stage_length_samples:
-                print('Extending stage 0 to gather more samples')
-            elif self.iteration_stage == 1 and len(self._error_history) < 2 * self.stage_length_samples:
-                print('Extending stage 1 to gather more samples')
+            if (
+                self.iteration_stage == 0
+                and len(self._error_history) < self.stage_length_samples
+            ):
+                print("Extending stage 0 to gather more samples")
+            elif (
+                self.iteration_stage == 1
+                and len(self._error_history) < 2 * self.stage_length_samples
+            ):
+                print("Extending stage 1 to gather more samples")
             else:
                 if self.iteration_stage == 1:
                     self.kp, self.ti = self.new_controller_parameters()
@@ -1043,8 +1034,7 @@ class IterativeFeedbackTuningPIController:
             isi = 1000.0 / frequency  # time is in ms
             duty_cycle = pulse_width / isi
             tt = 2.0 * np.pi * frequency * tmp
-            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt,
-                                                             duty=duty_cycle))
+            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt, duty=duty_cycle))
             dbs_signal[-1] = 0.0
 
             # Calculate the time for the first pulse of the next segment
