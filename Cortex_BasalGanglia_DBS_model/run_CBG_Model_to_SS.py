@@ -96,7 +96,7 @@ if __name__ == "__main__":
         simulation_duration,
         simulation_duration,
         v_init,
-        rng_seed=rng_seed
+        rng_seed=rng_seed,
     )
 
     # Define state variables to record from each population
