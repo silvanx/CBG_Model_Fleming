@@ -812,7 +812,7 @@ class IterativeFeedbackTuningPIController:
         gamma=0.005,
         lam=1e-8,
         min_kp=0,
-        min_ti=0
+        min_ti=0,
     ):
         self.setpoint = setpoint
         self.stage_length = stage_length
@@ -877,8 +877,7 @@ class IterativeFeedbackTuningPIController:
         yout_ti = np.zeros(len(s) + 1)
         for i, u in enumerate(s):
             yout_kp[i + 1] = u / kp
-            yout_ti[i + 1] = ((ti ** 2 * yout_ti[i] - ts * u)
-                              / (ti ** 2 + ti * ts))
+            yout_ti[i + 1] = (ti**2 * yout_ti[i] - ts * u) / (ti**2 + ti * ts)
 
         return yout_kp[1:], yout_ti[1:]
 
@@ -890,7 +889,7 @@ class IterativeFeedbackTuningPIController:
         u1 = self.output_history[
             -2 * self.stage_length_samples : -self.stage_length_samples
         ]
-        u2 = self.output_history[-self.stage_length_samples:]
+        u2 = self.output_history[-self.stage_length_samples :]
         y_tilde = np.array(y1)
         u_rho = u1
         dy_dkp, dy_dti = self.dc_drho(y2)
@@ -913,10 +912,10 @@ class IterativeFeedbackTuningPIController:
         r = np.identity(2)
         if len(self._error_history) >= 2 * self.stage_length_samples:
             grad = self.compute_fitness_gradient()
-            print(f'Gradient: ({grad[0]}, {grad[1]})\'')
+            print(f"Gradient: ({grad[0]}, {grad[1]})'")
         else:
             grad = [0, 0]
-            print('Too few samples, skipping update')
+            print("Too few samples, skipping update")
         new_rho = rho - gamma * np.dot(r, grad)
         if new_rho[0] < self.min_kp:
             new_rho[0] = self.min_kp
@@ -942,10 +941,16 @@ class IterativeFeedbackTuningPIController:
         )
 
         if elapsed_time >= self.stage_length:
-            if self.iteration_stage == 0 and len(self._error_history) < self.stage_length_samples:
-                print('Extending stage 0 to gather more samples')
-            elif self.iteration_stage == 1 and len(self._error_history) < 2 * self.stage_length_samples:
-                print('Extending stage 1 to gather more samples')
+            if (
+                self.iteration_stage == 0
+                and len(self._error_history) < self.stage_length_samples
+            ):
+                print("Extending stage 0 to gather more samples")
+            elif (
+                self.iteration_stage == 1
+                and len(self._error_history) < 2 * self.stage_length_samples
+            ):
+                print("Extending stage 1 to gather more samples")
             else:
                 if self.iteration_stage == 1:
                     self.kp, self.ti = self.new_controller_parameters()
