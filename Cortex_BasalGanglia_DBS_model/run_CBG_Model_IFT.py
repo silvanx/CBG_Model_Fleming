@@ -77,8 +77,17 @@ if __name__ == "__main__":
         "(%.0f ms) with IFT control (experiment time %.2f s)\n"
         "Kp: init=%f min=%f\tTi: init=%f min=%f\n"
         "gamma=%e, lambda=%e"
-        % (simulation_runtime, steady_state_duration, experiment_time,
-           kp_init, kp_min, ti_init, ti_min, gamma, lam)
+        % (
+            simulation_runtime,
+            steady_state_duration,
+            experiment_time,
+            kp_init,
+            kp_min,
+            ti_init,
+            ti_min,
+            gamma,
+            lam,
+        )
     )
     sim_total_time = (
         steady_state_duration + simulation_runtime + timestep
@@ -92,12 +101,7 @@ if __name__ == "__main__":
     # Make beta band filter centred on 25Hz (cutoff frequencies are 21-29 Hz)
     # for biomarker estimation
     fs = 1000.0 / rec_sampling_interval
-    beta_b, beta_a = make_beta_cheby1_filter(
-        fs=fs,
-        n=4,
-        rp=0.5,
-        low=21,
-        high=29)
+    beta_b, beta_a = make_beta_cheby1_filter(fs=fs, n=4, rp=0.5, low=21, high=29)
 
     # Use CVode to calculate i_membrane_ for fast LFP calculation
     cvode = h.CVode()
@@ -131,36 +135,22 @@ if __name__ == "__main__":
         prj_GPiThalamic,
         prj_ThalamicCortical,
         prj_CorticalThalamic,
-        GPe_stimulation_order
+        GPe_stimulation_order,
     ) = load_network(
-        steady_state_duration,
-        sim_total_time,
-        simulation_runtime,
-        v_init,
-        rng_seed
+        steady_state_duration, sim_total_time, simulation_runtime, v_init, rng_seed
     )
 
     # Define state variables to record from each population
-    Cortical_Pop.record(
-        "soma(0.5).v", sampling_interval=rec_sampling_interval)
-    Cortical_Pop.record(
-        "collateral(0.5).v", sampling_interval=rec_sampling_interval)
-    Interneuron_Pop.record(
-        "soma(0.5).v", sampling_interval=rec_sampling_interval)
-    STN_Pop.record(
-        "soma(0.5).v", sampling_interval=rec_sampling_interval)
-    STN_Pop.record(
-        "AMPA.i", sampling_interval=rec_sampling_interval)
-    STN_Pop.record(
-        "GABAa.i", sampling_interval=rec_sampling_interval)
-    Striatal_Pop.record(
-        "spikes")
-    GPe_Pop.record(
-        "soma(0.5).v", sampling_interval=rec_sampling_interval)
-    GPi_Pop.record(
-        "soma(0.5).v", sampling_interval=rec_sampling_interval)
-    Thalamic_Pop.record(
-        "soma(0.5).v", sampling_interval=rec_sampling_interval)
+    Cortical_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
+    Cortical_Pop.record("collateral(0.5).v", sampling_interval=rec_sampling_interval)
+    Interneuron_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
+    STN_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
+    STN_Pop.record("AMPA.i", sampling_interval=rec_sampling_interval)
+    STN_Pop.record("GABAa.i", sampling_interval=rec_sampling_interval)
+    Striatal_Pop.record("spikes")
+    GPe_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
+    GPi_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
+    Thalamic_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
 
     # Assign Positions for recording and stimulating electrode point sources
     recording_electrode_1_position = np.array([0, -1500, 250])
@@ -238,22 +228,17 @@ if __name__ == "__main__":
         gamma=gamma,
         lam=lam,
         min_kp=kp_min,
-        min_ti=ti_min
+        min_ti=ti_min,
     )
     output_prefix = "Simulation_Output_Results/Controller_Simulations/IFT/"
     simulation_identifier = controller.label + "-" + start_timestamp
     simulation_output_dir = output_prefix + simulation_identifier
-    print(f'Saving results to {simulation_output_dir}')
+    print(f"Saving results to {simulation_output_dir}")
 
     # Generate a square wave which represents the DBS signal
     # Needs to be initialized to zero when unused to prevent
     # open-circuit of cortical collateral extracellular mechanism
-    (
-        DBS_Signal,
-        DBS_times,
-        next_DBS_pulse_time,
-        _
-    ) = controller.generate_dbs_signal(
+    (DBS_Signal, DBS_times, next_DBS_pulse_time, _) = controller.generate_dbs_signal(
         start_time=steady_state_duration + 10 + simulator.state.dt,
         stop_time=sim_total_time,
         dt=simulator.state.dt,
