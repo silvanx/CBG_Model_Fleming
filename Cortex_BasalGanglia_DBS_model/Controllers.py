@@ -17,9 +17,9 @@ import scipy.signal as signal
 class ZeroController:
     """Dummy controller with no stimulation"""
 
-    def __init__(self, setpoint=0.0, Ts=0.02):
+    def __init__(self, SetPoint=0.0, Ts=0.02):
 
-        self.SetPoint = setpoint
+        self.SetPoint = SetPoint
         self.label = "ZeroController"
 
         self.Ts = Ts
@@ -803,22 +803,23 @@ class IterativeFeedbackTuningPIController:
     def __init__(
         self,
         stage_length,
-        setpoint=0.0,
-        kp_init=0.0,
-        ti_init=0.0,
-        ts=0.02,
-        min_value=0.0,
-        max_value=1e9,
+        SetPoint=0.0,
+        Kp=0.0,
+        Ti=0.0,
+        Ts=0.02,
+        MinValue=0.0,
+        MaxValue=1e9,
         gamma=0.005,
         lam=1e-8,
         min_kp=0,
         min_ti=0,
     ):
-        self.setpoint = setpoint
+
+        self.setpoint = SetPoint
         self.stage_length = stage_length
-        self.stage_length_samples = int(np.ceil(stage_length / ts)) + 1
-        self.kp = kp_init
-        self.ti = ti_init
+        self.stage_length_samples = int(np.ceil(stage_length / Ts)) + 1
+        self.kp = Kp
+        self.ti = Ti
         self.gamma = gamma
         self.lam = lam
         self.iteration_stage = -1
@@ -826,12 +827,12 @@ class IterativeFeedbackTuningPIController:
         self.min_ti = min_ti
 
         # Set output value bounds
-        self.min_value = min_value
-        self.max_value = max_value
+        self.min_value = MinValue
+        self.max_value = MaxValue
 
         self.label = "iterative_feedback_tuning_PI_Controller"
 
-        self.ts = ts
+        self.ts = Ts
         self.current_time = 0.0  # (sec)
         self.last_time = 0.0
         self.stage_start_time = 0.0

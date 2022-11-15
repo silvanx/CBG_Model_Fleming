@@ -1,0 +1,19 @@
+# Simulation
+Controller: IFT
+Modulation: ""
+RunTime: 8000.0
+
+# Controller
+stage_length: 2.0
+SetPoint: 1.0414e-04
+Kp: 1.0
+Ti: 0.2
+Ts: 0.02
+MinValue: 0.0
+MaxValue: 3.0
+
+# IFT specific options
+gamma: 0.01
+lam: 1.e-8
+min_kp: 0.01
+min_ti: 0.01

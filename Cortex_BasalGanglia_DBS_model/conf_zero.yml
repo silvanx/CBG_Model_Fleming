@@ -1,0 +1,8 @@
+---
+# Simulation
+Controller: Zero
+RunTime: 32000.0
+
+# Controller
+SetPoint: 0
+Ts: 0
