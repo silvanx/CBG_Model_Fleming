@@ -72,8 +72,8 @@ if __name__ == "__main__":
     args, unknown = parser.parse_known_args(args)
 
     # Duration of simulation from steady state
-    simulation_runtime = float(args.time)
-    experiment_time = float(args.experiment_time)
+    simulation_runtime = args.time
+    experiment_time = args.experiment_time
 
     sim_total_time = (
         steady_state_duration + simulation_runtime + timestep
