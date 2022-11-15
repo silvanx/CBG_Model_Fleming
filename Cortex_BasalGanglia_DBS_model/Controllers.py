@@ -117,8 +117,7 @@ class ZeroController:
             isi = 1000.0 / frequency  # time is in ms
             duty_cycle = pulse_width / isi
             tt = 2.0 * np.pi * frequency * tmp
-            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt,
-                                                             duty=duty_cycle))
+            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt, duty=duty_cycle))
             dbs_signal[-1] = 0.0
 
             # Calculate the time for the first pulse of the next segment
@@ -178,8 +177,7 @@ class ConstantController:
         self.ConstantValue = ConstantValue
         self.Ts = Ts  # should be in sec as per above
         self.units = units
-        self.label = "Constant_Controller/%f%s" % (self.ConstantValue,
-                                                   self.units)
+        self.label = "Constant_Controller/%f%s" % (self.ConstantValue, self.units)
 
         # Set output value
         self.OutputValue = 0
@@ -274,12 +272,7 @@ class OnOffController:
     """On-Off Controller Class"""
 
     def __init__(
-        self,
-        SetPoint=0.0,
-        MinValue=0.0,
-        MaxValue=1e9,
-        RampDuration=0.25,
-        Ts=0.02
+        self, SetPoint=0.0, MinValue=0.0, MaxValue=1e9, RampDuration=0.25, Ts=0.02
     ):
         # Initial Controller Values
         self.SetPoint = SetPoint
@@ -293,8 +286,9 @@ class OnOffController:
 
         # Calculate how much controller output value will change each
         # controller call
-        self.OutputValueIncrement = ((self.MaxValue - self.MinValue)
-                                     / math.ceil(self.RampDuration / self.Ts))
+        self.OutputValueIncrement = (self.MaxValue - self.MinValue) / math.ceil(
+            self.RampDuration / self.Ts
+        )
 
         # Initialize the output value of the controller
         self.LastOutputValue = 0
@@ -436,8 +430,9 @@ class DualThresholdController:
 
         # Calculate how much controller output value will change
         # each controller call
-        self.OutputValueIncrement = ((self.MaxValue - self.MinValue)
-                                     / math.ceil(self.RampDuration / self.Ts))
+        self.OutputValueIncrement = (self.MaxValue - self.MinValue) / math.ceil(
+            self.RampDuration / self.Ts
+        )
 
         # Initialize the output value of the controller
         self.LastOutputValue = 0.0
@@ -573,14 +568,7 @@ class StandardPIDController:
     """Standard PID Controller Class"""
 
     def __init__(
-        self,
-        SetPoint=0.0,
-        Kp=0.0,
-        Ti=0.0,
-        Td=0.0,
-        Ts=0.02,
-        MinValue=0.0,
-        MaxValue=1e9
+        self, SetPoint=0.0, Kp=0.0, Ti=0.0, Td=0.0, Ts=0.02, MinValue=0.0, MaxValue=1e9
     ):
 
         self.SetPoint = SetPoint
@@ -732,8 +720,7 @@ class StandardPIDController:
             isi = 1000.0 / frequency  # time is in ms
             duty_cycle = pulse_width / isi
             tt = 2.0 * np.pi * frequency * tmp
-            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt,
-                                                             duty=duty_cycle))
+            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt, duty=duty_cycle))
             dbs_signal[-1] = 0.0
 
             # Calculate the time for the first pulse of the next segment
@@ -897,11 +884,11 @@ class IterativeFeedbackTuningPIController:
 
     def compute_fitness_gradient(self):
         y1 = self.error_history[
-            -2 * self.stage_length_samples: -self.stage_length_samples
+            -2 * self.stage_length_samples : -self.stage_length_samples
         ]
-        y2 = self.error_history[-self.stage_length_samples:]
+        y2 = self.error_history[-self.stage_length_samples :]
         u1 = self.output_history[
-            -2 * self.stage_length_samples: -self.stage_length_samples
+            -2 * self.stage_length_samples : -self.stage_length_samples
         ]
         u2 = self.output_history[-self.stage_length_samples:]
         y_tilde = np.array(y1)
@@ -916,8 +903,7 @@ class IterativeFeedbackTuningPIController:
         y_part = y_tilde * dy_drho
         u_part = u_rho * du_drho
 
-        grad = (np.sum((y_part + lam * u_part), axis=1)
-                / self.stage_length_samples)
+        grad = np.sum((y_part + lam * u_part), axis=1) / self.stage_length_samples
         return grad
 
     def new_controller_parameters(self):
@@ -1043,8 +1029,7 @@ class IterativeFeedbackTuningPIController:
             isi = 1000.0 / frequency  # time is in ms
             duty_cycle = pulse_width / isi
             tt = 2.0 * np.pi * frequency * tmp
-            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt,
-                                                             duty=duty_cycle))
+            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt, duty=duty_cycle))
             dbs_signal[-1] = 0.0
 
             # Calculate the time for the first pulse of the next segment
