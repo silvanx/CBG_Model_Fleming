@@ -12,6 +12,9 @@ https://www.frontiersin.org/articles/10.3389/fnins.2020.00166/
 import math
 import numpy as np
 import scipy.signal as signal
+from mpi4py import MPI
+
+rank = MPI.COMM_WORLD.Get_rank()
 
 
 class ZeroController:
@@ -913,10 +916,12 @@ class IterativeFeedbackTuningPIController:
         r = np.identity(2)
         if len(self._error_history) >= 2 * self.stage_length_samples:
             grad = self.compute_fitness_gradient()
-            print(f"Gradient: ({grad[0]}, {grad[1]})'")
+            if rank == 0:
+                print(f"Gradient: ({grad[0]}, {grad[1]})'")
         else:
             grad = [0, 0]
-            print("Too few samples, skipping update")
+            if rank == 0:
+                print("Too few samples, skipping update")
         new_rho = rho - gamma * np.dot(r, grad)
         if new_rho[0] < self.min_kp:
             new_rho[0] = self.min_kp
@@ -936,30 +941,35 @@ class IterativeFeedbackTuningPIController:
         self.current_time = current_time
         elapsed_time = (current_time - self.stage_start_time) / 1000
         setpoint = self.reference_signal(elapsed_time)
-        print(
-            "Stage: %d, Elapsed time: %.3f s, Reference: %.5f"
-            % (self.iteration_stage, elapsed_time, setpoint)
-        )
+        if rank == 0:
+            print(
+                "Stage: %d, Elapsed time: %.3f s, Reference: %.5f"
+                % (self.iteration_stage, elapsed_time, setpoint)
+            )
 
         if elapsed_time >= self.stage_length:
             if (
                 self.iteration_stage == 0
                 and len(self._error_history) < self.stage_length_samples
             ):
-                print("Extending stage 0 to gather more samples")
+                if rank == 0:
+                    print("Extending stage 0 to gather more samples")
             elif (
                 self.iteration_stage == 1
                 and len(self._error_history) < 2 * self.stage_length_samples
             ):
-                print("Extending stage 1 to gather more samples")
+                if rank == 0:
+                    print("Extending stage 1 to gather more samples")
             else:
                 if self.iteration_stage == 1:
                     self.kp, self.ti = self.new_controller_parameters()
-                    print(f"New params: kp={self.kp}, ti={self.ti}")
+                    if rank == 0:
+                        print(f"New params: kp={self.kp}, ti={self.ti}")
                 self.stage_start_time = self.current_time
                 elapsed_time = 0
                 self.iteration_stage = (self.iteration_stage + 1) % 2
-                print("Stage change, now at stage %d" % self.iteration_stage)
+                if rank == 0:
+                    print("Stage change, now at stage %d" % self.iteration_stage)
 
         if self.iteration_stage == 0:
             sample = int(elapsed_time / self.ts)

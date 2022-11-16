@@ -17,7 +17,7 @@ import os
 from pathlib import Path
 
 # Change working directory so that imports works (save old)
-oldwd = Path(os.getcwd()).resolve()
+oldpwd = Path(os.getcwd()).resolve()
 newpwd = Path(__file__).resolve().parent
 os.chdir(newpwd)
 
@@ -39,7 +39,6 @@ import neo.io
 import quantities as pq
 import numpy as np
 import math
-import datetime
 import argparse
 from utils import make_beta_cheby1_filter, calculate_avg_beta_power
 from model import load_network, electrode_distance
@@ -52,20 +51,27 @@ h = neuron.h
 comm = MPI.COMM_WORLD
 
 if __name__ == "__main__":
-    rng_seed = 3695
-    timestep = 0.01
-    steady_state_duration = 6000.0  # Duration of simulation steady state
     # TODO: Fix the steady_state restore error when
     # simulation_runtime < steady_state_duration - 1
 
-    os.chdir(oldwd)
-    parser = argparse.ArgumentParser(prog=__file__, description="CBG Model")
-    parser.add_argument("filename", nargs='?', help="yaml configuration file")
+    os.chdir(oldpwd)
+    parser = argparse.ArgumentParser(description="CBG Model")
+    parser.add_argument("config_file", nargs="?", help="yaml configuration file")
+    parser.add_argument(
+        "-o", "--output-dir", default="RESULTS", help="output directory name"
+    )
     args, unknown = parser.parse_known_args()
-    c = Config(args.filename)
+
+    config_file = Path(args.config_file).resolve()
+    output_dir = Path(args.output_dir).resolve()
+    c = Config(args.config_file)
     os.chdir(newpwd)
+
     simulation_runtime = c.RunTime
     controller_type = c.Controller
+    rng_seed = c.RandomSeed
+    timestep = c.TimeStep
+    steady_state_duration = c.SteadyStateDuration
 
     sim_total_time = (
         steady_state_duration + simulation_runtime + timestep
@@ -76,12 +82,8 @@ if __name__ == "__main__":
     rank = setup(timestep=timestep, rngseed=rng_seed)
 
     if rank == 0:
-        print(
-            "\nINFO: Running simulation for %.0f ms after steady state (%.0f ms) with %s control"
-            % (simulation_runtime, steady_state_duration, controller_type)
-        )
-        print("Configuration:")
-        print(c)
+        print("\n------ Configuration ------")
+        print(c, "\n")
 
     # Make beta band filter centred on 25Hz (cutoff frequencies are 21-29 Hz)
     # for biomarker estimation
@@ -130,6 +132,8 @@ if __name__ == "__main__":
         v_init,
         rng_seed,
     )
+    if rank == 0:
+        print("Network loaded.")
 
     # Define state variables to record from each population
     Cortical_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
@@ -224,14 +228,9 @@ if __name__ == "__main__":
     controller_kwargs = get_controller_kwargs(c)
     controller = Controller(**controller_kwargs)
 
-    start_timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    output_dirname = os.environ.get("PYNN_OUTPUT_DIRNAME", "Simulation_Output_Results")
-    output_prefix = f"{output_dirname}/Controller_Simulation/"
-
-    simulation_identifier = controller.label + "-" + start_timestamp
-    simulation_output_dir = output_prefix + simulation_identifier
+    simulation_output_dir = output_dir
     if rank == 0:
-        print(f"Saving results to {simulation_output_dir}")
+        print(f"Output directory: {simulation_output_dir}")
 
     # Generate a square wave which represents the DBS signal
     # Needs to be initialized to zero when unused to prevent
@@ -351,11 +350,17 @@ if __name__ == "__main__":
     last_write_time = steady_state_duration
 
     if rank == 0:
-        print("Loaded the network, loading the steady state")
+        print(
+            f"\n---> Running simulation to steady state ({steady_state_duration} ms) ..."
+        )
     # Load the steady state
     run_until(steady_state_duration + simulator.state.dt, run_from_steady_state=True)
     if rank == 0:
-        print("Loaded the steady state")
+        print("Steady state finished.")
+        print(
+            "\n---> Running simulation for %.0f ms after steady state (%.0f ms) with %s control"
+            % (simulation_runtime, steady_state_duration, controller_type)
+        )
 
     # Reload striatal spike times after loading the steady state
     Striatal_Pop.set(spike_times=striatal_spike_times[:, 0])
@@ -557,26 +562,20 @@ if __name__ == "__main__":
         # Write population data to file
         write_index = "{:.0f}_".format(call_index)
         suffix = "_{:.0f}ms-{:.0f}ms".format(last_write_time, simulator.state.t)
-
-        fname = (
-            simulation_output_dir
-            + "/STN_Pop/"
-            + write_index
-            + "STN_Soma_v"
-            + suffix
-            + ".mat"
+        fname = write_index + "STN_Soma_v" + suffix + ".mat"
+        STN_Pop.write_data(
+            str(simulation_output_dir / "STN_POP" / fname), "soma(0.5).v", clear=True
         )
-        STN_Pop.write_data(fname, "soma(0.5).v", clear=True)
 
         last_write_time = simulator.state.t
 
     # # Write population membrane voltage data to file
-    # Cortical_Pop.write_data(simulation_output_dir+"/Cortical_Pop/Cortical_Collateral_v.mat", 'collateral(0.5).v', clear=False)
-    # Cortical_Pop.write_data(simulation_output_dir+"/Cortical_Pop/Cortical_Soma_v.mat", 'soma(0.5).v', clear=True)
-    # Interneuron_Pop.write_data(simulation_output_dir+"/Interneuron_Pop/Interneuron_Soma_v.mat", 'soma(0.5).v', clear=True)
-    # GPe_Pop.write_data(simulation_output_dir+"/GPe_Pop/GPe_Soma_v.mat", 'soma(0.5).v', clear=True)
-    # GPi_Pop.write_data(simulation_output_dir+"/GPi_Pop/GPi_Soma_v.mat", 'soma(0.5).v', clear=True)
-    # Thalamic_Pop.write_data(simulation_output_dir+"/Thalamic_Pop/Thalamic_Soma_v.mat", 'soma(0.5).v', clear=True)
+    # Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop/Cortical_Collateral_v.mat"), 'collateral(0.5).v', clear=False)
+    # Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop/Cortical_Soma_v.mat"), 'soma(0.5).v', clear=True)
+    # Interneuron_Pop.write_data(str(simulation_output_dir / "Interneuron_Pop/Interneuron_Soma_v.mat"), 'soma(0.5).v', clear=True)
+    # GPe_Pop.write_data(str(simulation_output_dir / "GPe_Pop/GPe_Soma_v.mat", 'soma(0.5).v'), clear=True)
+    # GPi_Pop.write_data(str(simulation_output_dir / "GPi_Pop/GPi_Soma_v.mat", 'soma(0.5).v'), clear=True)
+    # Thalamic_Pop.write_data(str(simulation_output_dir / "Thalamic_Pop/Thalamic_Soma_v.mat"), 'soma(0.5).v', clear=True)
 
     # Write controller values to csv files
     controller_measured_beta_values = np.asarray(controller.state_history)
@@ -590,42 +589,42 @@ if __name__ == "__main__":
 
     if rank == 0:
         np.savetxt(
-            simulation_output_dir + "/controller_beta_values.csv",
+            simulation_output_dir / "controller_beta_values.csv",
             controller_measured_beta_values,
             delimiter=",",
         )
         np.savetxt(
-            simulation_output_dir + "/controller_error_values.csv",
+            simulation_output_dir / "controller_error_values.csv",
             controller_measured_error_values,
             delimiter=",",
         )
         np.savetxt(
-            simulation_output_dir + "/controller_values.csv",
+            simulation_output_dir / "controller_values.csv",
             controller_output_values,
             delimiter=",",
         )
         np.savetxt(
-            simulation_output_dir + "/controller_sample_times.csv",
+            simulation_output_dir / "controller_sample_times.csv",
             controller_sample_times,
             delimiter=",",
         )
         np.savetxt(
-            simulation_output_dir + "/controller_iteration_values.csv",
+            simulation_output_dir / "controller_iteration_values.csv",
             controller_iteration_history,
             delimiter=",",
         )
         np.savetxt(
-            simulation_output_dir + "/controller_reference_values.csv",
+            simulation_output_dir / "controller_reference_values.csv",
             controller_reference_history,
             delimiter=",",
         )
         np.savetxt(
-            simulation_output_dir + "/controller_parameter_values.csv",
+            simulation_output_dir / "controller_parameter_values.csv",
             controller_parameter_history,
             delimiter=",",
         )
         np.savetxt(
-            simulation_output_dir + "/controller_integral_term_values.csv",
+            simulation_output_dir / "controller_integral_term_values.csv",
             controller_integral_term_history,
             delimiter=",",
         )
@@ -642,7 +641,7 @@ if __name__ == "__main__":
     )
     STN_LFP_seg.analogsignals.append(STN_LFP_signal)
 
-    w = neo.io.NeoMatlabIO(filename=simulation_output_dir + "/STN_LFP.mat")
+    w = neo.io.NeoMatlabIO(filename=str(simulation_output_dir / "STN_LFP.mat"))
     w.write_block(STN_LFP_Block)
 
     # # Write LFP AMPA and GABAa components to file
@@ -651,7 +650,7 @@ if __name__ == "__main__":
     # STN_LFP_AMPA_Block.segments.append(STN_LFP_AMPA_seg)
     # STN_LFP_AMPA_signal = neo.AnalogSignal(STN_LFP_AMPA, units='mV', t_start=0*pq.ms, sampling_rate=pq.Quantity(simulator.state.dt, '1/ms'))
     # STN_LFP_AMPA_seg.analogsignals.append(STN_LFP_AMPA_signal)
-    # w = neo.io.NeoMatlabIO(filename=simulation_output_dir+"/STN_LFP_AMPA.mat")
+    # w = neo.io.NeoMatlabIO(filename=str(simulation_output_dir / "STN_LFP_AMPA.mat"))
     # w.write_block(STN_LFP_AMPA_Block)
 
     # STN_LFP_GABAa_Block = neo.Block(name='STN_LFP_GABAa')
@@ -659,7 +658,7 @@ if __name__ == "__main__":
     # STN_LFP_GABAa_Block.segments.append(STN_LFP_GABAa_seg)
     # STN_LFP_GABAa_signal = neo.AnalogSignal(STN_LFP_GABAa, units='mV', t_start=0*pq.ms, sampling_rate=pq.Quantity(simulator.state.dt, '1/ms'))
     # STN_LFP_GABAa_seg.analogsignals.append(STN_LFP_GABAa_signal)
-    # w = neo.io.NeoMatlabIO(filename=simulation_output_dir+"/STN_LFP_GABAa.mat")
+    # w = neo.io.NeoMatlabIO(filename=str(simulation_output_dir / "STN_LFP_GABAa.mat"))
     # w.write_block(STN_LFP_GABAa_Block)
 
     # Write the DBS Signal to .mat file
@@ -682,7 +681,7 @@ if __name__ == "__main__":
     )
     DBS_Signal_seg.analogsignals.append(DBS_times)
 
-    w = neo.io.NeoMatlabIO(filename=simulation_output_dir + "/DBS_Signal.mat")
+    w = neo.io.NeoMatlabIO(filename=str(simulation_output_dir / "DBS_Signal.mat"))
     w.write_block(DBS_Block)
 
     if rank == 0:
