@@ -354,7 +354,7 @@ if __name__ == "__main__":
             f"\n---> Running simulation to steady state ({steady_state_duration} ms) ..."
         )
     # Load the steady state
-    run_until(steady_state_duration + simulator.state.dt, run_from_steady_state=True)
+    run_until(steady_state_duration + simulator.state.dt, run_from_steady_state=False)
     if rank == 0:
         print("Steady state finished.")
         print(
