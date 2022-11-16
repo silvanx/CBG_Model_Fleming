@@ -3,7 +3,7 @@
 """
 Description:
     Cortico-Basal Ganglia Network Model implemented in PyNN using the NEURON simulator.
-    This version of the model loads the model steady state and implements either DBS
+    This version of the model runs to a steady state and implements either DBS
     ampltiude or frequency modulation controllers, where the beta ARV from the STN LFP
     is calculated at each controller call and used to update the amplitude/frequency of
     the DBS waveform that is applied to the network.
