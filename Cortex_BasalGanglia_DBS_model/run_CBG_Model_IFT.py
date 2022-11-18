@@ -350,7 +350,7 @@ if __name__ == "__main__":
     if rank == 0:
         print("Loaded the network, loading the steady state")
     # Load the steady state
-    run_until(steady_state_duration + simulator.state.dt, run_from_steady_state=True)
+    run_until(steady_state_duration + simulator.state.dt, run_from_steady_state=False)
     if rank == 0:
         print("Loaded the steady state")
 
