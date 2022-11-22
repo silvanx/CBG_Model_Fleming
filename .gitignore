@@ -6,3 +6,4 @@ Controller_Simulations
 Steady_State_Simulation
 *.mat
 *.csv
+*.xlsx
