@@ -293,8 +293,8 @@ def compute_fitness(x, y, xi, yi, mse, teed, lam, method='linear'):
     return fitness_zi
 
 
-def plot_ift_trajectory(pi_fitness_dir, parameters, lam=1, setpoint=1.0414E-4,
-                        cmap=cm.RdBu_r):
+def plot_pi_fitness_function(pi_fitness_dir, fig, ax, setpoint=1.0414E-4,
+                             lam=1, cmap=cm.RdBu_r, plot_grid=True, cax=None):
     (
         x,
         y,
@@ -306,18 +306,27 @@ def plot_ift_trajectory(pi_fitness_dir, parameters, lam=1, setpoint=1.0414E-4,
         _
         ) = load_fitness_data(pi_fitness_dir, setpoint)
     fitness_zi = compute_fitness(x, y, xi, yi, mse, teed, lam, 'linear')
+    contours = ax.contourf(xi, yi, fitness_zi, cmap=cmap)
+    if plot_grid:
+        ax.scatter(x, y, c='k', s=5)
+    if cax is None:
+        fig.colorbar(contours)
+    else:
+        plt.colorbar(contours, cax=cax)
+    ax.set_xlim([-0.01, x.max() + 0.01])
+    ax.set_ylim([-0.01, y.max() + 0.01])
+
+
+def plot_ift_trajectory(pi_fitness_dir, parameters, lam=1, setpoint=1.0414E-4,
+                        cmap=cm.RdBu_r):
     fit_fig = plt.figure(figsize=(12, 7))
     fit_ax = plt.gca()
-    contours = plt.contourf(xi, yi, fitness_zi, cmap=cmap)
-    plt.scatter(x, y, c='k', s=5)
-    fit_fig.colorbar(contours)
+    plot_pi_fitness_function(pi_fitness_dir, fit_fig, fit_ax, setpoint, lam,
+                             cmap, plot_grid=True)
     add_arrows_to_plot(fit_ax, parameters)
     fit_ax.set_xlabel('Kp')
     fit_ax.set_ylabel('Ti')
-    fit_ax.set_xlim([-0.01, x.max() + 0.01])
-    fit_ax.set_ylim([-0.01, y.max() + 0.01])
-    fit_ax.set_title(
-        'Fitness of the PI parameters')
+    fit_ax.set_title('Fitness of the PI parameters')
 
 
 def read_ift_results(dirname):
@@ -380,9 +389,12 @@ def add_arrows_to_plot(ax, parameters):
     abase = np.vstack((parameters[np.where(np.diff(parameters[:, 0]))[0]],
                        parameters[-1, :]))
     ad = np.diff(abase, axis=0)
+    arrows = []
     for i in range(len(ad)):
-        ax.arrow(abase[i, 0], abase[i, 1], ad[i, 0], ad[i, 1],
-                 width=0.01, head_width=0.04)
+        a = ax.arrow(abase[i, 0], abase[i, 1], ad[i, 0], ad[i, 1],
+                     width=0.01, head_width=0.04)
+        arrows.append(a)
+    return arrows
 
 
 def plot_two_trajectories(pi_fitness_dir, dir1, lam1, dir2, lam2,
