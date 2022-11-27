@@ -27,4 +27,4 @@ RUN nrnivmodl
 COPY ./Cortex_BasalGanglia_DBS_model/*.py ./
 COPY ./Cortex_BasalGanglia_DBS_model/*.npy ./
 
-ENTRYPOINT ["python3", "/usr/app/src/CBG_Fleming_Model/run_CBG_Model_IFT.py", "12000", "2.1"]
+ENTRYPOINT ["python3", "/usr/app/src/CBG_Fleming_Model/run_CBG_Model_IFT.py", "46000", "2", "1", "0.2", "0.1", "1e-8", "0.05", "0.05"]
