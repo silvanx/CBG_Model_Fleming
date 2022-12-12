@@ -582,10 +582,22 @@ if __name__ == "__main__":
     controller_measured_error_values = np.asarray(controller.error_history)
     controller_output_values = np.asarray(controller.output_history)
     controller_sample_times = np.asarray(controller.sample_times)
-    controller_reference_history = np.asarray(controller.reference_history)
-    controller_iteration_history = np.asarray(controller.iteration_history)
-    controller_parameter_history = np.asarray(controller.parameter_history)
-    controller_integral_term_history = np.asarray(controller.integral_term_history)
+    try:
+        controller_reference_history = np.asarray(controller.reference_history)
+    except AttributeError:
+        controller_reference_history = None
+    try:
+        controller_iteration_history = np.asarray(controller.iteration_history)
+    except AttributeError:
+        controller_iteration_history = None
+    try:
+        controller_parameter_history = np.asarray(controller.parameter_history)
+    except AttributeError:
+        controller_parameter_history = None
+    try:
+        controller_integral_term_history = np.asarray(controller.integral_term_history)
+    except AttributeError:
+        controller_integral_term_history = None
 
     if rank == 0:
         np.savetxt(
@@ -608,26 +620,30 @@ if __name__ == "__main__":
             controller_sample_times,
             delimiter=",",
         )
-        np.savetxt(
-            simulation_output_dir / "controller_iteration_values.csv",
-            controller_iteration_history,
-            delimiter=",",
-        )
-        np.savetxt(
-            simulation_output_dir / "controller_reference_values.csv",
-            controller_reference_history,
-            delimiter=",",
-        )
-        np.savetxt(
-            simulation_output_dir / "controller_parameter_values.csv",
-            controller_parameter_history,
-            delimiter=",",
-        )
-        np.savetxt(
-            simulation_output_dir / "controller_integral_term_values.csv",
-            controller_integral_term_history,
-            delimiter=",",
-        )
+        if controller_iteration_history is not None:
+            np.savetxt(
+                simulation_output_dir / "controller_iteration_values.csv",
+                controller_iteration_history,
+                delimiter=",",
+            )
+        if controller_reference_history is not None:
+            np.savetxt(
+                simulation_output_dir / "controller_reference_values.csv",
+                controller_reference_history,
+                delimiter=",",
+            )
+        if controller_parameter_history is not None:
+            np.savetxt(
+                simulation_output_dir / "controller_parameter_values.csv",
+                controller_parameter_history,
+                delimiter=",",
+            )
+        if controller_integral_term_history is not None:
+            np.savetxt(
+                simulation_output_dir / "controller_integral_term_values.csv",
+                controller_integral_term_history,
+                delimiter=",",
+            )
 
     # Write the STN LFP to .mat file
     STN_LFP_Block = neo.Block(name="STN_LFP")
