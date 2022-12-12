@@ -1,20 +1,25 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Created on Wed April 03 14:27:26 2019
+Description:
+    Cortico-Basal Ganglia Network Model implemented in PyNN using the NEURON simulator.
+    This version of the model runs to a steady state and implements either DBS
+    ampltiude or frequency modulation controllers, where the beta ARV from the STN LFP
+    is calculated at each controller call and used to update the amplitude/frequency of
+    the DBS waveform that is applied to the network.
 
-Description: Cortico-Basal Ganglia Network Model implemented in PyNN using the
-            NEURON simulator. This version of the model loads the model steady
-            state and implements DBS ampltiude modulation controllers where
-            the beta ARV from the STN LFP is calculated at each controller
-            call and used to update the amplitude of the DBS waveform that is
-            applied to the network. Full documentation of the model and
-            controllers used is given in:
+    Full documentation of the model and controllers used is given in:
+    https://www.frontiersin.org/articles/10.3389/fnins.2020.00166/
 
-            https://www.frontiersin.org/articles/10.3389/fnins.2020.00166/
-
-@author: John Fleming, john.fleming@ucdconnect.ie
+Original author: John Fleming, john.fleming@ucdconnect.ie
 """
 import os
+from pathlib import Path
+
+# Change working directory so that imports works (save old)
+oldpwd = Path(os.getcwd()).resolve()
+newpwd = Path(__file__).resolve().parent
+os.chdir(newpwd)
 
 # No GUI please
 opts = os.environ.get("NEURON_MODULE_OPTIONS", "")
@@ -25,16 +30,19 @@ from mpi4py import MPI
 import neuron
 from pyNN.neuron import setup, run_until, end, simulator
 from pyNN.parameters import Sequence
-from Controllers import IterativeFeedbackTuningPIController
+from Controllers import (
+    ZeroController,
+    StandardPIDController,
+    IterativeFeedbackTuningPIController,
+)
 import neo.io
 import quantities as pq
 import numpy as np
 import math
-import datetime
-import sys
 import argparse
 from utils import make_beta_cheby1_filter, calculate_avg_beta_power
 from model import load_network, electrode_distance
+from config import Config, get_controller_kwargs
 
 # Import global variables for GPe DBS
 import Global_Variables as GV
@@ -43,37 +51,27 @@ h = neuron.h
 comm = MPI.COMM_WORLD
 
 if __name__ == "__main__":
-    rng_seed = 3695
-    timestep = 0.01
-    steady_state_duration = 6000.0  # Duration of simulation steady state
     # TODO: Fix the steady_state restore error when
     # simulation_runtime < steady_state_duration - 1
 
-    parser = argparse.ArgumentParser(
-        prog=__file__, description="CBG Model with amplitude modulation"
+    os.chdir(oldpwd)
+    parser = argparse.ArgumentParser(description="CBG Model")
+    parser.add_argument("config_file", nargs="?", help="yaml configuration file")
+    parser.add_argument(
+        "-o", "--output-dir", default="RESULTS", help="output directory name"
     )
-    parser.add_argument("-t", "--time", default=8000.0,
-                        help="simulation runtime after steady state",
-                        type=float)
-    parser.add_argument("-e", "--experiment-time", default=2.0, type=float)
-    parser.add_argument("--kp-init", default=1.0, type=float)
-    parser.add_argument("--ti-init", default=0.2, type=float)
-    parser.add_argument("--gamma", default=0.01, type=float)
-    parser.add_argument("--lam", default=1e-8, type=float)
-    parser.add_argument("--kp-min", default=0.01, type=float)
-    parser.add_argument("--ti-min", default=0.01, type=float)
+    args, unknown = parser.parse_known_args()
 
-    # Necessary to manually remove nrniv and __file__ when script is called via nrniv
-    args = sys.argv
-    for item in args:
-        if __file__ in item or "nrniv" in item:
-            args.remove(item)
+    config_file = Path(args.config_file).resolve()
+    output_dir = Path(args.output_dir).resolve()
+    c = Config(args.config_file)
+    os.chdir(newpwd)
 
-    args, unknown = parser.parse_known_args(args)
-
-    # Duration of simulation from steady state
-    simulation_runtime = args.time
-    experiment_time = args.experiment_time
+    simulation_runtime = c.RunTime
+    controller_type = c.Controller
+    rng_seed = c.RandomSeed
+    timestep = c.TimeStep
+    steady_state_duration = c.SteadyStateDuration
 
     sim_total_time = (
         steady_state_duration + simulation_runtime + timestep
@@ -84,23 +82,8 @@ if __name__ == "__main__":
     rank = setup(timestep=timestep, rngseed=rng_seed)
 
     if rank == 0:
-        print(
-            "INFO: Running simulation for %.0f ms after steady state "
-            "(%.0f ms) with IFT control (experiment time %.2f s)\n"
-            "Kp: init=%f min=%f\tTi: init=%f min=%f\n"
-            "gamma=%e, lambda=%e"
-            % (
-                simulation_runtime,
-                steady_state_duration,
-                experiment_time,
-                args.kp_init,
-                args.kp_min,
-                args.ti_init,
-                args.ti_min,
-                args.gamma,
-                args.lam,
-            )
-        )
+        print("\n------ Configuration ------")
+        print(c, "\n")
 
     # Make beta band filter centred on 25Hz (cutoff frequencies are 21-29 Hz)
     # for biomarker estimation
@@ -149,6 +132,8 @@ if __name__ == "__main__":
         v_init,
         rng_seed,
     )
+    if rank == 0:
+        print("Network loaded.")
 
     # Define state variables to record from each population
     Cortical_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
@@ -226,36 +211,43 @@ if __name__ == "__main__":
         controller_start, sim_total_time, controller_sampling_time
     )
 
+    if len(controller_call_times) == 0:
+        controller_call_times = np.array([controller_start])
+
     # Initialize the Controller being used:
     # Controller sampling period, Ts, is in sec
-    start_timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    controller = IterativeFeedbackTuningPIController(
-        stage_length=experiment_time,
-        setpoint=1.0414e-04,
-        kp_init=args.kp_init,
-        ti_init=args.ti_init,
-        ts=0.02,
-        min_value=0.0,
-        max_value=3.0,
-        gamma=args.gamma,
-        lam=args.lam,
-        min_kp=args.kp_min,
-        min_ti=args.ti_min,
-    )
+    if controller_type == "ZERO":
+        Controller = ZeroController
+    elif controller_type == "PID":
+        Controller = StandardPIDController
+    elif controller_type == "IFT":
+        Controller = IterativeFeedbackTuningPIController
+    else:
+        raise RuntimeError("Bad choice of Controller")
 
-    output_dirname = os.environ.get("PYNN_OUTPUT_DIRNAME", "Simulation_Output_Results")
-    output_prefix = f"{output_dirname}/Controller_Simulations/IFT/"
-    simulation_identifier = controller.label + "-" + start_timestamp
-    simulation_output_dir = output_prefix + simulation_identifier
+    controller_kwargs = get_controller_kwargs(c)
+    controller = Controller(**controller_kwargs)
+
+    simulation_output_dir = output_dir
     if rank == 0:
-        print(f"Saving results to {simulation_output_dir}")
+        print(f"Output directory: {simulation_output_dir}")
 
     # Generate a square wave which represents the DBS signal
     # Needs to be initialized to zero when unused to prevent
     # open-circuit of cortical collateral extracellular mechanism
-    (DBS_Signal, DBS_times, next_DBS_pulse_time, _,) = controller.generate_dbs_signal(
+    if c.Modulation == "frequency":
+        last_pulse_time_prior = steady_state_duration
+    else:
+        last_pulse_time_prior = 0
+    (
+        DBS_Signal,
+        DBS_times,
+        next_DBS_pulse_time,
+        last_DBS_pulse_time,
+    ) = controller.generate_dbs_signal(
         start_time=steady_state_duration + 10 + simulator.state.dt,
         stop_time=sim_total_time,
+        last_pulse_time_prior=last_pulse_time_prior,
         dt=simulator.state.dt,
         amplitude=-1.0,
         frequency=130.0,
@@ -287,6 +279,10 @@ if __name__ == "__main__":
     # Get DBS_Signal_neuron as a numpy array for easy updating
     updated_DBS_signal = DBS_Signal_neuron.as_numpy()
 
+    # Initialize tracking the frequencies calculated by the controller
+    last_freq_calculated = 0
+    last_DBS_pulse_time = steady_state_duration
+
     # GPe DBS current stimulations - precalculated for % of collaterals
     # entrained for varying DBS amplitude
     interp_DBS_amplitudes = np.array(
@@ -295,6 +291,11 @@ if __name__ == "__main__":
     interp_collaterals_entrained = np.array(
         [0, 0, 0, 1, 4, 8, 19, 30, 43, 59, 82, 100, 100, 100]
     )
+
+    if c.Modulation == "frequency":
+        last_pulse_time_prior = steady_state_duration
+    else:
+        last_pulse_time_prior = 0
 
     # Make new GPe DBS vector for each GPe neuron - each GPe neuron needs a
     # pointer to its own DBS signal
@@ -306,10 +307,11 @@ if __name__ == "__main__":
             GPe_DBS_Signal,
             GPe_DBS_times,
             GPe_next_DBS_pulse_time,
-            _,
+            GPe_last_DBS_pulse_time,
         ) = controller.generate_dbs_signal(
             start_time=steady_state_duration + 10 + simulator.state.dt,
             stop_time=sim_total_time,
+            last_pulse_time_prior=last_pulse_time_prior,
             dt=simulator.state.dt,
             amplitude=100.0,
             frequency=130.0,
@@ -348,11 +350,17 @@ if __name__ == "__main__":
     last_write_time = steady_state_duration
 
     if rank == 0:
-        print("Loaded the network, loading the steady state")
+        print(
+            f"\n---> Running simulation to steady state ({steady_state_duration} ms) ..."
+        )
     # Load the steady state
     run_until(steady_state_duration + simulator.state.dt, run_from_steady_state=False)
     if rank == 0:
-        print("Loaded the steady state")
+        print("Steady state finished.")
+        print(
+            "\n---> Running simulation for %.0f ms after steady state (%.0f ms) with %s control"
+            % (simulation_runtime, steady_state_duration, controller_type)
+        )
 
     # Reload striatal spike times after loading the steady state
     Striatal_Pop.set(spike_times=striatal_spike_times[:, 0])
@@ -456,14 +464,39 @@ if __name__ == "__main__":
         if rank == 0:
             print("Beta Average: %f" % lfp_beta_average_value)
 
-        # Calculate the updated DBS amplitude
-        DBS_amp = controller.update(
-            state_value=lfp_beta_average_value, current_time=simulator.state.t
-        )
+        if c.Modulation == "frequency":
+            # Calculate the updated DBS Frequency
+            DBS_amp = 1.5
+            DBS_freq = controller.update(
+                state_value=lfp_beta_average_value, current_time=simulator.state.t
+            )
+        else:
+            # Calculate the updated DBS amplitude
+            DBS_amp = controller.update(
+                state_value=lfp_beta_average_value, current_time=simulator.state.t
+            )
+            DBS_freq = 130.0
 
         # Update the DBS Signal
         if call_index + 1 < len(controller_call_times):
 
+            if c.Modulation == "frequency":
+                last_pulse_time_prior = last_DBS_pulse_time
+                # Check if the frequency needs to change before the last time that was calculated
+                if DBS_freq != last_freq_calculated:
+                    if DBS_freq == 0.0:  # Check if DBS wants to turn off
+                        next_DBS_pulse_time = 1e9
+                    else:  # Calculate new next pulse time if DBS is on
+                        T = (1.0 / DBS_freq) * 1e3
+                        next_DBS_pulse_time = last_DBS_pulse_time + T - 0.06
+
+                        # Need to check for situation when new DBS time is less than the current time
+                        if next_DBS_pulse_time <= simulator.state.t:
+                            next_DBS_pulse_time = simulator.state.t
+            else:
+                last_pulse_time_prior = 0
+
+            # Calculate new DBS segment from the next DBS pulse time
             if next_DBS_pulse_time < controller_call_times[call_index + 1]:
 
                 GPe_next_DBS_pulse_time = next_DBS_pulse_time
@@ -473,13 +506,14 @@ if __name__ == "__main__":
                     new_DBS_Signal_Segment,
                     new_DBS_times_Segment,
                     next_DBS_pulse_time,
-                    _,
+                    last_DBS_pulse_time,
                 ) = controller.generate_dbs_signal(
                     start_time=next_DBS_pulse_time,
                     stop_time=controller_call_times[call_index + 1],
+                    last_pulse_time_prior=last_pulse_time_prior,
                     dt=simulator.state.dt,
                     amplitude=-DBS_amp,
-                    frequency=130.0,
+                    frequency=DBS_freq,
                     pulse_width=0.06,
                     offset=0,
                 )
@@ -519,32 +553,29 @@ if __name__ == "__main__":
                             window_start_index:window_end_index
                         ] = GPe_DBS_Segment
 
+                # Remember the last frequency that was calculated
+                last_freq_calculated = DBS_freq
+
             else:
                 pass
 
         # Write population data to file
         write_index = "{:.0f}_".format(call_index)
         suffix = "_{:.0f}ms-{:.0f}ms".format(last_write_time, simulator.state.t)
-
-        fname = (
-            simulation_output_dir
-            + "/STN_Pop/"
-            + write_index
-            + "STN_Soma_v"
-            + suffix
-            + ".mat"
+        fname = write_index + "STN_Soma_v" + suffix + ".mat"
+        STN_Pop.write_data(
+            str(simulation_output_dir / "STN_POP" / fname), "soma(0.5).v", clear=True
         )
-        STN_Pop.write_data(fname, "soma(0.5).v", clear=True)
 
         last_write_time = simulator.state.t
 
     # # Write population membrane voltage data to file
-    # Cortical_Pop.write_data(simulation_output_dir+"/Cortical_Pop/Cortical_Collateral_v.mat", 'collateral(0.5).v', clear=False)
-    # Cortical_Pop.write_data(simulation_output_dir+"/Cortical_Pop/Cortical_Soma_v.mat", 'soma(0.5).v', clear=True)
-    # Interneuron_Pop.write_data(simulation_output_dir+"/Interneuron_Pop/Interneuron_Soma_v.mat", 'soma(0.5).v', clear=True)
-    # GPe_Pop.write_data(simulation_output_dir+"/GPe_Pop/GPe_Soma_v.mat", 'soma(0.5).v', clear=True)
-    # GPi_Pop.write_data(simulation_output_dir+"/GPi_Pop/GPi_Soma_v.mat", 'soma(0.5).v', clear=True)
-    # Thalamic_Pop.write_data(simulation_output_dir+"/Thalamic_Pop/Thalamic_Soma_v.mat", 'soma(0.5).v', clear=True)
+    # Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop/Cortical_Collateral_v.mat"), 'collateral(0.5).v', clear=False)
+    # Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop/Cortical_Soma_v.mat"), 'soma(0.5).v', clear=True)
+    # Interneuron_Pop.write_data(str(simulation_output_dir / "Interneuron_Pop/Interneuron_Soma_v.mat"), 'soma(0.5).v', clear=True)
+    # GPe_Pop.write_data(str(simulation_output_dir / "GPe_Pop/GPe_Soma_v.mat", 'soma(0.5).v'), clear=True)
+    # GPi_Pop.write_data(str(simulation_output_dir / "GPi_Pop/GPi_Soma_v.mat", 'soma(0.5).v'), clear=True)
+    # Thalamic_Pop.write_data(str(simulation_output_dir / "Thalamic_Pop/Thalamic_Soma_v.mat"), 'soma(0.5).v', clear=True)
 
     # Write controller values to csv files
     controller_measured_beta_values = np.asarray(controller.state_history)
@@ -558,42 +589,42 @@ if __name__ == "__main__":
 
     if rank == 0:
         np.savetxt(
-            simulation_output_dir + "/controller_beta_values.csv",
+            simulation_output_dir / "controller_beta_values.csv",
             controller_measured_beta_values,
             delimiter=",",
         )
         np.savetxt(
-            simulation_output_dir + "/controller_error_values.csv",
+            simulation_output_dir / "controller_error_values.csv",
             controller_measured_error_values,
             delimiter=",",
         )
         np.savetxt(
-            simulation_output_dir + "/controller_amplitude_values.csv",
+            simulation_output_dir / "controller_values.csv",
             controller_output_values,
             delimiter=",",
         )
         np.savetxt(
-            simulation_output_dir + "/controller_sample_times.csv",
+            simulation_output_dir / "controller_sample_times.csv",
             controller_sample_times,
             delimiter=",",
         )
         np.savetxt(
-            simulation_output_dir + "/controller_iteration_values.csv",
+            simulation_output_dir / "controller_iteration_values.csv",
             controller_iteration_history,
             delimiter=",",
         )
         np.savetxt(
-            simulation_output_dir + "/controller_reference_values.csv",
+            simulation_output_dir / "controller_reference_values.csv",
             controller_reference_history,
             delimiter=",",
         )
         np.savetxt(
-            simulation_output_dir + "/controller_parameter_values.csv",
+            simulation_output_dir / "controller_parameter_values.csv",
             controller_parameter_history,
             delimiter=",",
         )
         np.savetxt(
-            simulation_output_dir + "/controller_integral_term_values.csv",
+            simulation_output_dir / "controller_integral_term_values.csv",
             controller_integral_term_history,
             delimiter=",",
         )
@@ -610,7 +641,7 @@ if __name__ == "__main__":
     )
     STN_LFP_seg.analogsignals.append(STN_LFP_signal)
 
-    w = neo.io.NeoMatlabIO(filename=simulation_output_dir + "/STN_LFP.mat")
+    w = neo.io.NeoMatlabIO(filename=str(simulation_output_dir / "STN_LFP.mat"))
     w.write_block(STN_LFP_Block)
 
     # # Write LFP AMPA and GABAa components to file
@@ -619,7 +650,7 @@ if __name__ == "__main__":
     # STN_LFP_AMPA_Block.segments.append(STN_LFP_AMPA_seg)
     # STN_LFP_AMPA_signal = neo.AnalogSignal(STN_LFP_AMPA, units='mV', t_start=0*pq.ms, sampling_rate=pq.Quantity(simulator.state.dt, '1/ms'))
     # STN_LFP_AMPA_seg.analogsignals.append(STN_LFP_AMPA_signal)
-    # w = neo.io.NeoMatlabIO(filename=simulation_output_dir+"/STN_LFP_AMPA.mat")
+    # w = neo.io.NeoMatlabIO(filename=str(simulation_output_dir / "STN_LFP_AMPA.mat"))
     # w.write_block(STN_LFP_AMPA_Block)
 
     # STN_LFP_GABAa_Block = neo.Block(name='STN_LFP_GABAa')
@@ -627,7 +658,7 @@ if __name__ == "__main__":
     # STN_LFP_GABAa_Block.segments.append(STN_LFP_GABAa_seg)
     # STN_LFP_GABAa_signal = neo.AnalogSignal(STN_LFP_GABAa, units='mV', t_start=0*pq.ms, sampling_rate=pq.Quantity(simulator.state.dt, '1/ms'))
     # STN_LFP_GABAa_seg.analogsignals.append(STN_LFP_GABAa_signal)
-    # w = neo.io.NeoMatlabIO(filename=simulation_output_dir+"/STN_LFP_GABAa.mat")
+    # w = neo.io.NeoMatlabIO(filename=str(simulation_output_dir / "STN_LFP_GABAa.mat"))
     # w.write_block(STN_LFP_GABAa_Block)
 
     # Write the DBS Signal to .mat file
@@ -650,7 +681,7 @@ if __name__ == "__main__":
     )
     DBS_Signal_seg.analogsignals.append(DBS_times)
 
-    w = neo.io.NeoMatlabIO(filename=simulation_output_dir + "/DBS_Signal.mat")
+    w = neo.io.NeoMatlabIO(filename=str(simulation_output_dir / "DBS_Signal.mat"))
     w.write_block(DBS_Block)
 
     if rank == 0:
