@@ -29,7 +29,7 @@ from utils import generate_poisson_spike_times
 def create_network(
     Pop_size,
     steady_state_duration,
-    simulation_duration,
+    sim_total_time,
     simulation_runtime,
     v_init,
     rng_seed=3695,
@@ -120,7 +120,7 @@ def create_network(
                 mean=0,
                 stdev=0.005,
                 start=steady_state_duration,
-                stop=simulation_duration,
+                stop=sim_total_time,
                 dt=1.0,
             )
         )
@@ -131,7 +131,7 @@ def create_network(
                 mean=0,
                 stdev=0.005,
                 start=steady_state_duration,
-                stop=simulation_duration,
+                stop=sim_total_time,
                 dt=1.0,
             )
         )
@@ -339,7 +339,7 @@ def create_network(
 
 def load_network(
     steady_state_duration,
-    simulation_duration,
+    sim_total_time,
     simulation_runtime,
     v_init,
     rng_seed=3695,
@@ -413,7 +413,7 @@ def load_network(
                 mean=0,
                 stdev=0.005,
                 start=steady_state_duration,
-                stop=simulation_duration,
+                stop=sim_total_time,
                 dt=1.0,
             )
         )
@@ -424,7 +424,7 @@ def load_network(
                 mean=0,
                 stdev=0.005,
                 start=steady_state_duration,
-                stop=simulation_duration,
+                stop=sim_total_time,
                 dt=1.0,
             )
         )
@@ -435,6 +435,12 @@ def load_network(
     modulation_t = np.loadtxt(burst_times_script, delimiter=",")
     modulation_s = np.loadtxt(burst_level_script, delimiter=",")
     modulation_s = 0.02 * modulation_s  # Scale the modulation signal
+
+    while modulation_t[-1] < sim_total_time:
+        time_shift = modulation_t[-1] + np.mean(np.diff(modulation_t))
+        modulation_t = np.hstack((modulation_t, time_shift + modulation_t))
+        modulation_s = np.hstack((modulation_s, modulation_s))
+
     cortical_modulation_current = StepCurrentSource(
         times=modulation_t, amplitudes=modulation_s
     )
