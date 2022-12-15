@@ -437,7 +437,7 @@ def load_network(
     modulation_s = 0.02 * modulation_s  # Scale the modulation signal
 
     while modulation_t[-1] < sim_total_time:
-        time_shift = modulation_t[-1] + np.mean(np.diff(modulation_t))
+        time_shift = int(modulation_t[-1] - modulation_t[0] + np.mean(np.diff(modulation_t)))
         modulation_t = np.hstack((modulation_t, time_shift + modulation_t))
         modulation_s = np.hstack((modulation_s, modulation_s))
 
