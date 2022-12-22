@@ -51,9 +51,6 @@ h = neuron.h
 comm = MPI.COMM_WORLD
 
 if __name__ == "__main__":
-    # TODO: Fix the steady_state restore error when
-    # simulation_runtime < steady_state_duration - 1
-
     os.chdir(oldpwd)
     parser = argparse.ArgumentParser(description="CBG Model")
     parser.add_argument("config_file", nargs="?", help="yaml configuration file")

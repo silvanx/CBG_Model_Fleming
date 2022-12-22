@@ -4,7 +4,8 @@ Created on Wed April 03 14:27:26 2019
 
 Description: Functions for calculating cell distances to electrode. Distance is
              calculated similar to space.distance, but distance is now between
-             a cell position and a point for an electrode rather than between two cell positions
+             a cell position and a point for an electrode rather than between
+             two cell positions
 
 Edits:
     10-01-18: Created electrode_distance function
@@ -14,9 +15,10 @@ Edits:
 """
 
 # There must be some Python package out there that provides most of this stuff.
-# Distance computations are provided by scipy.spatial, but scipy is a fairly heavy dependency.
+# Distance computations are provided by scipy.spatial, but scipy is a fairly
+# heavy dependency.
 
-import numpy
+import numpy as np
 import logging
 
 logger = logging.getLogger("PyNN")
@@ -36,7 +38,7 @@ def distance_to_electrode(src_electrode, tgt_cell, mask=None):
 
     if mask is not None:
         d = d[mask]
-    return numpy.sqrt(numpy.dot(d, d))
+    return np.sqrt(np.dot(d, d))
 
 
 def distances_to_electrode(src_electrode, tgt_pop, coordinate_mask=None):
@@ -48,38 +50,35 @@ def distances_to_electrode(src_electrode, tgt_pop, coordinate_mask=None):
             * to ignore y, `coordinate_mask=array([0,2])`
             * to just consider z-distance, `coordinate_mask=array([2])`
     'src_electrode' is the electrode positon in xyz co-ordinates.
-    'tgt_pop' is the population of cells that the distance will be calculated to.
+    'tgt_pop' is the target population of cells.
     """
-    cell_electrode_distances = numpy.zeros((tgt_pop.local_size, 1))
-    cell_electrode_distances.flatten()
-
-    for ii, tgt_cell in enumerate(tgt_pop):
-        cell_electrode_distances[ii] = distance_to_electrode(
-            src_electrode, tgt_cell, mask=coordinate_mask
-        )
+    cell_electrode_distances = np.array([
+        distance_to_electrode(src_electrode, tgt_cell, mask=coordinate_mask)
+        for tgt_cell in tgt_pop
+        ])
 
     return cell_electrode_distances
-    # return cell_electrode_distances.flatten()
 
 
 def collateral_distances_to_electrode(src_electrode, tgt_pop, L, nseg):
     """
     Return an nd-array of the Euclidian distances from a point source
     electrode to a population of cells. Each row corresponds to a collateral
-    from the cortical population. Each column corresponds to the segments of the
-    collateral, with 0 being the furthest segment from the 2d plane the cells are
-    distributed in  and 1 being in the plane.
+    from the cortical population. Each column corresponds to the segments of
+    the collateral, with 0 being the furthest segment from the 2d plane the
+    cells are distributed in and 1 being in the plane.
     'src_electrode' is the electrode positon in xyz co-ordinates.
-    'tgt_pop' is the population of cells that the distance will be calculated to.
+    'tgt_pop' is the target population of cells.
     'L' is the length of the cortical collateral
     'nseg' is the number of segments in a collateral
-    'segment_electrode_distances' is the distance from the centre of each collateral
-    segment to the stimulating electrode. Each row corresponds to a collateral of a single
-    cortical cell. Each column corresponds to a segment of the collateral.
+    'segment_electrode_distances' is the distance from the centre of each
+    collateral segment to the stimulating electrode. Each row corresponds to
+    a collateral of a single cortical cell. Each column corresponds to a
+    segment of the collateral.
     """
-    segment_electrode_distances = numpy.zeros((tgt_pop.local_size, nseg))
+    segment_electrode_distances = np.zeros((tgt_pop.local_size, nseg))
 
-    segment_centres = numpy.arange(0, nseg + 3 - 1) * (1 / nseg)
+    segment_centres = np.arange(0, nseg + 3 - 1) * (1 / nseg)
     segment_centres = segment_centres - (1 / (2 * nseg))
     segment_centres[0] = 0
     segment_centres[-1] = 1
@@ -89,8 +88,8 @@ def collateral_distances_to_electrode(src_electrode, tgt_pop, L, nseg):
     # print(z_coordinate)
 
     for ii, tgt_cell in enumerate(tgt_pop):
-        for seg in numpy.arange(nseg):
-            tgt_cell.position = numpy.array(
+        for seg in np.arange(nseg):
+            tgt_cell.position = np.array(
                 [tgt_cell.position[0], tgt_cell.position[1], z_coordinate[seg]]
             )
             segment_electrode_distances[ii][seg] = distance_to_electrode(

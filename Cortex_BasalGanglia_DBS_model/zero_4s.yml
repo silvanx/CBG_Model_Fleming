@@ -1,0 +1,9 @@
+---
+# Simulation
+Controller: Zero
+RunTime: 4000
+RandomSeed: 8001
+
+# Controller
+SetPoint: 0
+Ts: 0

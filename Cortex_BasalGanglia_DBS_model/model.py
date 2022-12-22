@@ -452,7 +452,7 @@ def load_network(
     Cortical_Neuron_y_Positions = Cortical_Neuron_xy_Positions[1, :]
 
     # Set cortical xy positions to those loaded in
-    for ii, cell in enumerate(Cortical_Pop):
+    for ii, cell in enumerate(Cortical_Pop.all_cells):
         cell.position[0] = Cortical_Neuron_x_Positions[ii]
         cell.position[1] = Cortical_Neuron_y_Positions[ii]
 
@@ -462,7 +462,7 @@ def load_network(
     STN_Neuron_y_Positions = STN_Neuron_xy_Positions[1, :]
 
     # Set STN xy positions to those loaded in
-    for ii, cell in enumerate(STN_Pop):
+    for ii, cell in enumerate(STN_Pop.all_cells):
         cell.position[0] = STN_Neuron_x_Positions[ii]
         cell.position[1] = STN_Neuron_y_Positions[ii]
         cell.position[2] = 500
