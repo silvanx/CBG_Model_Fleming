@@ -52,10 +52,14 @@ def distances_to_electrode(src_electrode, tgt_pop, coordinate_mask=None):
     'src_electrode' is the electrode positon in xyz co-ordinates.
     'tgt_pop' is the target population of cells.
     """
-    cell_electrode_distances = np.array([
-        distance_to_electrode(src_electrode, tgt_cell, mask=coordinate_mask)
-        for tgt_cell in tgt_pop
-        ])
+
+    cell_electrode_distances = np.zeros((tgt_pop.local_size, 1))
+    cell_electrode_distances.flatten()
+
+    for ii, tgt_cell in enumerate(tgt_pop):
+        cell_electrode_distances[ii] = distance_to_electrode(
+            src_electrode, tgt_cell, mask=coordinate_mask
+        )
 
     return cell_electrode_distances
 
