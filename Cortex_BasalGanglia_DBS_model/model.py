@@ -448,21 +448,23 @@ def load_network(
 
     # Load cortical positions - Comment/Remove to generate new positions
     Cortical_Neuron_xy_Positions = np.loadtxt("cortical_xy_pos.txt", delimiter=",")
-    Cortical_Neuron_x_Positions = Cortical_Neuron_xy_Positions[0, :]
-    Cortical_Neuron_y_Positions = Cortical_Neuron_xy_Positions[1, :]
+    cortex_local_indices = [cell in Cortical_Pop for cell in Cortical_Pop.all_cells]
+    Cortical_Neuron_x_Positions = Cortical_Neuron_xy_Positions[0, cortex_local_indices]
+    Cortical_Neuron_y_Positions = Cortical_Neuron_xy_Positions[1, cortex_local_indices]
 
     # Set cortical xy positions to those loaded in
-    for ii, cell in enumerate(Cortical_Pop.all_cells):
+    for ii, cell in enumerate(Cortical_Pop):
         cell.position[0] = Cortical_Neuron_x_Positions[ii]
         cell.position[1] = Cortical_Neuron_y_Positions[ii]
 
     # Load STN positions - Comment/Remove to generate new positions
     STN_Neuron_xy_Positions = np.loadtxt("STN_xy_pos.txt", delimiter=",")
-    STN_Neuron_x_Positions = STN_Neuron_xy_Positions[0, :]
-    STN_Neuron_y_Positions = STN_Neuron_xy_Positions[1, :]
+    stn_local_indices = [cell in STN_Pop for cell in STN_Pop.all_cells]
+    STN_Neuron_x_Positions = STN_Neuron_xy_Positions[0, stn_local_indices]
+    STN_Neuron_y_Positions = STN_Neuron_xy_Positions[1, stn_local_indices]
 
     # Set STN xy positions to those loaded in
-    for ii, cell in enumerate(STN_Pop.all_cells):
+    for ii, cell in enumerate(STN_Pop):
         cell.position[0] = STN_Neuron_x_Positions[ii]
         cell.position[1] = STN_Neuron_y_Positions[ii]
         cell.position[2] = 500
