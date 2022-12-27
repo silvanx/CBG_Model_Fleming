@@ -74,9 +74,10 @@ def plot_controller_result(plot_start_t: float, plot_end_t: float,
     controller_t = controller_t * 1000
     s = time_to_sample(controller_t, plot_start_t)
     e = time_to_sample(controller_t, plot_end_t) - 1
-    axs[1].plot(controller_t[s:e], controller_p[s: e])
-    axs[1].set_ylabel(parameter)
-    axs[1].set_xlabel('Time [ms]')
+    if controller_p is not None:
+        axs[1].plot(controller_t[s:e], controller_p[s: e])
+        axs[1].set_ylabel(parameter)
+        axs[1].set_xlabel('Time [ms]')
 
     axs[2].plot(controller_t[s:e], controller_b[s: e])
     axs[2].set_ylabel('Beta')
