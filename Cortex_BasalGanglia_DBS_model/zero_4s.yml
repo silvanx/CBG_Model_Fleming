@@ -3,6 +3,7 @@
 Controller: Zero
 RunTime: 4000
 RandomSeed: 8001
+SteadyStateDuration: 1000
 
 # Controller
 SetPoint: 0

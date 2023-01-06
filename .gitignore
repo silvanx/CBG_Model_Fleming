@@ -4,6 +4,8 @@ __pycache__
 burst_*.txt
 Controller_Simulations
 Steady_State_Simulation
+PI_grid_search_12
 *.mat
 *.csv
 *.xlsx
+*.out
