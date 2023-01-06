@@ -7,6 +7,7 @@ from typing import Union, Any
 from numpy.typing import NDArray
 from scipy.interpolate import griddata
 from matplotlib import cm
+import re
 
 
 def mat_to_dict(obj: Any) -> dict:
@@ -46,7 +47,8 @@ def load_controller_data(dir: Path, parameter: str = None)\
         with open(dir / ('controller_%s_values.csv' % parameter), 'r') as f:
             controller_p = np.array([float(r[0]) for r in csv.reader(f)])
     else:
-        controller_p = None
+        with open(dir / ('controller_values.csv'), 'r') as f:
+            controller_p = np.array([float(r[0]) for r in csv.reader(f)])
     with open(dir / 'controller_beta_values.csv', 'r') as f:
         controller_b = np.array([float(r[0]) for r in csv.reader(f)])
     return controller_t, controller_p, controller_b
@@ -253,17 +255,26 @@ def load_fitness_data(pi_fitness_dir, setpoint=1.0414E-4, tail_length=6):
             continue
         try:
             controller_t, controller_p, controller_b = \
-                load_controller_data(result_dir, 'amplitude')
+                load_controller_data(result_dir)
         except FileNotFoundError:
             print('Not found: %s' % (result_dir.name))
             continue
         mse = compute_mse(controller_t, controller_b, setpoint, tail_length)
         teed = compute_mse(controller_t, controller_p, 0, tail_length)
-        params_string = result_dir.name.split('-')[0].split(',')
-        for p in params_string:
-            p = p.strip()
-            k, v = p.split('=')
-            res[k] = float(v)
+        if re.match('^Kp=.*', result_dir.name):
+            params_string = result_dir.name.split('-')[0].split(',')
+            for p in params_string:
+                p = p.strip()
+                k, v = p.split('=')
+                res[k] = float(v)
+        else:
+            simulation_id = result_dir.name.split('-')[-1]
+            with open(Path(pi_fitness_dir) / f'pi_grid_{simulation_id}.sh', 'r') as f:
+                for line in f:
+                    if re.match('^mpirun', line):
+                        kp, ti = re.search('pi_([\.0-9]+)_([\.0-9]+)\.yml', line).groups()
+                        res['Kp'] = float(kp)
+                        res['Ti'] = float(ti)
         res['mse'] = mse
         res['teed'] = teed
         fitness_list.append(res)
