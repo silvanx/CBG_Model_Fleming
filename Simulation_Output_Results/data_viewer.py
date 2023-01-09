@@ -26,19 +26,16 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__()
 
         self.fitness_dir = (
-            "Cortex_BasalGanglia_DBS_model/Simulation_Output_Results/"
-            "Controller_Simulations/Amp/standard_PID_Controller"
+            "Simulation_Output_Results/PI_grid_search_12"
             )
         self.results_dir = (
-            "Cortex_BasalGanglia_DBS_model/Simulation_Output_Results/"
-            "Controller_Simulations/IFT"
+            "Simulation_Output_Results/ift"
             )
         self.file_list = []
         self.current_file = None
         self.last_arrows = None
         self.df = pd.read_excel(
-            "Cortex_BasalGanglia_DBS_model/Simulation_Output_Results/"
-            "simulation_params.xlsx"
+            "Simulation_Output_Results/simulation_params.xlsx"
             ).dropna(subset=['Simulation dir'])
 
         self.parameter_plot = MplCanvas(self, width=12, height=7, dpi=100)
