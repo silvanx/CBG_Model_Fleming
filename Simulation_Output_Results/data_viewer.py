@@ -93,9 +93,19 @@ class MainWindow(QtWidgets.QMainWindow):
         layout_right.addWidget(self.directory_label)
         layout_right.addWidget(self.file_list_widget)
 
+        main_splitter = QtWidgets.QSplitter()
+
+        widget_left = QtWidgets.QWidget()
+        widget_left.setLayout(layout_left)
+
+        widget_right = QtWidgets.QWidget()
+        widget_right.setLayout(layout_right)
+
+        main_splitter.addWidget(widget_left)
+        main_splitter.addWidget(widget_right)
+
         layout_main = QtWidgets.QHBoxLayout()
-        layout_main.addLayout(layout_left)
-        layout_main.addLayout(layout_right)
+        layout_main.addWidget(main_splitter)
 
         widget = QtWidgets.QWidget()
         # Main layout
