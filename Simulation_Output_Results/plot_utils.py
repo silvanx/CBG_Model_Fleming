@@ -442,3 +442,69 @@ def plot_two_trajectories(pi_fitness_dir, dir1, lam1, dir2, lam2,
     ax[1].text(-0.4, 2.33, '(b)', fontsize=30)
     ax[1].set_title(f'$\\lambda={lam2}$')
     plt.subplots_adjust(hspace=0.3)
+
+
+def plot_ift_signals(dirname, axs=None):
+    result_dir = Path(dirname)
+    with open(result_dir / 'controller_sample_times.csv', 'r') as f:
+        tt = np.array([float(r) for r in f])
+
+    with open(result_dir / 'controller_iteration_values.csv', 'r') as f:
+        iteration_history = np.array([float(r) for r in f])
+
+    with open(result_dir / 'controller_reference_values.csv', 'r') as f:
+        reference_history = np.array([float(r) for r in f])
+
+    with open(result_dir / 'controller_error_values.csv', 'r') as f:
+        error_history = np.array([float(r) for r in f])
+
+    with open(result_dir / 'controller_beta_values.csv', 'r') as f:
+        beta_history = np.array([float(r) for r in f])
+
+    with open(result_dir / 'controller_parameter_values.csv', 'r') as f:
+        csvreader = csv.reader(f, delimiter=',')
+        parameters = np.asarray([
+            [float(row[0]), float(row[1])]for row in csvreader
+        ])
+
+    with open(result_dir / 'controller_integral_term_values.csv', 'r') as f:
+        integral_term_history = np.array([float(r) for r in f])
+
+    time, dbs = load_dbs_output(result_dir)
+
+    shifted_reference_history = np.copy(reference_history)
+    shifted_reference_history[iteration_history == 0] = 0
+    edges = list(iter(np.where(np.diff(1 * (iteration_history == 1)))[0]))
+    n = len(edges)
+    for i, s in enumerate(edges[::2]):
+        if 2 * i + 1 >= n:
+            break
+        e = edges[2 * i + 1]
+        length = e - s
+        if s < length:
+            tmp = np.delete(shifted_reference_history, np.s_[:s])
+            shifted_reference_history = np.insert(
+                tmp, length + 1, np.zeros(s))
+        else:
+            tmp = np.delete(shifted_reference_history, np.s_[s-length:s])
+            shifted_reference_history = np.insert(
+                tmp, e - length + 1, np.zeros(length))
+
+    if axs is None:
+        fig = plt.figure(figsize=(12, 10))
+        axs = []
+        axs.append(fig.add_subplot(3, 1, 1))
+        axs.append(fig.add_subplot(3, 1, 2))
+        axs.append(fig.add_subplot(3, 1, 3))
+    axs[0].plot(tt, beta_history)
+    axs[1].plot(time['signal'][:, 0]/1000, -dbs['signal'][:, 0])
+    axs[1].plot(tt, error_history)
+    axs[1].plot(tt, integral_term_history)
+    axs[2].plot(tt, parameters[:, 0])
+    axs[2].plot(tt, parameters[:, 1])
+    axs[2].plot(tt, iteration_history)
+    axs[2].legend(['kp', 'ti'])
+    axs[0].plot(tt, shifted_reference_history)
+
+    for a in axs:
+        a.set_xlim([min(tt) - 0.1, max(tt) + 0.1])

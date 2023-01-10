@@ -20,10 +20,41 @@ class MplCanvas(FigureCanvasQTAgg):
         super(MplCanvas, self).__init__(self.fig)
 
 
+class DetailedViewWindow(QtWidgets.QMainWindow):
+
+    def __init__(self, parent=None):
+        super(DetailedViewWindow, self).__init__(parent)
+
+        self.setWindowTitle("Detailed View Window")
+        self.canvas = MplCanvas(self, width=5, height=4, dpi=100)
+        self.canvas.axes.remove()
+        self.canvas.axes = None
+        self.axs = [
+            self.canvas.fig.add_subplot(3, 1, 1),
+            self.canvas.fig.add_subplot(3, 1, 2),
+            self.canvas.fig.add_subplot(3, 1, 3)
+        ]
+        toolbar = NavigationToolbar(self.canvas, self)
+
+        main_widget = QtWidgets.QWidget()
+        central_layout = QtWidgets.QVBoxLayout()
+        central_layout.addWidget(toolbar)
+        central_layout.addWidget(self.canvas)
+        main_widget.setLayout(central_layout)
+
+        self.setCentralWidget(main_widget)
+
+
 class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
+
+        hover_label_style = (
+            "QLabel::hover"
+            "{"
+            "color : #8e8e8e"
+            "}")
 
         self.fitness_dir = (
             "Simulation_Output_Results/PI_grid_search_12"
@@ -51,30 +82,31 @@ class MainWindow(QtWidgets.QMainWindow):
         layout_plotting.addWidget(self.parameter_plot)
         self.parameter_plot.setMinimumWidth(200)
 
+        open_detailed_view_button = QtWidgets.QPushButton()
+        open_detailed_view_button.setText("Open detailed view (D)")
+        self.detailed_view_window = DetailedViewWindow(self)
+        open_detailed_view_button.clicked.connect(
+            self.open_detailed_view_window)
+
         # Left side
         layout_left = QtWidgets.QVBoxLayout()
 
         layout_left.addWidget(self.description)
         layout_left.addLayout(layout_plotting)
+        layout_left.addWidget(open_detailed_view_button)
 
         # Right side
         layout_right = QtWidgets.QVBoxLayout()
 
         self.fitness_directory_label = QtWidgets.QLabel()
-        self.fitness_directory_label.setStyleSheet("QLabel::hover"
-                                                   "{"
-                                                   "color : #8e8e8e"
-                                                   "}")
+        self.fitness_directory_label.setStyleSheet(hover_label_style)
         if self.results_dir is not None:
             self.fitness_directory_label.setText(self.fitness_dir)
         else:
             self.fitness_directory_label.setText('None')
 
         self.directory_label = QtWidgets.QLabel()
-        self.directory_label.setStyleSheet("QLabel::hover"
-                                           "{"
-                                           "color : #8e8e8e"
-                                           "}")
+        self.directory_label.setStyleSheet(hover_label_style)
         if self.results_dir is not None:
             self.directory_label.setText(self.results_dir)
         else:
@@ -121,6 +153,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle("Closed-loop parameters")
         self.show()
+
+    def open_detailed_view_window(self):
+        if self.current_file is not None:
+            filename = Path(self.results_dir) / self.file_list[self.current_file]
+            u.plot_ift_signals(
+                filename,
+                self.detailed_view_window.axs
+            )
+        self.detailed_view_window.canvas.draw()
+        self.detailed_view_window.canvas.flush_events()
+        self.detailed_view_window.show()
 
     def change_file_dir(self, event):
         newdir = QtWidgets.QFileDialog.getExistingDirectory(
@@ -208,7 +251,7 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 self.description.setText("No description found in database")
 
-            tt, _, _, _, _, params, _ = u.read_ift_results(f)
+            _, _, _, _, _, params, _ = u.read_ift_results(f)
             self.last_arrows = u.add_arrows_to_plot(
                 self.parameter_plot.axes,
                 params
