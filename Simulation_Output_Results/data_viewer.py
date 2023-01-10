@@ -35,7 +35,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.current_file = None
         self.last_arrows = None
         self.df = pd.read_excel(
-            "Simulation_Output_Results/simulation_params.xlsx"
+            "Simulation_Output_Results/output.xlsx"
             ).dropna(subset=['Simulation dir'])
 
         self.parameter_plot = MplCanvas(self, width=12, height=7, dpi=100)
@@ -105,6 +105,7 @@ class MainWindow(QtWidgets.QMainWindow):
         u.plot_pi_fitness_function(Path(self.fitness_dir),
                                    self.parameter_plot.fig,
                                    self.parameter_plot.axes)
+        self.last_lambda = 1
         self.file_list = self.populate_file_list()
         self.refresh_file_list_display()
 
@@ -168,13 +169,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.current_file = self.file_list.index(text)
             f = Path(self.results_dir) / text
 
-            tt, _, _, _, _, params, _ = u.read_ift_results(f)
-            self.last_arrows = u.add_arrows_to_plot(
-                self.parameter_plot.axes,
-                params
-                )
-            self.parameter_plot.draw()
-
             row = self.df[self.df["Simulation dir"].str.contains(text)]
             if not row.empty:
                 description = (
@@ -188,8 +182,28 @@ class MainWindow(QtWidgets.QMainWindow):
                     f"lambda: {row.iloc[0]['lambda']}\n"
                     )
                 self.description.setText(description)
+                if self.last_lambda != row.iloc[0]['lambda']:
+                    try:
+                        cax = self.parameter_plot.fig.axes[-1]
+                    except IndexError:
+                        cax = None
+                    self.parameter_plot.axes.cla()
+                    u.plot_pi_fitness_function(Path(self.fitness_dir),
+                                               self.parameter_plot.fig,
+                                               self.parameter_plot.axes,
+                                               cax=cax,
+                                               lam=row.iloc[0]['lambda'])
+                    self.parameter_plot.draw()
+                    self.last_lambda = row.iloc[0]['lambda']
             else:
                 self.description.setText("No description found in database")
+
+            tt, _, _, _, _, params, _ = u.read_ift_results(f)
+            self.last_arrows = u.add_arrows_to_plot(
+                self.parameter_plot.axes,
+                params
+                )
+            self.parameter_plot.draw()
 
 
 if __name__ == "__main__":
