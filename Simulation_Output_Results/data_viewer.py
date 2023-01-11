@@ -29,10 +29,11 @@ class DetailedViewWindow(QtWidgets.QMainWindow):
         self.canvas = MplCanvas(self, width=5, height=4, dpi=100)
         self.canvas.axes.remove()
         self.canvas.axes = None
+        first_ax = self.canvas.fig.add_subplot(3, 1, 1)
         self.axs = [
-            self.canvas.fig.add_subplot(3, 1, 1),
-            self.canvas.fig.add_subplot(3, 1, 2),
-            self.canvas.fig.add_subplot(3, 1, 3)
+            first_ax,
+            self.canvas.fig.add_subplot(3, 1, 2, sharex=first_ax),
+            self.canvas.fig.add_subplot(3, 1, 3, sharex=first_ax)
         ]
         toolbar = NavigationToolbar(self.canvas, self)
 
@@ -233,6 +234,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     f"Ti init: {row.iloc[0]['Ti']}\n"
                     f"gamma: {row.iloc[0]['gamma']}, "
                     f"lambda: {row.iloc[0]['lambda']}\n"
+                    f"min_kp,min_ti: {row.iloc[0]['min_kp,min_ti']}"
                     )
                 self.description.setText(description)
                 if self.last_lambda != row.iloc[0]['lambda']:
