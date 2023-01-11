@@ -248,6 +248,13 @@ def plot_fitness_pi_params(pi_fitness_dir, setpoint=1.0414E-4, three_d=False,
 
 def load_fitness_data(pi_fitness_dir, setpoint=1.0414E-4, tail_length=6):
     directory = Path(pi_fitness_dir)
+
+    try:
+        output = np.load(directory / 'output.npy', allow_pickle=True)
+        return output
+    except OSError:
+        print('No output.npy found, recalculating')
+
     fitness_list = []
     for result_dir in directory.iterdir():
         res = dict()
@@ -296,7 +303,9 @@ def load_fitness_data(pi_fitness_dir, setpoint=1.0414E-4, tail_length=6):
     xi, yi = np.meshgrid(xi, yi)
     mse_zi = griddata((x, y), mse, (xi, yi), method='linear')
     teed_zi = griddata((x, y), teed, (xi, yi), method='linear')
-    return x, y, xi, yi, mse, teed, mse_zi, teed_zi
+    output = np.array([x, y, xi, yi, mse, teed, mse_zi, teed_zi], dtype=object)
+    np.save(directory / 'output.npy', output, allow_pickle=True)
+    return output
 
 
 def compute_fitness(x, y, xi, yi, mse, teed, lam, method='linear'):
@@ -398,7 +407,7 @@ def read_ift_results(dirname):
 
 
 def add_arrows_to_plot(ax, parameters):
-    abase = np.vstack((parameters[np.where(np.diff(parameters[:, 0]))[0]],
+    abase = np.vstack((parameters[np.unique(np.where(np.diff(parameters[:, :], axis=0))[0])],
                        parameters[-1, :]))
     ad = np.diff(abase, axis=0)
     arrows = []

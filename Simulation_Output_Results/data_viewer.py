@@ -26,7 +26,7 @@ class DetailedViewWindow(QtWidgets.QMainWindow):
         super(DetailedViewWindow, self).__init__(parent)
 
         self.setWindowTitle("Detailed View Window")
-        self.canvas = MplCanvas(self, width=5, height=4, dpi=100)
+        self.canvas = MplCanvas(self, width=8, height=6, dpi=100)
         self.canvas.axes.remove()
         self.canvas.axes = None
         first_ax = self.canvas.fig.add_subplot(3, 1, 1)
@@ -76,7 +76,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.description = QtWidgets.QLabel()
         self.description.setText("Description")
         self.description.setFont(QtGui.QFont("Roboto", 15))
-        self.description.setFixedHeight(100)
+        self.description.setFixedHeight(120)
 
         layout_plotting = QtWidgets.QVBoxLayout()
         layout_plotting.addWidget(parameter_toolbar)
@@ -156,6 +156,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.show()
 
     def open_detailed_view_window(self):
+        for ax in self.detailed_view_window.axs:
+            ax.cla()
         if self.current_file is not None:
             filename = Path(self.results_dir) / self.file_list[self.current_file]
             u.plot_ift_signals(
