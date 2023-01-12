@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys
 import matplotlib
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets, QtGui, QtCore
 import plot_utils as u
 import pandas as pd
 
@@ -83,18 +83,28 @@ class MainWindow(QtWidgets.QMainWindow):
         layout_plotting.addWidget(self.parameter_plot)
         self.parameter_plot.setMinimumWidth(200)
 
+        recalculate_fitness_button = QtWidgets.QPushButton()
+        recalculate_fitness_button.setText("Reload fitness (R)")
+        recalculate_fitness_button.clicked.connect(
+            self.recalculate_fitness
+        )
+
         open_detailed_view_button = QtWidgets.QPushButton()
         open_detailed_view_button.setText("Open detailed view (D)")
         self.detailed_view_window = DetailedViewWindow(self)
         open_detailed_view_button.clicked.connect(
             self.open_detailed_view_window)
 
+        buttons = QtWidgets.QHBoxLayout()
+        buttons.addWidget(recalculate_fitness_button)
+        buttons.addWidget(open_detailed_view_button)
+
         # Left side
         layout_left = QtWidgets.QVBoxLayout()
 
         layout_left.addWidget(self.description)
         layout_left.addLayout(layout_plotting)
-        layout_left.addWidget(open_detailed_view_button)
+        layout_left.addLayout(buttons)
 
         # Right side
         layout_right = QtWidgets.QVBoxLayout()
@@ -116,6 +126,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file_list_widget = QtWidgets.QListWidget()
         self.file_list_widget.itemSelectionChanged.connect(
             self.plot_clicked_dir_arrows)
+        self.file_list_widget.installEventFilter(self)
 
         self.directory_label.mousePressEvent = self.change_file_dir
         self.fitness_directory_label.mousePressEvent = self.change_fitness_dir
@@ -145,6 +156,8 @@ class MainWindow(QtWidgets.QMainWindow):
         widget.setLayout(layout_main)
         self.setCentralWidget(widget)
 
+        self.installEventFilter(self)
+
         u.plot_pi_fitness_function(Path(self.fitness_dir),
                                    self.parameter_plot.fig,
                                    self.parameter_plot.axes)
@@ -155,7 +168,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("Closed-loop parameters")
         self.show()
 
-    def open_detailed_view_window(self):
+    # def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+    #     print('aaa')
+    #     if event.key() == QtCore.Qt.Key.Key_D:
+    #         self.open_detailed_view_window()
+
+    def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        if event.type() != QtCore.QEvent.Type.KeyPress:
+            return False
+
+        if event.key() == QtCore.Qt.Key.Key_D:
+            self.open_detailed_view_window()
+            return True
+
+        return False
+
+    def open_detailed_view_window(self) -> None:
         for ax in self.detailed_view_window.axs:
             ax.cla()
         if self.current_file is not None:
@@ -167,6 +195,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.detailed_view_window.canvas.draw()
         self.detailed_view_window.canvas.flush_events()
         self.detailed_view_window.show()
+
+    def recalculate_fitness(self) -> None:
+        fitness_file = Path(self.fitness_dir) / 'output.npy'
+        fitness_file.unlink()
+        u.plot_pi_fitness_function(Path(self.fitness_dir),
+                                   self.parameter_plot.fig,
+                                   self.parameter_plot.axes)
 
     def change_file_dir(self, event):
         newdir = QtWidgets.QFileDialog.getExistingDirectory(
