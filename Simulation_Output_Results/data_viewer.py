@@ -28,7 +28,6 @@ class DetailedViewWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("Detailed View Window")
         self.canvas = MplCanvas(self, width=8, height=6, dpi=100)
         self.canvas.axes.remove()
-        self.canvas.axes = None
         first_ax = self.canvas.fig.add_subplot(3, 1, 1)
         self.axs = [
             first_ax,
@@ -44,6 +43,10 @@ class DetailedViewWindow(QtWidgets.QMainWindow):
         main_widget.setLayout(central_layout)
 
         self.setCentralWidget(main_widget)
+
+    def keyPressEvent(self, ev: QtGui.QKeyEvent) -> None:
+        if ev.key() == QtCore.Qt.Key.Key_Escape:
+            self.close()
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -168,26 +171,28 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("Closed-loop parameters")
         self.show()
 
-    # def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
-    #     print('aaa')
-    #     if event.key() == QtCore.Qt.Key.Key_D:
-    #         self.open_detailed_view_window()
-
-    def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
+    def eventFilter(self,
+                    object: QtCore.QObject,
+                    event: QtCore.QEvent) -> bool:
         if event.type() != QtCore.QEvent.Type.KeyPress:
             return False
 
         if event.key() == QtCore.Qt.Key.Key_D:
             self.open_detailed_view_window()
             return True
+        elif event.key() == QtCore.Qt.Key.Key_R:
+            self.recalculate_fitness()
+            return True
 
         return False
 
     def open_detailed_view_window(self) -> None:
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
         for ax in self.detailed_view_window.axs:
             ax.cla()
         if self.current_file is not None:
-            filename = Path(self.results_dir) / self.file_list[self.current_file]
+            filename = (Path(self.results_dir) /
+                        self.file_list[self.current_file])
             u.plot_ift_signals(
                 filename,
                 self.detailed_view_window.axs
@@ -195,15 +200,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.detailed_view_window.canvas.draw()
         self.detailed_view_window.canvas.flush_events()
         self.detailed_view_window.show()
+        QtWidgets.QApplication.restoreOverrideCursor()
 
     def recalculate_fitness(self) -> None:
         fitness_file = Path(self.fitness_dir) / 'output.npy'
         fitness_file.unlink()
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
         u.plot_pi_fitness_function(Path(self.fitness_dir),
                                    self.parameter_plot.fig,
                                    self.parameter_plot.axes)
+        QtWidgets.QApplication.restoreOverrideCursor()
 
-    def change_file_dir(self, event):
+    def change_file_dir(self, ev):
         newdir = QtWidgets.QFileDialog.getExistingDirectory(
             self,
             '',
@@ -216,7 +224,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.file_list = self.populate_file_list()
             self.refresh_file_list_display()
 
-    def change_fitness_dir(self, event):
+    def change_fitness_dir(self, ev):
         newdir = QtWidgets.QFileDialog.getExistingDirectory(
             self,
             '',
