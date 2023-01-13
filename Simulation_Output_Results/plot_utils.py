@@ -194,15 +194,22 @@ def plot_fitness_pi_params(pi_fitness_dir, setpoint=1.0414E-4, three_d=False,
     comb_fig, comb_ax = plt.subplots(1, 3, figsize=(33, 7))
     plot_colormap(comb_fig, comb_ax[0], x, y, xi, yi, mse_zi,
                   title='Beta power', show_xy=False, cmap=cmap)
-    comb_ax[0].text(-0.2, 2.35, '(a)', fontsize=24)
+    comb_ax[0].set_xticks([0.0, 0.5, 1.0, 1.5, 2.0])
+    comb_ax[0].set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
+    comb_ax[0].text(-0.2, 2.11, '(a)', fontsize=24)
     plot_colormap(comb_fig, comb_ax[1], x, y, xi, yi, teed_zi,
                   title='Stimulation power', show_xy=False, cmap=cmap)
-    comb_ax[1].text(-0.2, 2.35, '(b)', fontsize=24)
+    comb_ax[1].set_xticks([0.0, 0.5, 1.0, 1.5, 2.0])
+    comb_ax[1].set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
+    comb_ax[1].text(-0.2, 2.11, '(b)', fontsize=24)
     plot_colormap(comb_fig, comb_ax[2], x, y, xi, yi, fitness_zi,
                   title=f'Cost function $\\lambda=${lam}', show_xy=False,
                   cmap=cmap)
-    comb_ax[2].text(-0.2, 2.35, '(c)', fontsize=24)
-    plt.subplots_adjust(wspace=0.08)
+    comb_ax[2].set_xticks([0.0, 0.5, 1.0, 1.5, 2.0])
+    comb_ax[2].set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
+    comb_ax[2].text(-0.2, 2.11, '(c)', fontsize=24)
+    plt.subplots_adjust(wspace=0.15)
+    plt.savefig('three_plots.eps', bbox_inches='tight')
 
     if three_d:
         mse_fig, mse_ax = plt.subplots(figsize=(25, 12),
@@ -426,6 +433,8 @@ def plot_two_trajectories(pi_fitness_dir, dir1, lam1, dir2, lam2,
     tt, _, _, _, _, params, _ = read_ift_results(dir1)
     fitness_zi = compute_fitness(x, y, xi, yi, mse, teed, lam1)
     plot_colormap(fig, ax[0], x, y, xi, yi, fitness_zi)
+    ax[0].set_xticks([0.0, 0.5, 1.0, 1.5, 2.0])
+    ax[0].set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
     if timestop1 is not None:
         dt = tt[1] - tt[0]
         stop_index = int(timestop1 / dt)
@@ -434,12 +443,14 @@ def plot_two_trajectories(pi_fitness_dir, dir1, lam1, dir2, lam2,
           f'Initial value: ({params[0, 0]:.2f}, {params[0, 1]:.2f}), '
           f'Final value: ({params[-1, 0]:.2f}, {params[-1, 1]:.2f})')
     add_arrows_to_plot(ax[0], params)
-    ax[0].text(-0.4, 2.33, '(a)', fontsize=30)
-    ax[0].set_title(f'$\\lambda={lam1}$')
+    ax[0].text(-0.4, 2.06, '(a)', fontsize=30)
+    ax[0].set_title(f'$\\lambda={lam1}$', fontsize=20)
 
     tt, _, _, _, _, params, _ = read_ift_results(dir2)
     fitness_zi = compute_fitness(x, y, xi, yi, mse, teed, lam2)
     plot_colormap(fig, ax[1], x, y, xi, yi, fitness_zi)
+    ax[1].set_xticks([0.0, 0.5, 1.0, 1.5, 2.0])
+    ax[1].set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
     if timestop2 is not None:
         dt = tt[1] - tt[0]
         stop_index = int(timestop2 / dt)
@@ -448,9 +459,9 @@ def plot_two_trajectories(pi_fitness_dir, dir1, lam1, dir2, lam2,
     print(f'Lambda: {lam2}, '
           f'Initial value: ({params[0, 0]:.2f}, {params[0, 1]:.2f}), '
           f'Final value: ({params[-1, 0]:.2f}, {params[-1, 1]:.2f})')
-    ax[1].text(-0.4, 2.33, '(b)', fontsize=30)
-    ax[1].set_title(f'$\\lambda={lam2}$')
-    plt.subplots_adjust(hspace=0.3)
+    ax[1].text(-0.4, 2.06, '(b)', fontsize=30)
+    ax[1].set_title(f'$\\lambda={lam2}$', fontsize=20)
+    plt.subplots_adjust(hspace=0.22)
 
 
 def plot_ift_signals(dirname, axs=None):

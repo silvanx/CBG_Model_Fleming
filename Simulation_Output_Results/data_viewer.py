@@ -206,9 +206,16 @@ class MainWindow(QtWidgets.QMainWindow):
         fitness_file = Path(self.fitness_dir) / 'output.npy'
         fitness_file.unlink()
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+        try:
+            cax = self.parameter_plot.fig.axes[-1]
+        except IndexError:
+            cax = None
+        self.parameter_plot.axes.cla()
         u.plot_pi_fitness_function(Path(self.fitness_dir),
                                    self.parameter_plot.fig,
-                                   self.parameter_plot.axes)
+                                   self.parameter_plot.axes,
+                                   cax=cax)
+        self.parameter_plot.draw()
         QtWidgets.QApplication.restoreOverrideCursor()
 
     def change_file_dir(self, ev):
