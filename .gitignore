@@ -9,3 +9,5 @@ PI_grid_search_12
 *.csv
 *.xlsx
 *.out
+*.png
+*.eps
