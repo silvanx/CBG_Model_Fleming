@@ -2,6 +2,7 @@ import scipy.io as sio
 import numpy as np
 import csv
 import matplotlib.pyplot as plt
+import matplotlib.colors as clrs
 from pathlib import Path
 from typing import Union, Any
 from numpy.typing import NDArray
@@ -39,7 +40,7 @@ def load_stn_lfp(dir: Path, steady_state_time: float, sim_time: float)\
 
 
 def load_controller_data(dir: Path, parameter: str = None)\
-        -> tuple[NDArray[np.float32], NDArray[np.float32]]:
+        -> tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32]]:
     '''Reads controller data from CSV files'''
     with open(dir / 'controller_sample_times.csv', 'r') as f:
         controller_t = np.array([float(r[0]) for r in csv.reader(f)])
@@ -115,6 +116,13 @@ def load_and_plot(dirname: Union[str, list[str]], parameter: str,
                                      controller_b, lfp_time, lfp, axs)
 
 
+def compute_cost(lfp: np.ndarray, u: np.ndarray, lam: float,
+                 setpoint: float = 1.0414E-4) -> float:
+    n = len(lfp)
+    cost = np.sum((lfp - setpoint) ** 2 + lam * u ** 2) / (2 * n)
+    return cost
+
+
 def compute_mse(lfp_time: np.ndarray, lfp: np.ndarray,
                 setpoint: float = 1.0414E-4,
                 tail_length: float = None) -> float:
@@ -179,7 +187,8 @@ def plot_colormap(fig, ax, x_orig, y_orig, x, y, z, xlabel='$K_p$',
 
 
 def plot_fitness_pi_params(pi_fitness_dir, setpoint=1.0414E-4, three_d=False,
-                           lam=1e-8, tail_length=6, cmap=cm.gist_rainbow):
+                           lam=1e-8, tail_length=6, recalculate=False,
+                           cmap=cm.gist_rainbow):
     (
         x,
         y,
@@ -188,8 +197,10 @@ def plot_fitness_pi_params(pi_fitness_dir, setpoint=1.0414E-4, three_d=False,
         mse,
         teed,
         mse_zi,
-        teed_zi
-     ) = load_fitness_data(pi_fitness_dir, setpoint, tail_length=tail_length)
+        teed_zi,
+        cost_zi
+     ) = load_fitness_data(pi_fitness_dir, lam, setpoint,
+                           tail_length=tail_length, recalculate=recalculate)
     fitness_zi = compute_fitness(x, y, xi, yi, mse, teed, lam)
     comb_fig, comb_ax = plt.subplots(1, 3, figsize=(33, 7))
     plot_colormap(comb_fig, comb_ax[0], x, y, xi, yi, mse_zi,
@@ -250,17 +261,32 @@ def plot_fitness_pi_params(pi_fitness_dir, setpoint=1.0414E-4, three_d=False,
         fit_fig = plt.figure(figsize=(12, 7))
         fit_ax = plt.gca()
         plot_colormap(fit_fig, fit_ax, x, y, xi, yi, fitness_zi,
+                      title='Fitness function', show_xy=True, cmap=cmap)
+
+        def func_to_vectorize(x, y, dx, dy, scaling=5000):
+            plt.arrow(x, y, dx*scaling, dy*scaling, fc="k", ec="k", head_width=0.01, head_length=0.01)
+        vectorized_arrow_drawing = np.vectorize(func_to_vectorize)
+
+        cost_fig = plt.figure(figsize=(22, 14))
+        cost_ax = plt.gca()
+        plot_colormap(cost_fig, cost_ax, x, y, xi, yi, cost_zi,
                       title='Cost function', show_xy=True, cmap=cmap)
+        a, b = np.gradient(cost_zi)
+        vectorized_arrow_drawing(xi[1::10, 1::10], yi[1::10, 1::10], a[1::10, 1::10], b[1::10, 1::10])
 
 
-def load_fitness_data(pi_fitness_dir, setpoint=1.0414E-4, tail_length=6):
+def load_fitness_data(pi_fitness_dir, lam, setpoint=1.0414E-4, tail_length=6,
+                      recalculate=False):
     directory = Path(pi_fitness_dir)
 
-    try:
-        output = np.load(directory / 'output.npy', allow_pickle=True)
-        return output
-    except OSError:
-        print('No output.npy found, recalculating')
+    if not recalculate:
+        try:
+            output = np.load(directory / 'output.npy', allow_pickle=True)
+            return output
+        except OSError:
+            print('No output.npy found, recalculating')
+    else:
+        print('Forcibly recalculating fitness')
 
     fitness_list = []
     for result_dir in directory.iterdir():
@@ -275,6 +301,10 @@ def load_fitness_data(pi_fitness_dir, setpoint=1.0414E-4, tail_length=6):
             continue
         mse = compute_mse(controller_t, controller_b, setpoint, tail_length)
         teed = compute_mse(controller_t, controller_p, 0, tail_length)
+
+        tail_samples = int(tail_length / (controller_t[1]-controller_t[0]))
+        cost = compute_cost(controller_b[-tail_samples:], controller_p[-tail_samples:], lam)
+
         if re.match('^Kp=.*', result_dir.name):
             params_string = result_dir.name.split('-')[0].split(',')
             for p in params_string:
@@ -291,26 +321,32 @@ def load_fitness_data(pi_fitness_dir, setpoint=1.0414E-4, tail_length=6):
                         res['Ti'] = float(ti)
         res['mse'] = mse
         res['teed'] = teed
+        res['cost'] = cost
         fitness_list.append(res)
     x = []
     y = []
     mse = []
     teed = []
+    cost = []
     for e in fitness_list:
         x.append(e['Kp'])
         y.append(e['Ti'])
         mse.append(e['mse'])
         teed.append(e['teed'])
+        cost.append(e['cost'])
     x = np.array(x)
     y = np.array(y)
     mse = np.array(mse)
     teed = np.array(teed)
+    cost = np.array(cost)
     max_value = max(x.max(), y.max()) + 0.01
     xi = yi = np.arange(0, max_value, 0.01)
     xi, yi = np.meshgrid(xi, yi)
-    mse_zi = griddata((x, y), mse, (xi, yi), method='linear')
-    teed_zi = griddata((x, y), teed, (xi, yi), method='linear')
-    output = np.array([x, y, xi, yi, mse, teed, mse_zi, teed_zi], dtype=object)
+    method = 'linear'
+    mse_zi = griddata((x, y), mse, (xi, yi), method=method)
+    teed_zi = griddata((x, y), teed, (xi, yi), method=method)
+    cost_zi = griddata((x, y), cost, (xi, yi), method=method)
+    output = np.array([x, y, xi, yi, mse, teed, mse_zi, teed_zi, cost_zi], dtype=object)
     np.save(directory / 'output.npy', output, allow_pickle=True)
     return output
 
@@ -322,7 +358,7 @@ def compute_fitness(x, y, xi, yi, mse, teed, lam, method='linear'):
 
 
 def plot_pi_fitness_function(pi_fitness_dir, fig, ax, setpoint=1.0414E-4,
-                             lam=1, cmap=cm.RdBu_r, plot_grid=True, cax=None):
+                             lam=1, cmap=cm.RdBu_r, plot_grid=True, cax=None, zlim_exponent=1):
     (
         x,
         y,
@@ -331,10 +367,11 @@ def plot_pi_fitness_function(pi_fitness_dir, fig, ax, setpoint=1.0414E-4,
         mse,
         teed,
         _,
+        _,
         _
         ) = load_fitness_data(pi_fitness_dir, setpoint)
     fitness_zi = compute_fitness(x, y, xi, yi, mse, teed, lam, 'linear')
-    contours = ax.contourf(xi, yi, fitness_zi, cmap=cmap)
+    contours = ax.pcolormesh(xi, yi, fitness_zi, cmap=cmap, norm=clrs.LogNorm(vmin=1e-9, vmax=(10 ** zlim_exponent + 1e-9)))
     if plot_grid:
         ax.scatter(x, y, c='k', s=5)
     if cax is None:

@@ -69,6 +69,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file_list = []
         self.current_file = None
         self.last_arrows = None
+        self.zlim_exponent = 1
         self.df = pd.read_excel(
             "Simulation_Output_Results/output.xlsx"
             ).dropna(subset=['Simulation dir'])
@@ -81,10 +82,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.description.setFont(QtGui.QFont("Roboto", 15))
         self.description.setFixedHeight(120)
 
-        layout_plotting = QtWidgets.QVBoxLayout()
-        layout_plotting.addWidget(parameter_toolbar)
-        layout_plotting.addWidget(self.parameter_plot)
+        self.zlim_slider_top = QtWidgets.QSlider(QtCore.Qt.Vertical)
+        self.zlim_slider_top.setMinimum(-9)
+        self.zlim_slider_top.setMaximum(1)
+        self.zlim_slider_top.setValue(self.zlim_slider_top.maximum())
+        self.zlim_slider_top.setTickPosition(QtWidgets.QSlider.TicksRight)
+        self.zlim_slider_top.setTickInterval(1)
+        self.zlim_slider_top.sliderReleased.connect(self.update_plot_bounds)
+
+        layout_plot = QtWidgets.QVBoxLayout()
+        layout_plot.addWidget(parameter_toolbar)
+        layout_plot.addWidget(self.parameter_plot)
         self.parameter_plot.setMinimumWidth(200)
+        layout_plot_outer = QtWidgets.QHBoxLayout()
+        layout_plot_outer.addLayout(layout_plot)
+        layout_plot_outer.addWidget(self.zlim_slider_top)
 
         recalculate_fitness_button = QtWidgets.QPushButton()
         recalculate_fitness_button.setText("Reload fitness (R)")
@@ -106,7 +118,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout_left = QtWidgets.QVBoxLayout()
 
         layout_left.addWidget(self.description)
-        layout_left.addLayout(layout_plotting)
+        layout_left.addLayout(layout_plot_outer)
         layout_left.addLayout(buttons)
 
         # Right side
@@ -214,7 +226,8 @@ class MainWindow(QtWidgets.QMainWindow):
         u.plot_pi_fitness_function(Path(self.fitness_dir),
                                    self.parameter_plot.fig,
                                    self.parameter_plot.axes,
-                                   cax=cax)
+                                   cax=cax,
+                                   zlim_exponent=self.zlim_exponent)
         self.parameter_plot.draw()
         QtWidgets.QApplication.restoreOverrideCursor()
 
@@ -230,6 +243,25 @@ class MainWindow(QtWidgets.QMainWindow):
             self.current_file = None
             self.file_list = self.populate_file_list()
             self.refresh_file_list_display()
+
+    def update_plot_bounds(self):
+        self.zlim_exponent = self.zlim_slider_top.value()
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+        try:
+            cax = self.parameter_plot.fig.axes[-1]
+        except IndexError:
+            cax = None
+        self.parameter_plot.axes.cla()
+        u.plot_pi_fitness_function(Path(self.fitness_dir),
+                                   self.parameter_plot.fig,
+                                   self.parameter_plot.axes,
+                                   cax=cax,
+                                   zlim_exponent=self.zlim_exponent)
+        if self.last_arrows is not None:
+            for arrow in self.last_arrows:
+                self.parameter_plot.axes.add_patch(arrow)
+        self.parameter_plot.draw()
+        QtWidgets.QApplication.restoreOverrideCursor()
 
     def change_fitness_dir(self, ev):
         newdir = QtWidgets.QFileDialog.getExistingDirectory(
@@ -299,7 +331,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                                self.parameter_plot.fig,
                                                self.parameter_plot.axes,
                                                cax=cax,
-                                               lam=row.iloc[0]['lambda'])
+                                               lam=row.iloc[0]['lambda'],
+                                               zlim_exponent=self.zlim_exponent)
                     self.parameter_plot.draw()
                     self.last_lambda = row.iloc[0]['lambda']
             else:
