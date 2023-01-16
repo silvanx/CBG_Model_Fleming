@@ -69,6 +69,7 @@ if __name__ == "__main__":
     rng_seed = c.RandomSeed
     timestep = c.TimeStep
     steady_state_duration = c.SteadyStateDuration
+    save_stn_voltage = c.save_stn_voltage
 
     sim_total_time = (
         steady_state_duration + simulation_runtime + timestep
@@ -228,6 +229,7 @@ if __name__ == "__main__":
     simulation_output_dir = output_dir
     if rank == 0:
         print(f"Output directory: {simulation_output_dir}")
+        simulation_output_dir.mkdir(parents=True, exist_ok=True)
 
     # Generate a square wave which represents the DBS signal
     # Needs to be initialized to zero when unused to prevent
@@ -557,12 +559,18 @@ if __name__ == "__main__":
                 pass
 
         # Write population data to file
-        write_index = "{:.0f}_".format(call_index)
-        suffix = "_{:.0f}ms-{:.0f}ms".format(last_write_time, simulator.state.t)
-        fname = write_index + "STN_Soma_v" + suffix + ".mat"
-        STN_Pop.write_data(
-            str(simulation_output_dir / "STN_POP" / fname), "soma(0.5).v", clear=True
-        )
+        if save_stn_voltage:
+            write_index = "{:.0f}_".format(call_index)
+            suffix = "_{:.0f}ms-{:.0f}ms".format(
+                last_write_time, simulator.state.t)
+            fname = write_index + "STN_Soma_v" + suffix + ".mat"
+            STN_Pop.write_data(
+                str(simulation_output_dir / "STN_POP" / fname),
+                "soma(0.5).v",
+                clear=True
+            )
+        else:
+            STN_Pop.get_data("soma(0.5).v", clear=True)
 
         last_write_time = simulator.state.t
 

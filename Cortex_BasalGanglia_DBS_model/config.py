@@ -62,6 +62,7 @@ class Config(object):
         lam={"type": "float", "coerce": float, "default": 1e-8},
         min_kp={"type": "float", "coerce": float, "default": 0.01},
         min_ti={"type": "float", "coerce": float, "default": 0.01},
+        save_stn_voltage={"type": "boolean", "coerce": bool, "default": True},
     )
 
     def __init__(self, config_file):

@@ -1,10 +1,11 @@
 ---
 # Simulation
 Controller: Zero
-RunTime: 4000
+RunTime: 3500
 RandomSeed: 8001
-SteadyStateDuration: 1000
+SteadyStateDuration: 500
 
 # Controller
 SetPoint: 0
 Ts: 0
+save_stn_voltage: False
