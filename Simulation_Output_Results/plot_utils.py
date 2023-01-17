@@ -358,7 +358,7 @@ def compute_fitness(x, y, xi, yi, mse, teed, lam, method='linear'):
 
 
 def plot_pi_fitness_function(pi_fitness_dir, fig, ax, setpoint=1.0414E-4,
-                             lam=1, cmap=cm.RdBu_r, plot_grid=True, cax=None, zlim_exponent=1):
+                             lam=1, cmap=cm.RdBu_r, plot_grid=True, cax=None, zlim_exponent_high=1, zlim_exponent_low=-9):
     (
         x,
         y,
@@ -371,7 +371,13 @@ def plot_pi_fitness_function(pi_fitness_dir, fig, ax, setpoint=1.0414E-4,
         _
         ) = load_fitness_data(pi_fitness_dir, setpoint)
     fitness_zi = compute_fitness(x, y, xi, yi, mse, teed, lam, 'linear')
-    contours = ax.pcolormesh(xi, yi, fitness_zi, cmap=cmap, norm=clrs.LogNorm(vmin=1e-9, vmax=(10 ** zlim_exponent + 1e-9)))
+    contours = ax.pcolormesh(
+        xi,
+        yi,
+        fitness_zi,
+        cmap=cmap,
+        norm=clrs.LogNorm(vmin=(10 ** zlim_exponent_low - 1e-15),
+                          vmax=(10 ** zlim_exponent_high + 1e-15)))
     if plot_grid:
         ax.scatter(x, y, c='k', s=5)
     if cax is None:
