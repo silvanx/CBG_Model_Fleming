@@ -51,6 +51,7 @@ class Config(object):
         SteadyStateDuration={"type": "float", "coerce": float, "default": 6000.0},
         RunTime={"type": "float", "coerce": float, "default": 32000.0},
         SetPoint={"type": "float", "coerce": float, "default": 0},
+        beta_burst_modulation_scale={"type": "float", "coerce": float, "default": 0.02},
         Kp={"type": "float", "coerce": float, "default": 0.23},
         Ti={"type": "float", "coerce": float, "default": 0.2},
         Td={"type": "float", "coerce": float, "default": 0},

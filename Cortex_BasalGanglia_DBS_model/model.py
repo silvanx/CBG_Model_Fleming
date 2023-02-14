@@ -343,6 +343,7 @@ def load_network(
     simulation_runtime,
     v_init,
     rng_seed=3695,
+    beta_burst_modulation_scale=0.02,
 ):
     np.random.seed(rng_seed)
     # Sphere with radius 2000 um
@@ -434,7 +435,7 @@ def load_network(
     burst_level_script = "burst_level_1.txt"
     modulation_t = np.loadtxt(burst_times_script, delimiter=",")
     modulation_s = np.loadtxt(burst_level_script, delimiter=",")
-    modulation_s = 0.02 * modulation_s  # Scale the modulation signal
+    modulation_s = beta_burst_modulation_scale * modulation_s  # Scale the modulation signal
 
     while modulation_t[-1] < sim_total_time:
         time_shift = int(modulation_t[-1] - modulation_t[0] + np.mean(np.diff(modulation_t)))
