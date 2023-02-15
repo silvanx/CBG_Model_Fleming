@@ -9,3 +9,4 @@ SteadyStateDuration: 500
 SetPoint: 0
 Ts: 0
 save_stn_voltage: False
+beta_burst_modulation_scale: 0.02

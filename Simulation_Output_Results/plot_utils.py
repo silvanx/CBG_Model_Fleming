@@ -4,9 +4,9 @@ import csv
 import matplotlib.pyplot as plt
 import matplotlib.colors as clrs
 from pathlib import Path
-from typing import Union, Any
-from numpy.typing import NDArray
+from typing import Union, Any, Optional
 from scipy.interpolate import griddata
+from scipy.signal import find_peaks
 from matplotlib import cm
 import re
 
@@ -28,8 +28,32 @@ def load_dbs_output(dir: Path) -> tuple[dict, dict]:
     return time, dbs
 
 
-def load_stn_lfp(dir: Path, steady_state_time: float, sim_time: float)\
-        -> tuple[NDArray[np.float32], dict]:
+def load_cortical_soma_voltage(dir: Path) -> np.ndarray:
+    voltage_file = sio.loadmat(dir / 'Cortical_Pop' / 'Cortical_Soma_v.mat')
+    segments = mat_to_dict(voltage_file['block'][0, 0])['segments']
+    analog_signals = mat_to_dict(segments[0, 0])['analogsignals']
+    sig = mat_to_dict(
+        mat_to_dict(
+            analog_signals[0]
+            )['analogsignals'][0, 0][0, 0]
+        )['signal']
+    return sig
+
+
+def find_population_spikes(sig: np.ndarray) -> np.ndarray:
+    spikes = []
+    for i in range(sig.shape[1]):
+        cell_voltage = sig[:, i]
+        peaks = find_peaks(cell_voltage, height=0)
+        spikes.append([[p, i] for p in peaks[0]])
+    return np.array(spikes, dtype=object)
+
+
+def load_stn_lfp(
+        dir: Path,
+        steady_state_time: float,
+        sim_time: float
+        ) -> tuple[np.ndarray, dict]:
     '''Reads STN LFP data from a .mat file'''
     lfp_file = sio.loadmat(dir / 'STN_LFP.mat')
     segments, _, _ = lfp_file['block'][0, 0]
@@ -39,8 +63,10 @@ def load_stn_lfp(dir: Path, steady_state_time: float, sim_time: float)\
     return lfp_t, lfp
 
 
-def load_controller_data(dir: Path, parameter: str = None)\
-        -> tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32]]:
+def load_controller_data(
+    dir: Path,
+    parameter: Optional[str] = None,
+        ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     '''Reads controller data from CSV files'''
     with open(dir / 'controller_sample_times.csv', 'r') as f:
         controller_t = np.array([float(r[0]) for r in csv.reader(f)])
@@ -61,11 +87,43 @@ def time_to_sample(tt: np.ndarray, t: float) -> int:
     return np.where(tt >= t)[0][0]
 
 
-def plot_controller_result(plot_start_t: float, plot_end_t: float,
-                           parameter: str, time: dict, dbs: dict,
-                           controller_t: np.ndarray, controller_p: np.ndarray,
-                           controller_b: np.ndarray,
-                           lfp_time, lfp, axs: list[plt.Axes] = None):
+def burst_txt_to_signal(
+        tt: np.ndarray,
+        aa: np.ndarray,
+        tstart: float,
+        tstop: float,
+        dt: float
+        ) -> np.ndarray:
+    segments = []
+    if tstart < tt[0]:
+        initial_segment = aa[0] * np.ones(int(np.floor((tt[0] - tstart) / dt)))
+        segments.append(initial_segment)
+    for i in range(len(tt)):
+        t = tt[i]
+        a = aa[i]
+        if t > tstop:
+            break
+        if i == (len(tt) - 1):
+            next_t = tstop
+        elif tt[i + 1] > tstop:
+            next_t = tstop
+        else:
+            next_t = tt[i + 1]
+        segment_length = int(np.floor((next_t - t) / dt))
+        seg = a * np.ones(segment_length)
+        segments.append(seg)
+    signal = np.concatenate(segments)
+    return np.linspace(tstart, tstop, len(signal)), signal
+
+
+def plot_controller_result(
+        plot_start_t: float, plot_end_t: float,
+        parameter: str, time: dict, dbs: dict,
+        controller_t: np.ndarray, controller_p: np.ndarray,
+        controller_b: np.ndarray,
+        lfp_time: np.ndarray, lfp: np.ndarray,
+        axs: Optional[list[plt.Axes]] = None
+        ) -> list[plt.Axes]:
     if axs is None:
         fig, axs = plt.subplots(4, 1, figsize=(15, 8))
     s = time_to_sample(time['signal'], plot_start_t)
@@ -125,7 +183,7 @@ def compute_cost(lfp: np.ndarray, u: np.ndarray, lam: float,
 
 def compute_mse(lfp_time: np.ndarray, lfp: np.ndarray,
                 setpoint: float = 1.0414E-4,
-                tail_length: float = None) -> float:
+                tail_length: Optional[float] = None) -> float:
     if tail_length is not None:
         dt = lfp_time[1] - lfp_time[0]
         num_samples = int(tail_length / dt)
@@ -154,12 +212,17 @@ def plot_mse_dir(dir: str, setpoint: float = 1.0414E-4) -> None:
         plt.axhline(setpoint, linestyle='--', color='k')
         plt.ylim([0, 4E-4])
         plt.title('%s (MSE = %.2E)' % (result_dir.name, mse))
-        fig.savefig(directory / ('%s.png' % result_dir.name),
-                    bbox_inches='tight', facecolor='white')
+        figure_name = str(directory / ('%s.png' % result_dir.name))
+        fig.savefig(figure_name, bbox_inches='tight', facecolor='white')
         plt.close(fig)
 
 
-def compute_teed(lfp_time, lfp, pulse_width, f_stimulation, impedance):
+def compute_teed(
+        lfp_time: np.ndarray,
+        lfp: np.ndarray,
+        pulse_width: float,
+        f_stimulation: float,
+        impedance: float) -> float:
     recording_length = lfp_time.max() - lfp_time.min()
     power = np.square(lfp) * pulse_width * f_stimulation * impedance
     teed = np.trapz(power, lfp_time) / recording_length
