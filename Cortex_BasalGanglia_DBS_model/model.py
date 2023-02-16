@@ -5,6 +5,7 @@ from pyNN.neuron import (
     Population,
     StepCurrentSource,
     SpikeSourceArray,
+    DCSource,
     Projection,
     StaticSynapse,
     FromFileConnector,
@@ -344,6 +345,7 @@ def load_network(
     v_init,
     rng_seed=3695,
     beta_burst_modulation_scale=0.02,
+    modulation_offset=0.0,
 ):
     np.random.seed(rng_seed)
     # Sphere with radius 2000 um
@@ -435,17 +437,22 @@ def load_network(
     burst_level_script = "burst_level_1.txt"
     modulation_t = np.loadtxt(burst_times_script, delimiter=",")
     modulation_s = np.loadtxt(burst_level_script, delimiter=",")
-    modulation_s = beta_burst_modulation_scale * modulation_s  # Scale the modulation signal
 
     while modulation_t[-1] < sim_total_time:
         time_shift = int(modulation_t[-1] - modulation_t[0] + np.mean(np.diff(modulation_t)))
         modulation_t = np.hstack((modulation_t, time_shift + modulation_t))
         modulation_s = np.hstack((modulation_s, modulation_s))
 
+    modulation_s = beta_burst_modulation_scale * modulation_s  # Scale the modulation signal
+
     cortical_modulation_current = StepCurrentSource(
         times=modulation_t, amplitudes=modulation_s
     )
     Cortical_Pop.inject(cortical_modulation_current)
+    Cortical_Pop.inject(
+        DCSource(start=steady_state_duration,
+                 stop=sim_total_time,
+                 amplitude=modulation_offset))
 
     # Load cortical positions - Comment/Remove to generate new positions
     Cortical_Neuron_xy_Positions = np.loadtxt("cortical_xy_pos.txt", delimiter=",")

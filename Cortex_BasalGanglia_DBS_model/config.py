@@ -52,6 +52,7 @@ class Config(object):
         RunTime={"type": "float", "coerce": float, "default": 32000.0},
         SetPoint={"type": "float", "coerce": float, "default": 0},
         beta_burst_modulation_scale={"type": "float", "coerce": float, "default": 0.02},
+        modulation_offset={"type": "float", "coerce": float, "default": 0},
         Kp={"type": "float", "coerce": float, "default": 0.23},
         Ti={"type": "float", "coerce": float, "default": 0.2},
         Td={"type": "float", "coerce": float, "default": 0},
@@ -64,6 +65,7 @@ class Config(object):
         min_kp={"type": "float", "coerce": float, "default": 0.01},
         min_ti={"type": "float", "coerce": float, "default": 0.01},
         save_stn_voltage={"type": "boolean", "coerce": bool, "default": True},
+        save_ctx_voltage={"type": "boolean", "coerce": bool, "default": False},
     )
 
     def __init__(self, config_file):

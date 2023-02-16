@@ -576,9 +576,10 @@ if __name__ == "__main__":
 
         last_write_time = simulator.state.t
 
-    # # Write population membrane voltage data to file
-    # Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop/Cortical_Collateral_v.mat"), 'collateral(0.5).v', clear=False)
-    # Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop/Cortical_Soma_v.mat"), 'soma(0.5).v', clear=True)
+    # Write population membrane voltage data to file
+    if c.save_ctx_voltage:
+        Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop/Cortical_Collateral_v.mat"), 'collateral(0.5).v', clear=False)
+        Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop/Cortical_Soma_v.mat"), 'soma(0.5).v', clear=True)
     # Interneuron_Pop.write_data(str(simulation_output_dir / "Interneuron_Pop/Interneuron_Soma_v.mat"), 'soma(0.5).v', clear=True)
     # GPe_Pop.write_data(str(simulation_output_dir / "GPe_Pop/GPe_Soma_v.mat", 'soma(0.5).v'), clear=True)
     # GPi_Pop.write_data(str(simulation_output_dir / "GPi_Pop/GPi_Soma_v.mat", 'soma(0.5).v'), clear=True)
