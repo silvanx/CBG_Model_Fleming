@@ -71,6 +71,7 @@ if __name__ == "__main__":
     steady_state_duration = c.SteadyStateDuration
     save_stn_voltage = c.save_stn_voltage
     beta_burst_modulation_scale = c.beta_burst_modulation_scale
+    burst_modulation_offset = c.modulation_offset
 
     sim_total_time = (
         steady_state_duration + simulation_runtime + timestep
@@ -131,6 +132,7 @@ if __name__ == "__main__":
         v_init,
         rng_seed,
         beta_burst_modulation_scale,
+        burst_modulation_offset,
     )
     if rank == 0:
         print("Network loaded.")
