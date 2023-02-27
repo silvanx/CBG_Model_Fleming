@@ -163,6 +163,7 @@ def create_network(
             and (-1500 < STN_cell.position[1] < 2000)
         ):
             STN_cell.position = STN_space.generate_positions(1).flatten()
+        STN_cell.position[2] = 500
 
     # Save the generated STN xy positions to a textfile
     np.savetxt("STN_xy_pos.txt", STN_Pop.positions, delimiter=",")
