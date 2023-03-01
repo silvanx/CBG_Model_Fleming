@@ -663,7 +663,7 @@ if __name__ == "__main__":
         STN_LFP,
         units="mV",
         t_start=0 * pq.ms,
-        sampling_rate=pq.Quantity(1.0 / simulator.state.dt, "1/ms"),
+        sampling_rate=pq.Quantity(1.0 / rec_sampling_interval, "1/ms"),
     )
     STN_LFP_seg.analogsignals.append(STN_LFP_signal)
 
@@ -674,7 +674,7 @@ if __name__ == "__main__":
     # STN_LFP_AMPA_Block = neo.Block(name='STN_LFP_AMPA')
     # STN_LFP_AMPA_seg = neo.Segment(name='segment_0')
     # STN_LFP_AMPA_Block.segments.append(STN_LFP_AMPA_seg)
-    # STN_LFP_AMPA_signal = neo.AnalogSignal(STN_LFP_AMPA, units='mV', t_start=0*pq.ms, sampling_rate=pq.Quantity(1.0 / simulator.state.dt, '1/ms'))
+    # STN_LFP_AMPA_signal = neo.AnalogSignal(STN_LFP_AMPA, units='mV', t_start=0*pq.ms, sampling_rate=pq.Quantity(1.0 / rec_sampling_interval, '1/ms'))
     # STN_LFP_AMPA_seg.analogsignals.append(STN_LFP_AMPA_signal)
     # w = neo.io.NeoMatlabIO(filename=str(simulation_output_dir / "STN_LFP_AMPA.mat"))
     # w.write_block(STN_LFP_AMPA_Block)
@@ -682,7 +682,7 @@ if __name__ == "__main__":
     # STN_LFP_GABAa_Block = neo.Block(name='STN_LFP_GABAa')
     # STN_LFP_GABAa_seg = neo.Segment(name='segment_0')
     # STN_LFP_GABAa_Block.segments.append(STN_LFP_GABAa_seg)
-    # STN_LFP_GABAa_signal = neo.AnalogSignal(STN_LFP_GABAa, units='mV', t_start=0*pq.ms, sampling_rate=pq.Quantity(1.0 / simulator.state.dt, '1/ms'))
+    # STN_LFP_GABAa_signal = neo.AnalogSignal(STN_LFP_GABAa, units='mV', t_start=0*pq.ms, sampling_rate=pq.Quantity(1.0 / rec_sampling_interval, '1/ms'))
     # STN_LFP_GABAa_seg.analogsignals.append(STN_LFP_GABAa_signal)
     # w = neo.io.NeoMatlabIO(filename=str(simulation_output_dir / "STN_LFP_GABAa.mat"))
     # w.write_block(STN_LFP_GABAa_Block)
