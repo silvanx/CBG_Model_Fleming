@@ -66,6 +66,8 @@ class Config(object):
         min_ti={"type": "float", "coerce": float, "default": 0.01},
         save_stn_voltage={"type": "boolean", "coerce": bool, "default": True},
         save_ctx_voltage={"type": "boolean", "coerce": bool, "default": False},
+        create_new_network={"type": "boolean", "coerce": bool, "default": False},
+        Pop_size={"type": "integer", "coerce": int, "default": 100},
     )
 
     def __init__(self, config_file):

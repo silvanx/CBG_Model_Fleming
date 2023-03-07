@@ -41,7 +41,7 @@ import numpy as np
 import math
 import argparse
 from utils import make_beta_cheby1_filter, calculate_avg_beta_power
-from model import load_network, electrode_distance
+from model import create_network, load_network, electrode_distance
 from config import Config, get_controller_kwargs
 
 # Import global variables for GPe DBS
@@ -72,6 +72,8 @@ if __name__ == "__main__":
     save_stn_voltage = c.save_stn_voltage
     beta_burst_modulation_scale = c.beta_burst_modulation_scale
     burst_modulation_offset = c.modulation_offset
+    Pop_size = c.Pop_size
+    create_new_network = c.create_new_network
 
     sim_total_time = (
         steady_state_duration + simulation_runtime + timestep
@@ -100,42 +102,78 @@ if __name__ == "__main__":
     # Set initial values for cell membrane voltages
     v_init = -68
 
-    if rank == 0:
-        print("Loading network...")
-    (
-        Pop_size,
-        striatal_spike_times,
-        Cortical_Pop,
-        Interneuron_Pop,
-        STN_Pop,
-        GPe_Pop,
-        GPi_Pop,
-        Striatal_Pop,
-        Thalamic_Pop,
-        prj_CorticalAxon_Interneuron,
-        prj_Interneuron_CorticalSoma,
-        prj_CorticalSTN,
-        prj_STNGPe,
-        prj_GPeGPe,
-        prj_GPeSTN,
-        prj_StriatalGPe,
-        prj_STNGPi,
-        prj_GPeGPi,
-        prj_GPiThalamic,
-        prj_ThalamicCortical,
-        prj_CorticalThalamic,
-        GPe_stimulation_order,
-    ) = load_network(
-        steady_state_duration,
-        sim_total_time,
-        simulation_runtime,
-        v_init,
-        rng_seed,
-        beta_burst_modulation_scale,
-        burst_modulation_offset,
-    )
-    if rank == 0:
-        print("Network loaded.")
+    if not create_new_network:
+        if rank == 0:
+            print("Loading network...")
+        (
+            Pop_size,
+            striatal_spike_times,
+            Cortical_Pop,
+            Interneuron_Pop,
+            STN_Pop,
+            GPe_Pop,
+            GPi_Pop,
+            Striatal_Pop,
+            Thalamic_Pop,
+            prj_CorticalAxon_Interneuron,
+            prj_Interneuron_CorticalSoma,
+            prj_CorticalSTN,
+            prj_STNGPe,
+            prj_GPeGPe,
+            prj_GPeSTN,
+            prj_StriatalGPe,
+            prj_STNGPi,
+            prj_GPeGPi,
+            prj_GPiThalamic,
+            prj_ThalamicCortical,
+            prj_CorticalThalamic,
+            GPe_stimulation_order,
+        ) = load_network(
+            steady_state_duration,
+            sim_total_time,
+            simulation_runtime,
+            v_init,
+            rng_seed,
+            beta_burst_modulation_scale,
+            burst_modulation_offset,
+        )
+        if rank == 0:
+            print("Network loaded.")
+    else:
+        if rank == 0:
+            print(f"Creating network ({Pop_size} cells per population)...")
+        (
+            striatal_spike_times,
+            Cortical_Pop,
+            Interneuron_Pop,
+            STN_Pop,
+            GPe_Pop,
+            GPi_Pop,
+            Striatal_Pop,
+            Thalamic_Pop,
+            prj_CorticalAxon_Interneuron,
+            prj_Interneuron_CorticalSoma,
+            prj_CorticalSTN,
+            prj_STNGPe,
+            prj_GPeGPe,
+            prj_GPeSTN,
+            prj_StriatalGPe,
+            prj_STNGPi,
+            prj_GPeGPi,
+            prj_GPiThalamic,
+            prj_ThalamicCortical,
+            prj_CorticalThalamic,
+            GPe_stimulation_order,
+        ) = create_network(
+            Pop_size,
+            steady_state_duration,
+            sim_total_time,
+            simulation_runtime,
+            v_init,
+            rng_seed,
+        )
+        if rank == 0:
+            print("Network created")
 
     # Define state variables to record from each population
     Cortical_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
