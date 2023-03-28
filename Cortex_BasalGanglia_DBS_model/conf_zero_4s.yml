@@ -6,7 +6,7 @@ RandomSeed: 8001
 SteadyStateDuration: 500
 
 # Controller
-SetPoint: 0
-Ts: 0
+setpoint: 0
+ts: 0.02
 save_stn_voltage: False
 beta_burst_modulation_scale: 0.02

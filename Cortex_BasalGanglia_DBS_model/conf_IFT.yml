@@ -5,12 +5,12 @@ RunTime: 8000.0
 
 # Controller
 stage_length: 2.0
-SetPoint: 1.0414e-04
-Kp: 1.0
-Ti: 0.2
-Ts: 0.02
-MinValue: 0.0
-MaxValue: 3.0
+setpoint: 1.0414e-04
+kp: 1.0
+ti: 0.2
+ts: 0.02
+min_value: 0.0
+max_value: 3.0
 
 # IFT specific options
 gamma: 0.01

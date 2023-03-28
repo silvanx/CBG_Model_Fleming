@@ -4,5 +4,5 @@ Controller: Zero
 RunTime: 32000.0
 
 # Controller
-SetPoint: 0
-Ts: 0
+setpoint: 0
+ts: 0.02

@@ -5,10 +5,10 @@ Modulation: frequency
 RunTime: 32000.0
 
 # Controller
-SetPoint: 1.0414e-04
-Kp: 19.3
-Ti: 0.2
-Td: 0
-Ts: 0.02
-MinValue: 0.0
-MaxValue: 250.0
+setpoint: 1.0414e-04
+kp: 19.3
+ti: 0.2
+td: 0
+ts: 0.02
+min_value: 0.0
+max_value: 250.0

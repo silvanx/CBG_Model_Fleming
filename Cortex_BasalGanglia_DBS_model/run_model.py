@@ -74,6 +74,7 @@ if __name__ == "__main__":
     burst_modulation_offset = c.modulation_offset
     Pop_size = c.Pop_size
     create_new_network = c.create_new_network
+    controller_sampling_time = 1000 * c.ts
 
     sim_total_time = (
         steady_state_duration + simulation_runtime + timestep
@@ -243,7 +244,6 @@ if __name__ == "__main__":
         controller_window_tail_length / rec_sampling_interval
     )
 
-    controller_sampling_time = 20.0  # ms
     controller_start = (
         steady_state_duration + controller_window_length + controller_sampling_time
     )
