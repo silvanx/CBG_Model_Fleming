@@ -52,7 +52,7 @@ class Config(object):
         RunTime={"type": "float", "coerce": float, "default": 32000.0},
         setpoint={"type": "float", "coerce": float, "default": 0},
         beta_burst_modulation_scale={"type": "float", "coerce": float, "default": 0.02},
-        modulation_offset={"type": "float", "coerce": float, "default": 0},
+        ctx_dc_offset={"type": "float", "coerce": float, "default": 0},
         kp={"type": "float", "coerce": float, "default": 0.23},
         ti={"type": "float", "coerce": float, "default": 0.2},
         td={"type": "float", "coerce": float, "default": 0},
