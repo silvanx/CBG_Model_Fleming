@@ -122,7 +122,7 @@ def create_network(
                      stop=sim_total_time,
                      amplitude=ctx_dc_offset))
 
-    if ctx_slow_modulation_amplitude > 0:
+    if abs(ctx_slow_modulation_amplitude) > 0:
         slow_modulation_start = steady_state_duration
         slow_modulation_stage_duration = (
             (sim_total_time - steady_state_duration) / (ctx_slow_modulation_step_count + 1)
@@ -486,7 +486,7 @@ def load_network(
                      stop=sim_total_time,
                      amplitude=ctx_dc_offset))
 
-    if ctx_slow_modulation_amplitude > 0:
+    if abs(ctx_slow_modulation_amplitude) > 0:
         slow_modulation_start = steady_state_duration
         slow_modulation_stage_duration = (
             (sim_total_time - steady_state_duration) / (ctx_slow_modulation_step_count + 1)
