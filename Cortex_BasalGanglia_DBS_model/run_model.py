@@ -75,6 +75,8 @@ if __name__ == "__main__":
     Pop_size = c.Pop_size
     create_new_network = c.create_new_network
     controller_sampling_time = 1000 * c.ts
+    ctx_slow_modulation_amplitude = c.ctx_slow_modulation_amplitude
+    ctx_slow_modulation_step_count = c.ctx_slow_modulation_step_count
 
     sim_total_time = (
         steady_state_duration + simulation_runtime + timestep
@@ -137,6 +139,8 @@ if __name__ == "__main__":
             rng_seed,
             beta_burst_modulation_scale,
             ctx_dc_offset,
+            ctx_slow_modulation_amplitude,
+            ctx_slow_modulation_step_count
         )
         if rank == 0:
             print("Network loaded.")
@@ -172,6 +176,10 @@ if __name__ == "__main__":
             simulation_runtime,
             v_init,
             rng_seed,
+            beta_burst_modulation_scale,
+            ctx_dc_offset,
+            ctx_slow_modulation_amplitude,
+            ctx_slow_modulation_step_count,
         )
         if rank == 0:
             print("Network created")
@@ -232,14 +240,14 @@ if __name__ == "__main__":
 
     # Create times for when the DBS controller will be called
     # Window length for filtering biomarker
-    controller_window_length = 2000.0  # ms
+    controller_window_length = c.controller_window_length  # ms
     controller_window_length_no_samples = int(
         controller_window_length / rec_sampling_interval
     )
 
     # Window Tail length - removed post filtering, prior to
     # biomarker calculation
-    controller_window_tail_length = 100.0  # ms
+    controller_window_tail_length = c.controller_window_tail_length  # ms
     controller_window_tail_length_no_samples = int(
         controller_window_tail_length / rec_sampling_interval
     )

@@ -36,6 +36,8 @@ def create_network(
     rng_seed=3695,
     beta_burst_modulation_scale=0.02,
     ctx_dc_offset=0.0,
+    ctx_slow_modulation_amplitude=0.0,
+    ctx_slow_modulation_step_count=0
 ):
     np.random.seed(rng_seed)
 
@@ -119,6 +121,25 @@ def create_network(
             DCSource(start=steady_state_duration,
                      stop=sim_total_time,
                      amplitude=ctx_dc_offset))
+
+    if ctx_slow_modulation_amplitude > 0:
+        slow_modulation_start = steady_state_duration
+        slow_modulation_stage_duration = (
+            (sim_total_time - steady_state_duration) / (ctx_slow_modulation_step_count + 1)
+            )
+        slow_modulation_times = []
+        slow_modulation_scales = []
+        for i in range(ctx_slow_modulation_step_count + 1):
+            slow_modulation_times.append(
+                slow_modulation_start + i * slow_modulation_stage_duration
+            )
+            slow_modulation_scales.append(
+                ctx_slow_modulation_amplitude * ((i + 1) % 2)
+            )
+        Cortical_Pop.inject(StepCurrentSource(
+            times=slow_modulation_times,
+            amplitudes=slow_modulation_scales
+        ))
 
     # Generate Noisy current sources for cortical pyramidal and interneuron populations
     # Inject each membrane noise current into each cortical and interneuron in network
@@ -354,6 +375,8 @@ def load_network(
     rng_seed=3695,
     beta_burst_modulation_scale=0.02,
     ctx_dc_offset=0.0,
+    ctx_slow_modulation_amplitude=0.0,
+    ctx_slow_modulation_step_count=0
 ):
     np.random.seed(rng_seed)
     # Sphere with radius 2000 um
@@ -462,6 +485,25 @@ def load_network(
             DCSource(start=steady_state_duration,
                      stop=sim_total_time,
                      amplitude=ctx_dc_offset))
+
+    if ctx_slow_modulation_amplitude > 0:
+        slow_modulation_start = steady_state_duration
+        slow_modulation_stage_duration = (
+            (sim_total_time - steady_state_duration) / (ctx_slow_modulation_step_count + 1)
+            )
+        slow_modulation_times = []
+        slow_modulation_scales = []
+        for i in range(ctx_slow_modulation_step_count + 1):
+            slow_modulation_times.append(
+                slow_modulation_start + i * slow_modulation_stage_duration
+            )
+            slow_modulation_scales.append(
+                ctx_slow_modulation_amplitude * ((i + 1) % 2)
+            )
+        Cortical_Pop.inject(StepCurrentSource(
+            times=slow_modulation_times,
+            amplitudes=slow_modulation_scales
+        ))
 
     # Load cortical positions - Comment/Remove to generate new positions
     Cortical_Neuron_xy_Positions = np.loadtxt("cortical_xy_pos.txt", delimiter=",")
