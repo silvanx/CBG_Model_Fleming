@@ -4,9 +4,10 @@ Controller: Zero
 RunTime: 3500
 RandomSeed: 8001
 SteadyStateDuration: 500
+save_stn_voltage: False
+beta_burst_modulation_scale: 0.02
+ctx_dc_offset: 0
 
 # Controller
 setpoint: 0
 ts: 0.02
-save_stn_voltage: False
-beta_burst_modulation_scale: 0.02
