@@ -122,24 +122,13 @@ def create_network(
                      stop=sim_total_time,
                      amplitude=ctx_dc_offset))
 
-    if abs(ctx_slow_modulation_amplitude) > 0:
-        slow_modulation_start = steady_state_duration
-        slow_modulation_stage_duration = (
-            (sim_total_time - steady_state_duration) / (ctx_slow_modulation_step_count + 1)
-            )
-        slow_modulation_times = []
-        slow_modulation_scales = []
-        for i in range(ctx_slow_modulation_step_count + 1):
-            slow_modulation_times.append(
-                slow_modulation_start + i * slow_modulation_stage_duration
-            )
-            slow_modulation_scales.append(
-                ctx_slow_modulation_amplitude * ((i + 1) % 2)
-            )
-        Cortical_Pop.inject(StepCurrentSource(
-            times=slow_modulation_times,
-            amplitudes=slow_modulation_scales
-        ))
+    add_slow_modulation(
+        Cortical_Pop,
+        ctx_slow_modulation_amplitude,
+        ctx_slow_modulation_step_count,
+        steady_state_duration,
+        sim_total_time
+    )
 
     # Generate Noisy current sources for cortical pyramidal and interneuron populations
     # Inject each membrane noise current into each cortical and interneuron in network
@@ -486,24 +475,14 @@ def load_network(
                      stop=sim_total_time,
                      amplitude=ctx_dc_offset))
 
-    if abs(ctx_slow_modulation_amplitude) > 0:
-        slow_modulation_start = steady_state_duration
-        slow_modulation_stage_duration = (
-            (sim_total_time - steady_state_duration) / (ctx_slow_modulation_step_count + 1)
-            )
-        slow_modulation_times = []
-        slow_modulation_scales = []
-        for i in range(ctx_slow_modulation_step_count + 1):
-            slow_modulation_times.append(
-                slow_modulation_start + i * slow_modulation_stage_duration
-            )
-            slow_modulation_scales.append(
-                ctx_slow_modulation_amplitude * ((i + 1) % 2)
-            )
-        Cortical_Pop.inject(StepCurrentSource(
-            times=slow_modulation_times,
-            amplitudes=slow_modulation_scales
-        ))
+
+    add_slow_modulation(
+        Cortical_Pop,
+        ctx_slow_modulation_amplitude,
+        ctx_slow_modulation_step_count,
+        steady_state_duration,
+        sim_total_time
+    )
 
     # Load cortical positions - Comment/Remove to generate new positions
     Cortical_Neuron_xy_Positions = np.loadtxt("cortical_xy_pos.txt", delimiter=",")
@@ -712,3 +691,22 @@ def electrode_distance(
         STN_recording_electrode_2_distances,
         Cortical_Collateral_stimulating_electrode_distances,
     )
+
+
+def add_slow_modulation(Population, amplitude, step_count, steady_state_duration, sim_total_time):
+    if abs(amplitude) > 0:
+        slow_modulation_start = steady_state_duration
+        slow_modulation_stage_duration = (
+            (sim_total_time - slow_modulation_start) / (step_count + 1)
+            )
+        for i in range(step_count + 1):
+            stage_start = slow_modulation_start + i * slow_modulation_stage_duration
+            stage_end = stage_start + slow_modulation_stage_duration
+            stage_amplitude = amplitude * ((i) % 2)
+            if stage_amplitude == 0:
+                continue
+            Population.inject(DCSource(
+                start=stage_start,
+                stop=stage_end,
+                amplitude=stage_amplitude
+            ))
