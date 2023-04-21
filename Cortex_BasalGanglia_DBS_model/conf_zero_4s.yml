@@ -1,12 +1,17 @@
 ---
 # Simulation
 Controller: Zero
-RunTime: 3500
+RunTime: 2500
 RandomSeed: 8001
 SteadyStateDuration: 500
 save_stn_voltage: False
 beta_burst_modulation_scale: 0.02
 ctx_dc_offset: 0
+controller_window_length: 100
+controller_window_tail_length: 10
+ctx_slow_modulation_amplitude: 0.1
+ctx_slow_modulation_step_count: 2
+
 
 # Controller
 setpoint: 0
