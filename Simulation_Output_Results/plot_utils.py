@@ -93,7 +93,7 @@ def compute_mse(lfp_time: np.ndarray, lfp: np.ndarray,
         lfp_time = lfp_time[-num_samples:]
         lfp = lfp[-num_samples:]
     duration = lfp_time[-1] - lfp_time[0]
-    error = lfp - setpoint
+    error = lfp.as_array().transpose()[0] - setpoint
     mse = np.trapz(error ** 2, lfp_time) / duration
     return mse
 
@@ -295,6 +295,17 @@ def load_fitness_data(pi_fitness_dir, lam, setpoint=1.0414E-4, tail_length=6,
     output = np.array([x, y, xi, yi, mse, teed, mse_zi, teed_zi, cost_zi], dtype=object)
     np.save(directory / 'output.npy', output, allow_pickle=True)
     return output
+
+
+def read_config_from_output_file(file: Path) -> dict:
+    '''Reads the .out file and returns a dictionary with config values'''
+    config = dict()
+    with open(file, 'r') as f:
+        file_contents = f.read()
+        match = re.findall('\'(.+)\': ([0-9\.]+),\n', file_contents)
+        for m in match:
+            config[m[0]] = float(m[1])
+    return config
 
 
 #
