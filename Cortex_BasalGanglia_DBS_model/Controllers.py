@@ -828,6 +828,7 @@ class IterativeFeedbackTuningPIController:
         self.iteration_stage = -1
         self.min_kp = min_kp
         self.min_ti = min_ti
+        self.r = np.identity(2)
 
         # Set output value bounds
         self.min_value = min_value
@@ -902,6 +903,9 @@ class IterativeFeedbackTuningPIController:
         dy_drho = np.vstack((dy_dkp, dy_dti))
         du_drho = np.vstack((du_dkp, du_dti))
 
+        r = np.dot(dy_drho, np.transpose(dy_drho)) + self.lam * np.dot(du_drho, np.transpose(du_drho)) / self.stage_length_samples
+        self.r = r
+
         lam = self.lam
         y_part = y_tilde * dy_drho
         u_part = u_rho * du_drho
@@ -913,7 +917,7 @@ class IterativeFeedbackTuningPIController:
         rho = np.array([self.kp, self.ti])
         gamma = self.gamma
         # TODO: Make r a parameter
-        r = np.identity(2)
+        r = np.linalg.inv(self.r)
         if len(self._error_history) >= 2 * self.stage_length_samples:
             grad = self.compute_fitness_gradient()
             if rank == 0:
@@ -933,7 +937,7 @@ class IterativeFeedbackTuningPIController:
         sample = int(elapsed_time / self.ts)
         if self.iteration_stage == 0:
             return self.setpoint
-        if sample > self.stage_length_samples:
+        if sample >= self.stage_length_samples:
             sample = self.stage_length_samples - 1
         return self._recorded_output[sample]
 
