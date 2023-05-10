@@ -246,7 +246,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.results_dir
             )
         if newdir:
-            self.file_dir = newdir
+            self.results_dir = newdir
             self.directory_label.setText(newdir)
             self.current_file = None
             self.file_list = self.populate_file_list()
@@ -310,7 +310,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(self.file_list_widget.selectedItems()) > 0:
             if self.last_arrows is not None:
                 for a in self.last_arrows:
-                    self.parameter_plot.axes.patches.remove(a)
+                    a.remove()
                 self.last_arrows = None
             item = self.file_list_widget.selectedItems()[0]
             text = item.text()
@@ -318,7 +318,22 @@ class MainWindow(QtWidgets.QMainWindow):
             f = Path(self.results_dir) / text
 
             row = self.df[self.df["Simulation dir"].str.contains(text)]
-            if not row.empty:
+            outfiles = list(f.glob("*.out"))
+            if len(outfiles) == 1:
+                config = u.read_config_from_output_file(outfiles[0])
+                description = (
+                    f"{f.stem}\t"
+                    f"{config['RunTime']} ms\t"
+                    f"controller: {config['Controller']} "
+                    f"({config['stage_length']} s)\n"
+                    f"Kp init: {config['kp']}, "
+                    f"Ti init: {config['ti']}\n"
+                    f"gamma: {config['gamma']}, "
+                    f"lambda: {config['lam']}\n"
+                    f"min_kp,min_ti: {config['min_kp'], config['min_ti']}"
+                    )
+                self.description.setText(description) 
+            elif not row.empty:
                 description = (
                     f"ID: {row.iloc[0]['Simulation number']}\t"
                     f"{row.iloc[0]['Sim duration [ms]']} ms\t"
