@@ -816,6 +816,8 @@ class IterativeFeedbackTuningPIController:
         lam=1e-8,
         min_kp=0,
         min_ti=0,
+        fix_ti=False,
+        fix_kp=False,
     ):
 
         self.setpoint = setpoint
@@ -829,6 +831,8 @@ class IterativeFeedbackTuningPIController:
         self.min_kp = min_kp
         self.min_ti = min_ti
         self.r = np.identity(2)
+        self.fix_ti = fix_ti
+        self.fix_kp = fix_kp
 
         # Set output value bounds
         self.min_value = min_value
@@ -903,34 +907,47 @@ class IterativeFeedbackTuningPIController:
         dy_drho = np.vstack((dy_dkp, dy_dti))
         du_drho = np.vstack((du_dkp, du_dti))
 
+        # TODO: Make r a parameter
         r = np.dot(dy_drho, np.transpose(dy_drho)) + self.lam * np.dot(du_drho, np.transpose(du_drho)) / self.stage_length_samples
+        if self.fix_ti or self.fix_kp:
+            r = np.diag(np.diag(r))  # Remove off-diagonal elements
         self.r = r
 
         lam = self.lam
         y_part = y_tilde * dy_drho
         u_part = u_rho * du_drho
 
-        grad = np.sum((y_part + lam * u_part), axis=1) / self.stage_length_samples
+        grad = np.sum((y_part + lam * u_part), axis=-1) / self.stage_length_samples
         return grad
 
     def new_controller_parameters(self):
         rho = np.array([self.kp, self.ti])
         gamma = self.gamma
-        # TODO: Make r a parameter
-        r = np.linalg.inv(self.r)
         if len(self._error_history) >= 2 * self.stage_length_samples:
             grad = self.compute_fitness_gradient()
             if rank == 0:
-                print(f"Gradient: ({grad[0]}, {grad[1]})'")
+                print(f"Gradient: {grad}'")
+                print(f"R-matrix: {self.r}")
         else:
             grad = [0, 0]
             if rank == 0:
                 print("Too few samples, skipping update")
-        new_rho = rho - gamma * np.dot(r, grad)
+        r_inv = np.linalg.inv(self.r)
+        scaled_grad = np.dot(r_inv, grad)
+        if rank == 0:
+            print(f"R-scaled gradient: {scaled_grad}")
+        new_rho = rho - gamma * scaled_grad
+
+        if self.fix_kp:
+            new_rho[0] = rho[0]
+        if self.fix_ti:
+            new_rho[1] = rho[1]
+
         if new_rho[0] < self.min_kp:
             new_rho[0] = self.min_kp
         if new_rho[1] < self.min_ti:
             new_rho[1] = self.min_ti
+
         return new_rho[0], new_rho[1]
 
     def reference_signal(self, elapsed_time):

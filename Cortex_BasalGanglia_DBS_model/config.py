@@ -29,6 +29,8 @@ ift_schema = dict(
     lam={"type": "float", "coerce": float},
     min_kp={"type": "float", "coerce": float},
     min_ti={"type": "float", "coerce": float},
+    fix_kp={"type": "boolean", "coerce": bool, "default": False},
+    fix_ti={"type": "boolean", "coerce": bool, "default": False},
 )
 
 
@@ -72,6 +74,8 @@ class Config(object):
         controller_window_tail_length={"type": "float", "coerce": float, "default": 100.0},
         ctx_slow_modulation_amplitude={"type": "float", "coerce": float, "default": 0},
         ctx_slow_modulation_step_count={"type": "integer", "coerce": int, "default": 0},
+        fix_kp={"type": "boolean", "coerce": bool, "default": False},
+        fix_ti={"type": "boolean", "coerce": bool, "default": False},
     )
 
     def __init__(self, config_file):
