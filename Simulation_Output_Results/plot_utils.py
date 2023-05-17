@@ -302,15 +302,30 @@ def read_config_from_output_file(file: Path) -> dict:
     config = dict()
     with open(file, 'r') as f:
         file_contents = f.read()
-        match = re.findall('\'(.+)\': ([0-9\.]+),\n', file_contents)
-        for m in match:
+        match_numerical = re.findall('\'(.+)\': ([-e0-9\.]+),\n', file_contents)
+        for m in match_numerical:
             config[m[0]] = float(m[1])
+        match_text = re.findall('\'(Controller|Modulation)\': \'([a-zA-Z]+)\',\n', file_contents)
+        for m in match_text:
+            config[m[0]] = m[1]
     return config
 
 
 #
 # Plotting
 #
+
+
+def format_single_2d_plot(fig, xlabel, ylabel, title, fontsize=22):
+    '''Sets appropriate font size everywhere and unboxes the plot'''
+    ax = fig.axes[0]
+    ax.tick_params(axis='both', which='major', labelsize=fontsize)
+    ax.yaxis.get_offset_text().set_fontsize(fontsize)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_xlabel(xlabel, fontsize=fontsize)
+    ax.set_ylabel(ylabel, fontsize=fontsize)
+    ax.set_title(title, fontsize=1.5*fontsize)
 
 
 def plot_controller_result(
@@ -348,8 +363,8 @@ def plot_controller_result(
 
     s = time_to_sample(lfp_time, plot_start_t)
     e = time_to_sample(lfp_time, plot_end_t) - 1
-    axs[3].plot(lfp_time[s:e] / 1000, lfp['signal'][s: e])
-    axs[3].set_ylabel('Local field potential [%s]' % lfp['signal_units'][0], fontsize=fontsize)
+    axs[3].plot(lfp_time[s:e] / 1000, lfp[s: e])
+    axs[3].set_ylabel('Local field potential [mV]', fontsize=fontsize)
     axs[3].set_xlabel('Time [s]', fontsize=fontsize)
     plt.subplots_adjust(hspace=0.42)
     for a in axs:
@@ -360,7 +375,7 @@ def plot_controller_result(
 
 def load_and_plot(dirname: Union[str, list[str]], parameter: str,
                   steady_state_time: float, sim_time: float,
-                  plot_start_t: float, plot_end_t: float) -> None:
+                  plot_start_t: float, plot_end_t: float, dirname_zero: str) -> None:
     '''Loads and plots the simulation result from a given directory.
 
     If dirname is a list of strings, displays all the results in one plot.
@@ -371,12 +386,16 @@ def load_and_plot(dirname: Union[str, list[str]], parameter: str,
     for d in dirname:
         directory = Path(d)
         time, dbs = load_dbs_output(directory)
-        lfp_time, lfp = load_stn_lfp(directory, steady_state_time, sim_time)
+        lfp_time, lfp = load_stn_lfp(directory)
         controller_t, controller_p, controller_b =\
             load_controller_data(directory, parameter)
         axs = plot_controller_result(plot_start_t, plot_end_t, parameter, time,
                                      dbs, controller_t, controller_p,
                                      controller_b, lfp_time, lfp, axs)
+        z_t, z_p, z_b = load_controller_data(dirname_zero, None)
+        s = time_to_sample(z_t, plot_start_t / 1000)
+        e = time_to_sample(z_t, plot_end_t / 1000)
+        axs[2].plot(z_t[s:e], z_b[s:e], color="#a42cd6", linewidth=3, alpha=0.4)
 
 
 def plot_mse_dir(dir: str, setpoint: float = 1.0414E-4) -> None:
