@@ -319,6 +319,11 @@ def read_config_from_output_file(file: Path) -> dict:
 def format_single_2d_plot(fig, xlabel, ylabel, title, fontsize=22):
     '''Sets appropriate font size everywhere and unboxes the plot'''
     ax = fig.axes[0]
+    format_single_axis(ax, xlabel, ylabel, title, fontsize=fontsize)
+
+
+def format_single_axis(ax, xlabel, ylabel, title, fontsize=22):
+    '''Sets appropriate font size everywhere and unboxes the axis'''
     ax.tick_params(axis='both', which='major', labelsize=fontsize)
     ax.yaxis.get_offset_text().set_fontsize(fontsize)
     ax.spines['top'].set_visible(False)
