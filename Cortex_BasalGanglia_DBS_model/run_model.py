@@ -34,6 +34,7 @@ from Controllers import (
     ZeroController,
     StandardPIDController,
     IterativeFeedbackTuningPIController,
+    ConstantController,
 )
 import neo.io
 import quantities as pq
@@ -270,6 +271,8 @@ if __name__ == "__main__":
         Controller = StandardPIDController
     elif controller_type == "IFT":
         Controller = IterativeFeedbackTuningPIController
+    elif controller_type == "OPEN":
+        Controller = ConstantController
     else:
         raise RuntimeError("Bad choice of Controller")
 

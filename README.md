@@ -29,11 +29,11 @@ The config file specifies the parameters of the simulation
 ## Controller
 - `setpoint`: target value of the biomarker
 - `td`:
-- `ts`:
+- `ts`: time between subsequent controller calls; unit: s
 - `min_value`: minimum value of controller output
 - `max_value`: maximum value of controller output
 - `controller_window_length`: length of time on which the biomarker value is calculated; unit: ms
-- `controller_window_length`:
+- `controller_window_tail_length`: length of the tail which is ignored for calculating biomarker to avoid edge effects; unit: ms
 ### PID controller settings
 - `kp`: proportional gain
 - `ti`: integral constant
@@ -46,4 +46,6 @@ The config file specifies the parameters of the simulation
 - `lam`: lambda parameter, weighting the MSE and TEED parts of the fitness function
 - `min_kp`: minimal value of kp
 - `min_ti`: minimal value of ti 
-`
+
+### OPEN controller settings
+- `stimulation_amplitude`: amplitude of the open-loop stimulation

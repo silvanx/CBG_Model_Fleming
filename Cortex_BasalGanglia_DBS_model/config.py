@@ -33,6 +33,12 @@ ift_schema = dict(
     fix_ti={"type": "boolean", "coerce": bool, "default": False},
 )
 
+constant_schema = dict(
+    setpoint={"type": "float", "coerce": float},
+    stimulation_amplitude={"type": "float", "coerce": float},
+    ts={"type": "float", "coerce": float},
+)
+
 
 class Config(object):
     schema = dict(
@@ -40,7 +46,7 @@ class Config(object):
             "type": "string",
             "coerce": (str, lambda x: x.upper()),
             "default": "ZERO",
-            "allowed": ("ZERO", "PID", "IFT"),
+            "allowed": ("ZERO", "PID", "IFT", "OPEN"),
         },
         Modulation={
             "type": "string",
@@ -76,6 +82,7 @@ class Config(object):
         ctx_slow_modulation_step_count={"type": "integer", "coerce": int, "default": 0},
         fix_kp={"type": "boolean", "coerce": bool, "default": False},
         fix_ti={"type": "boolean", "coerce": bool, "default": False},
+        stimulation_amplitude={"type": "float", "coerce": float, "default": 0},
     )
 
     def __init__(self, config_file):
@@ -109,6 +116,8 @@ def get_controller_kwargs(config):
         schema = pid_schema
     elif controller == "IFT":
         schema = ift_schema
+    elif controller == "OPEN":
+        schema = constant_schema
     else:
         raise RuntimeError("Invalid controller type")
 
