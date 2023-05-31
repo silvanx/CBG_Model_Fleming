@@ -1,0 +1,9 @@
+---
+# Simulation
+Controller: OPEN
+RunTime: 32000.0
+
+# Controller
+setpoint: 0
+ts: 0.02
+stimulation_amplitude: 2.0
