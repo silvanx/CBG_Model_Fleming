@@ -96,69 +96,16 @@ class ZeroController:
         offset,
         last_pulse_time_prior=0,
     ):
-        """Generate monophasic square-wave DBS signal
-
-        Example inputs:
-            start_time = 0                # ms
-            stop_time = 12000            # ms
-            dt = 0.01                    # ms
-            amplitude = -1.0            # mA (<0 = cathodic, >0 = anodic)
-            frequency = 130.0            # Hz
-            pulse_width    = 0.06            # ms
-            offset = 0                    # mA
-        """
-
-        times = np.round(np.arange(start_time, stop_time, dt), 2)
-        tmp = np.arange(0, stop_time - start_time, dt) / 1000.0
-
-        if frequency == 0:
-            dbs_signal = np.zeros(len(tmp))
-            last_pulse_time = last_pulse_time_prior
-            next_pulse_time = 1e9
-        else:
-            # Calculate the duty cycle of the DBS signal
-            isi = 1000.0 / frequency  # time is in ms
-            duty_cycle = pulse_width / isi
-            tt = 2.0 * np.pi * frequency * tmp
-            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt, duty=duty_cycle))
-            dbs_signal[-1] = 0.0
-
-            # Calculate the time for the first pulse of the next segment
-            try:
-                last_pulse_index = np.where(np.diff(dbs_signal) < 0)[0][-1]
-                next_pulse_time = times[last_pulse_index] + isi - pulse_width
-
-                # Track when the last pulse was
-                last_pulse_time = times[last_pulse_index]
-
-            except IndexError:
-                # Catch times when signal may be flat
-                last_pulse_index = len(dbs_signal) - 1
-                next_pulse_time = times[last_pulse_index] + isi - pulse_width
-
-            # Rescale amplitude
-            dbs_signal *= amplitude
-
-        return dbs_signal, times, next_pulse_time, last_pulse_time
-
-    def set_setpoint(self, setpoint):
-        """Set target set point value"""
-        self.setpoint = setpoint
-
-    def get_state_history(self):
-        return self.state_history
-
-    def get_error_history(self):
-        return self.error_history
-
-    def get_output_history(self):
-        return self.output_history
-
-    def get_sample_times(self):
-        return self.sample_times
-
-    def get_label(self):
-        return self.label
+        return generate_monophasic_square_dbs_signal(
+            start_time,
+            stop_time,
+            dt,
+            amplitude=0,
+            frequency=0,
+            pulse_width=pulse_width,
+            offset=offset,
+            last_pulse_time_prior=last_pulse_time_prior
+            )
 
 
 class ConstantController:
@@ -243,88 +190,16 @@ class ConstantController:
         offset,
         last_pulse_time_prior=0,
     ):
-        """Generate monophasic square-wave DBS signal
-
-        Example inputs:
-            start_time = 0                # ms
-            stop_time = 12000            # ms
-            dt = 0.01                    # ms
-            amplitude = -1.0            # mA (<0 = cathodic, >0 = anodic)
-            frequency = 130.0            # Hz
-            pulse_width    = 0.06            # ms
-            offset = 0                    # mA
-        """
-
-        times = np.round(np.arange(start_time, stop_time, dt), 2)
-        tmp = np.arange(0, stop_time - start_time, dt) / 1000.0
-
-        if frequency == 0:
-            dbs_signal = np.zeros(len(tmp))
-            last_pulse_time = last_pulse_time_prior
-            next_pulse_time = 1e9
-        else:
-            # Calculate the duty cycle of the DBS signal
-            isi = 1000.0 / frequency  # time is in ms
-            duty_cycle = pulse_width / isi
-            tt = 2.0 * np.pi * frequency * tmp
-            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt, duty=duty_cycle))
-            dbs_signal[-1] = 0.0
-
-            # Calculate the time for the first pulse of the next segment
-            try:
-                last_pulse_index = np.where(np.diff(dbs_signal) < 0)[0][-1]
-                next_pulse_time = times[last_pulse_index] + isi - pulse_width
-
-                # Track when the last pulse was
-                last_pulse_time = times[last_pulse_index]
-
-            except IndexError:
-                # Catch times when signal may be flat
-                last_pulse_index = len(dbs_signal) - 1
-                next_pulse_time = times[last_pulse_index] + isi - pulse_width
-
-            # Rescale amplitude
-            dbs_signal *= amplitude
-
-        return dbs_signal, times, next_pulse_time, last_pulse_time
-
-    def set_max_value(self, max_value):
-        """Sets the upper bound for the controller output"""
-        self.max_value = max_value
-
-    def set_min_value(self, min_value):
-        """Sets the lower bound for the controller output"""
-        self.min_value = min_value
-
-    def set_stimulation_amplitude(self, constant_value):
-        """Sets the constant controller output"""
-        self.stimulation_amplitude = constant_value
-
-    def set_ts(self, Ts):
-        """Sets the sampling rate of the controller"""
-        self.ts = Ts
-
-    def set_label(self, label):
-        """Sets the label of the controller"""
-        self.label = label
-
-    def set_setpoint(self, set_point):
-        self.setpoint = set_point
-
-    def get_state_history(self):
-        return self.state_history
-
-    def get_error_history(self):
-        return self.error_history
-
-    def get_output_history(self):
-        return self.output_history
-
-    def get_sample_times(self):
-        return self.sample_times
-
-    def get_label(self):
-        return self.label
+        return generate_monophasic_square_dbs_signal(
+            start_time,
+            stop_time,
+            dt,
+            amplitude,
+            frequency,
+            pulse_width,
+            offset,
+            last_pulse_time_prior
+            )
 
 
 class OnOffController:
@@ -755,50 +630,16 @@ class StandardPIDController:
         offset,
         last_pulse_time_prior=0,
     ):
-        """Generate monophasic square-wave DBS signal
-
-        Example inputs:
-            start_time = 0                # ms
-            stop_time = 12000            # ms
-            dt = 0.01                    # ms
-            amplitude = -1.0            # mA (<0 = cathodic, >0 = anodic)
-            frequency = 130.0            # Hz
-            pulse_width    = 0.06            # ms
-            offset = 0                    # mA
-        """
-
-        times = np.round(np.arange(start_time, stop_time, dt), 2)
-        tmp = np.arange(0, stop_time - start_time, dt) / 1000.0
-
-        if frequency == 0:
-            dbs_signal = np.zeros(len(tmp))
-            last_pulse_time = last_pulse_time_prior
-            next_pulse_time = 1e9
-        else:
-            # Calculate the duty cycle of the DBS signal
-            isi = 1000.0 / frequency  # time is in ms
-            duty_cycle = pulse_width / isi
-            tt = 2.0 * np.pi * frequency * tmp
-            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt, duty=duty_cycle))
-            dbs_signal[-1] = 0.0
-
-            # Calculate the time for the first pulse of the next segment
-            try:
-                last_pulse_index = np.where(np.diff(dbs_signal) < 0)[0][-1]
-                next_pulse_time = times[last_pulse_index] + isi - pulse_width
-
-                # Track when the last pulse was
-                last_pulse_time = times[last_pulse_index]
-
-            except IndexError:
-                # Catch times when signal may be flat
-                last_pulse_index = len(dbs_signal) - 1
-                next_pulse_time = times[last_pulse_index] + isi - pulse_width
-
-            # Rescale amplitude
-            dbs_signal *= amplitude
-
-        return dbs_signal, times, next_pulse_time, last_pulse_time
+        return generate_monophasic_square_dbs_signal(
+            start_time,
+            stop_time,
+            dt,
+            amplitude,
+            frequency,
+            pulse_width,
+            offset,
+            last_pulse_time_prior
+            )
 
     def set_kp(self, proportional_gain):
         """Determine how aggressively the controller reacts to the current
@@ -841,21 +682,6 @@ class StandardPIDController:
     def set_min_value(self, min_value):
         """Sets the lower bound for the controller output"""
         self.min_value = min_value
-
-    def get_state_history(self):
-        return self.state_history
-
-    def get_error_history(self):
-        return self.error_history
-
-    def get_output_history(self):
-        return self.output_history
-
-    def get_sample_times(self):
-        return self.sample_times
-
-    def get_label(self):
-        return self.label
 
 
 class IterativeFeedbackTuningPIController:
@@ -1098,50 +924,16 @@ class IterativeFeedbackTuningPIController:
         offset,
         last_pulse_time_prior=0,
     ):
-        """Generate monophasic square-wave DBS signal
-
-        Example inputs:
-            start_time = 0                # ms
-            stop_time = 12000            # ms
-            dt = 0.01                    # ms
-            amplitude = -1.0            # mA (<0 = cathodic, >0 = anodic)
-            frequency = 130.0            # Hz
-            pulse_width    = 0.06            # ms
-            offset = 0                    # mA
-        """
-
-        times = np.round(np.arange(start_time, stop_time, dt), 2)
-        tmp = np.arange(0, stop_time - start_time, dt) / 1000.0
-
-        if frequency == 0:
-            dbs_signal = np.zeros(len(tmp))
-            last_pulse_time = last_pulse_time_prior
-            next_pulse_time = 1e9
-        else:
-            # Calculate the duty cycle of the DBS signal
-            isi = 1000.0 / frequency  # time is in ms
-            duty_cycle = pulse_width / isi
-            tt = 2.0 * np.pi * frequency * tmp
-            dbs_signal = offset + 0.5 * (1.0 + signal.square(tt, duty=duty_cycle))
-            dbs_signal[-1] = 0.0
-
-            # Calculate the time for the first pulse of the next segment
-            try:
-                last_pulse_index = np.where(np.diff(dbs_signal) < 0)[0][-1]
-                next_pulse_time = times[last_pulse_index] + isi - pulse_width
-
-                # Track when the last pulse was
-                last_pulse_time = times[last_pulse_index]
-
-            except IndexError:
-                # Catch times when signal may be flat
-                last_pulse_index = len(dbs_signal) - 1
-                next_pulse_time = times[last_pulse_index] + isi - pulse_width
-
-            # Rescale amplitude
-            dbs_signal *= amplitude
-
-        return dbs_signal, times, next_pulse_time, last_pulse_time
+        return generate_monophasic_square_dbs_signal(
+            start_time,
+            stop_time,
+            dt,
+            amplitude,
+            frequency,
+            pulse_width,
+            offset,
+            last_pulse_time_prior
+            )
 
     @property
     def label(self):
@@ -1210,3 +1002,70 @@ class IterativeFeedbackTuningPIController:
     @property
     def parameter_history(self):
         return self._parameter_history
+
+
+#
+#  Utility functions
+#
+def generate_monophasic_square_dbs_signal(
+    start_time,
+    stop_time,
+    dt,
+    amplitude,
+    frequency,
+    pulse_width,
+    offset,
+    last_pulse_time_prior=0,
+):
+    """
+    Generate monophasic square-wave DBS signal
+
+    Parameters:
+        start_time (float): Stimulation start time (ms)
+        stop_time (float): Stimulation stop time (ms)
+        dt (float): Timestep (ms)
+        amplitude (float): Stimulation amplitude (mA); <0 = cathodic, >0 = anodic
+        frequency (float): Stimulation frequency (Hz)
+        pulse_width (float): Width of the stimulation pulse (ms)
+        offset (float): DC offset of the signal (mA)
+        last_pulse_time_prior (float): Time of the last delivered pulse (ms)
+
+    Returns:
+        dbs_signal (np.array): DBS stimulation waveform
+        times (np.array): sample times
+        next_pulse_time (float): Time of the next stimulation pulse
+        last_pulse_time (float): Time of the last stimulation pulse
+    """
+
+    times = np.round(np.arange(start_time, stop_time, dt), 2)
+    tmp = np.arange(0, stop_time - start_time, dt) / 1000.0
+
+    if frequency == 0:
+        dbs_signal = np.zeros(len(tmp))
+        last_pulse_time = last_pulse_time_prior
+        next_pulse_time = 1e9
+    else:
+        # Calculate the duty cycle of the DBS signal
+        isi = 1000.0 / frequency  # time is in ms
+        duty_cycle = pulse_width / isi
+        tt = 2.0 * np.pi * frequency * tmp
+        dbs_signal = offset + 0.5 * (1.0 + signal.square(tt, duty=duty_cycle))
+        dbs_signal[-1] = 0.0
+
+        # Calculate the time for the first pulse of the next segment
+        try:
+            last_pulse_index = np.where(np.diff(dbs_signal) < 0)[0][-1]
+            next_pulse_time = times[last_pulse_index] + isi - pulse_width
+
+            # Track when the last pulse was
+            last_pulse_time = times[last_pulse_index]
+
+        except IndexError:
+            # Catch times when signal may be flat
+            last_pulse_index = len(dbs_signal) - 1
+            next_pulse_time = times[last_pulse_index] + isi - pulse_width
+
+        # Rescale amplitude
+        dbs_signal *= amplitude
+
+    return dbs_signal, times, next_pulse_time, last_pulse_time
