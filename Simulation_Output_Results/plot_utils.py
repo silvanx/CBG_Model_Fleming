@@ -62,9 +62,8 @@ def burst_txt_to_signal(
 
 
 def time_to_sample(tt: np.ndarray, t: float) -> int:
-    '''Finds the first index in a time array where time is greater than or
-    equal to t.'''
-    return np.where(tt >= t)[0][0]
+    '''Return the index of closest value in the array'''
+    return (np.abs(np.array(tt) - t)).argmin()
 
 
 def compute_cost(lfp: np.ndarray, u: np.ndarray, lam: float,
@@ -378,29 +377,46 @@ def plot_controller_result(
     return axs
 
 
-def load_and_plot(dirname: Union[str, list[str]], parameter: str,
-                  steady_state_time: float, sim_time: float,
-                  plot_start_t: float, plot_end_t: float, dirname_zero: str) -> None:
-    '''Loads and plots the simulation result from a given directory.
-
-    If dirname is a list of strings, displays all the results in one plot.
+def load_and_plot(dirname: Path, start=0, stop=None) -> None:
     '''
-    if isinstance(dirname, str):
-        dirname = [dirname]
-    axs = None
-    for d in dirname:
-        directory = Path(d)
-        time, dbs = load_dbs_output(directory)
-        lfp_time, lfp = load_stn_lfp(directory)
-        controller_t, controller_p, controller_b =\
-            load_controller_data(directory, parameter)
-        axs = plot_controller_result(plot_start_t, plot_end_t, parameter, time,
-                                     dbs, controller_t, controller_p,
-                                     controller_b, lfp_time, lfp, axs)
-        z_t, z_p, z_b = load_controller_data(dirname_zero, None)
-        s = time_to_sample(z_t, plot_start_t / 1000)
-        e = time_to_sample(z_t, plot_end_t / 1000)
-        axs[2].plot(z_t[s:e], z_b[s:e], color="#a42cd6", linewidth=3, alpha=0.4)
+    Load and plot the simulation result from a given directory.
+    '''
+    controller_t, _, controller_b = load_controller_data(dirname)
+    time_lfp, lfp = load_stn_lfp(dirname)
+    time_dbs, dbs = load_dbs_output(dirname)
+
+    s = time_to_sample(controller_t, start)
+    if stop is None:
+        e = len(controller_t)
+    else:
+        e = time_to_sample(controller_t, stop)
+
+    s_lfp = time_to_sample(time_lfp, start * 1000)
+    if stop is None:
+        e_lfp = len(time_lfp)
+    else:
+        e_lfp = time_to_sample(time_lfp, stop * 1000)
+
+    s_dbs = time_to_sample(time_dbs, start * 1000)
+    if stop is None:
+        e_dbs = len(time_dbs)
+    else:
+        e_dbs = time_to_sample(time_dbs, stop * 1000)
+
+    _, axs = plt.subplots(3, 1, figsize=(22, 15))
+    axs[0].plot(controller_t[s:e], controller_b[s:e], color="orange")
+    axs[0].axhline(np.median(controller_b), linestyle="--", color="black")
+    axs[0].axhline(np.percentile(controller_b, 25), linestyle="--", color="#808080")
+    axs[0].axhline(np.percentile(controller_b, 75), linestyle="--", color="#808080")
+    format_single_axis(axs[0], "Time [s]", "STN Beta ARV", f"STN beta ARV ({dirname.name})")
+
+    axs[1].plot(time_lfp[s_lfp:e_lfp], lfp[s_lfp:e_lfp])
+    format_single_axis(axs[1], "Time [ms]", "STN LFP [mV]", "STN LFP")
+
+    axs[2].plot(time_dbs[s_dbs:e_dbs], dbs[s_dbs:e_dbs])
+    format_single_axis(axs[2], "Time [ms]", "DBS amplitude [mA]", "DBS signal")
+
+    plt.subplots_adjust(hspace=0.5)
 
 
 def plot_mse_dir(dir: str, setpoint: float = 1.0414E-4) -> None:
