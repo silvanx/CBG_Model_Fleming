@@ -700,6 +700,7 @@ class IterativeFeedbackTuningPIController:
         min_ti=0,
         fix_ti=False,
         fix_kp=False,
+        r_matrix="identity",
     ):
 
         self.setpoint = setpoint
@@ -715,6 +716,7 @@ class IterativeFeedbackTuningPIController:
         self.r = np.identity(2)
         self.fix_ti = fix_ti
         self.fix_kp = fix_kp
+        self.r_matrix = r_matrix
 
         # Set output value bounds
         self.min_value = min_value
@@ -789,10 +791,12 @@ class IterativeFeedbackTuningPIController:
         dy_drho = np.vstack((dy_dkp, dy_dti))
         du_drho = np.vstack((du_dkp, du_dti))
 
-        # TODO: Make r a parameter
-        r = np.dot(dy_drho, np.transpose(dy_drho)) + self.lam * np.dot(du_drho, np.transpose(du_drho)) / self.stage_length_samples
-        if self.fix_ti or self.fix_kp:
-            r = np.diag(np.diag(r))  # Remove off-diagonal elements
+        if self.r_matrix == "identity":
+            r = np.identity(2)
+        elif self.r_matrix == "hessian":
+            r = (np.dot(dy_drho, np.transpose(dy_drho)) + self.lam * np.dot(du_drho, np.transpose(du_drho))) / self.stage_length_samples
+            if self.fix_ti or self.fix_kp:
+                r = np.diag(np.diag(r))  # Remove off-diagonal elements
         self.r = r
 
         lam = self.lam

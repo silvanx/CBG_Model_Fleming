@@ -31,6 +31,7 @@ ift_schema = dict(
     min_ti={"type": "float", "coerce": float},
     fix_kp={"type": "boolean", "coerce": bool, "default": False},
     fix_ti={"type": "boolean", "coerce": bool, "default": False},
+    r_matrix={"type": "string", "coerce": str, "default": "identity"}
 )
 
 constant_schema = dict(
@@ -83,6 +84,12 @@ class Config(object):
         fix_kp={"type": "boolean", "coerce": bool, "default": False},
         fix_ti={"type": "boolean", "coerce": bool, "default": False},
         stimulation_amplitude={"type": "float", "coerce": float, "default": 0},
+        r_matrix={
+            "type": "string",
+            "coerce": (str, lambda x: x.lower()),
+            "default": "identity",
+            "allowed": ("identity", "hessian")
+        }
     )
 
     def __init__(self, config_file):
