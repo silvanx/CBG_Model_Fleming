@@ -775,15 +775,15 @@ class IterativeFeedbackTuningPIController:
         return yout_kp[1:], yout_ti[1:]
 
     def compute_fitness_gradient(self):
-        y1 = self.error_history[
+        y1 = self._state_history[
             -2 * self.stage_length_samples : -self.stage_length_samples
         ]
-        y2 = self.error_history[-self.stage_length_samples :]
-        u1 = self.output_history[
+        y2 = self._state_history[-self.stage_length_samples :]
+        u1 = self._output_history[
             -2 * self.stage_length_samples : -self.stage_length_samples
         ]
-        u2 = self.output_history[-self.stage_length_samples :]
-        y_tilde = np.array(y1)
+        u2 = self._output_history[-self.stage_length_samples :]
+        y_tilde = np.array(y1) - self.setpoint
         u_rho = u1
         dy_dkp, dy_dti = self.dc_drho(y2)
         du_dkp, du_dti = self.dc_drho(u2)
@@ -847,11 +847,11 @@ class IterativeFeedbackTuningPIController:
     def update(self, state_value, current_time):
         self.current_time = current_time
         elapsed_time = (current_time - self.stage_start_time) / 1000
-        setpoint = self.reference_signal(elapsed_time)
+        reference = self.reference_signal(elapsed_time)
         if rank == 0:
             print(
                 "Stage: %d, Elapsed time: %.3f s, Reference: %.5f"
-                % (self.iteration_stage, elapsed_time, setpoint)
+                % (self.iteration_stage, elapsed_time, reference)
             )
 
         if elapsed_time >= self.stage_length:
@@ -881,8 +881,8 @@ class IterativeFeedbackTuningPIController:
         if self.iteration_stage == 0:
             sample = int(elapsed_time / self.ts)
             self._recorded_output[sample] = state_value
-        if setpoint != 0:
-            error = (state_value - setpoint) / setpoint
+        if reference != 0:
+            error = (state_value - reference) / reference
         else:
             error = state_value
 
@@ -910,7 +910,7 @@ class IterativeFeedbackTuningPIController:
         self._state_history.append(state_value)
         self._error_history.append(error)
         self._iteration_history.append(self.iteration_stage)
-        self._reference_history.append(setpoint)
+        self._reference_history.append(reference)
         self._sample_times.append(current_time / 1000)
         self._output_history.append(self.output_value)
         self._parameter_history.append([self.kp, self.ti])
