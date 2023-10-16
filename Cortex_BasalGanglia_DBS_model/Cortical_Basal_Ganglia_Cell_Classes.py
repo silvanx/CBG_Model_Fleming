@@ -5,7 +5,7 @@
 
                                 Model References
     ------------------------------------------------------------------------------------
-    Cortical Pyramical Cell Soma:
+    Cortical Pyramidal Cell Soma:
     Pospischil, M., Toledo-Rodriguez, M., Monier, C., Piwkowska, Z.,
     Bal, T., Frégnac, Y., Markram, H. and Destexhe, A., 2008.
     "Minimal Hodgkin–Huxley type models for different classes of
@@ -61,7 +61,6 @@
 
 """
 
-from math import pi
 from neuron import h
 from nrnutils import Mechanism, Section
 from pyNN.neuron import NativeCellType
@@ -256,7 +255,7 @@ class Cortical_Neuron(object):
 
     def soma_area(self):
         """Membrane area in µm²"""
-        return pi * self.soma.L * self.soma.diam
+        return np.pi * self.soma.L * self.soma.diam
 
     def memb_init(self):
         for seg in self.soma:
@@ -393,7 +392,7 @@ class Interneuron(object):
 
     def area(self):
         """Membrane area in µm²"""
-        return pi * self.soma.L * self.soma.diam
+        return np.pi * self.soma.L * self.soma.diam
 
     def memb_init(self):
         for seg in self.soma:
@@ -479,7 +478,7 @@ class STN_Neuron(object):
 
     def area(self):
         """Membrane area in µm²"""
-        return pi * self.soma.L * self.soma.diam
+        return np.pi * self.soma.L * self.soma.diam
 
     def memb_init(self):
         for seg in self.soma:
@@ -575,7 +574,7 @@ class GP_Neuron(object):
 
     def area(self):
         """Membrane area in µm²"""
-        return pi * self.soma.L * self.soma.diam
+        return np.pi * self.soma.L * self.soma.diam
 
     def memb_init(self):
         for seg in self.soma:
@@ -653,7 +652,7 @@ class Thalamic_Neuron(object):
 
     def area(self):
         """Membrane area in µm²"""
-        return pi * self.soma.L * self.soma.diam
+        return np.pi * self.soma.L * self.soma.diam
 
     def memb_init(self):
         for seg in self.soma:
