@@ -24,10 +24,7 @@ WORKDIR /usr/app/src/CBG_Fleming_Model
 
 COPY ./Cortex_BasalGanglia_DBS_model/*.txt ./
 
-COPY ./Cortex_BasalGanglia_DBS_model/*.c ./
 COPY ./Cortex_BasalGanglia_DBS_model/*.mod ./
-COPY ./Cortex_BasalGanglia_DBS_model/*.o ./
-COPY ./Cortex_BasalGanglia_DBS_model/*.html ./
 RUN nrnivmodl
 
 COPY ./Cortex_BasalGanglia_DBS_model/*.py ./
