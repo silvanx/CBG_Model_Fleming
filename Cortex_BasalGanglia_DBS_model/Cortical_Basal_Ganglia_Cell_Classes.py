@@ -70,10 +70,7 @@ import numpy as np
 # Import global variables for GPe DBS
 import Global_Variables as GV
 
-try:
-    reduce
-except NameError:
-    from functools import reduce
+from functools import reduce
 
 
 def _new_property(obj_hierarchy, attr_name):

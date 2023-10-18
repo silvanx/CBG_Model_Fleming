@@ -86,6 +86,7 @@ if __name__ == "__main__":
 
     # Setup simulation
     rank = setup(timestep=timestep, rngseed=rng_seed)
+    simulator.load_mechanisms("neuron_mechanisms")
 
     if rank == 0:
         print("\n------ Configuration ------")

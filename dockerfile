@@ -1,5 +1,7 @@
 FROM python:3.9.5
 
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /usr/app/src/CBG_Fleming_Model
 
 RUN pip3 install numpy==1.23.1 scipy==1.9.0 PyNN==0.10.0
@@ -24,8 +26,13 @@ WORKDIR /usr/app/src/CBG_Fleming_Model
 
 COPY ./Cortex_BasalGanglia_DBS_model/*.txt ./
 
-COPY ./Cortex_BasalGanglia_DBS_model/*.mod ./
+COPY ./Cortex_BasalGanglia_DBS_model/neuron_mechanisms/*.mod ./neuron_mechanisms/
+
+WORKDIR /usr/app/src/CBG_Fleming_Model/neuron_mechanisms
+
 RUN nrnivmodl
+
+WORKDIR /usr/app/src/CBG_Fleming_Model
 
 COPY ./Cortex_BasalGanglia_DBS_model/*.py ./
 COPY ./Cortex_BasalGanglia_DBS_model/*.npy ./
