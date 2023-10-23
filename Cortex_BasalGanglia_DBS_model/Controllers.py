@@ -702,7 +702,8 @@ class IterativeFeedbackTuningPIController:
         fix_ti=False,
         fix_kp=False,
         r_matrix="identity",
-        debug=False
+        stage_two_mean=False,
+        debug=False,
     ):
 
         self.setpoint = setpoint
@@ -719,6 +720,7 @@ class IterativeFeedbackTuningPIController:
         self.fix_ti = fix_ti
         self.fix_kp = fix_kp
         self.r_matrix = r_matrix
+        self.stage_two_mean = stage_two_mean
 
         # Set output value bounds
         self.min_value = min_value
@@ -750,6 +752,7 @@ class IterativeFeedbackTuningPIController:
         self._reference_history = []
         self._parameter_history = []
         self._recorded_output = np.zeros(self.stage_length_samples)
+        self._mean_recorded_output = 0
 
     def clear(self):
         self.integral_term = 0.0
@@ -857,6 +860,9 @@ class IterativeFeedbackTuningPIController:
         return new_rho[0], new_rho[1]
 
     def reference_signal(self, elapsed_time):
+        if self.stage_two_mean:
+            return self._mean_recorded_output
+
         sample = int(elapsed_time / self.ts)
         if self.iteration_stage == 0:
             return self.setpoint
@@ -892,6 +898,8 @@ class IterativeFeedbackTuningPIController:
                     self.kp, self.ti = self.new_controller_parameters()
                     if rank == 0:
                         print(f"New params: kp={self.kp}, ti={self.ti}")
+                if self.iteration_stage == 0:
+                    self._mean_recorded_output = np.mean(self._recorded_output)
                 self.stage_start_time = self.current_time
                 elapsed_time = 0
                 self.iteration_stage = (self.iteration_stage + 1) % 2

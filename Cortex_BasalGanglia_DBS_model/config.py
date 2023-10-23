@@ -31,7 +31,9 @@ ift_schema = dict(
     min_ti={"type": "float", "coerce": float},
     fix_kp={"type": "boolean", "coerce": bool, "default": False},
     fix_ti={"type": "boolean", "coerce": bool, "default": False},
-    r_matrix={"type": "string", "coerce": str, "default": "identity"}
+    r_matrix={"type": "string", "coerce": str, "default": "identity"},
+    stage_two_mean={"type": "boolean", "coerce": bool, "default": False},
+    debug={"type": "boolean", "coerce": bool, "default": False},
 )
 
 constant_schema = dict(
@@ -89,7 +91,9 @@ class Config(object):
             "coerce": (str, lambda x: x.lower()),
             "default": "identity",
             "allowed": ("identity", "hessian")
-        }
+        },
+        stage_two_mean={"type": "boolean", "coerce": bool, "default": False},
+        debug={"type": "boolean", "coerce": bool, "default": False},
     )
 
     def __init__(self, config_file):
