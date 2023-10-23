@@ -13,6 +13,7 @@ import math
 import numpy as np
 import scipy.signal as signal
 from mpi4py import MPI
+from numpy.linalg import LinAlgError
 
 rank = MPI.COMM_WORLD.Get_rank()
 
@@ -701,6 +702,7 @@ class IterativeFeedbackTuningPIController:
         fix_ti=False,
         fix_kp=False,
         r_matrix="identity",
+        debug=False
     ):
 
         self.setpoint = setpoint
@@ -721,6 +723,8 @@ class IterativeFeedbackTuningPIController:
         # Set output value bounds
         self.min_value = min_value
         self.max_value = max_value
+
+        self.debug = debug
 
         self.label = "iterative_feedback_tuning_PI_Controller"
 
@@ -769,24 +773,37 @@ class IterativeFeedbackTuningPIController:
         yout_kp = np.zeros(len(s) + 1)
         yout_ti = np.zeros(len(s) + 1)
         for i, u in enumerate(s):
-            yout_kp[i + 1] = u / kp
-            yout_ti[i + 1] = (ti**2 * yout_ti[i] - ts * u) / (ti**2 + ti * ts)
+            if kp == 0:
+                yout_kp[i + 1] = 0
+            else:
+                yout_kp[i + 1] = u / kp
+            if ti == 0:
+                yout_ti[i + 1] = 0
+            else:
+                yout_ti[i + 1] = (ti ** 2 * yout_ti[i] - ts * u) / (ti ** 2 + ti * ts)
 
         return yout_kp[1:], yout_ti[1:]
 
     def compute_fitness_gradient(self):
-        y1 = self._state_history[
+        y1 = np.array(self._state_history[
             -2 * self.stage_length_samples : -self.stage_length_samples
-        ]
-        y2 = self._state_history[-self.stage_length_samples :]
-        u1 = self._output_history[
+        ])
+        y2 = np.array(self._state_history[-self.stage_length_samples :])
+        u1 = np.array(self._output_history[
             -2 * self.stage_length_samples : -self.stage_length_samples
-        ]
-        u2 = self._output_history[-self.stage_length_samples :]
-        y_tilde = np.array(y1) - self.setpoint
+        ])
+        u2 = np.array(self._output_history[-self.stage_length_samples :])
+        # y_tilde = y1 - self.setpoint
+        
+        y_tilde = (self.setpoint - y1) / self.setpoint
         u_rho = u1
         dy_dkp, dy_dti = self.dc_drho(y2)
         du_dkp, du_dti = self.dc_drho(u2)
+        if rank == 0 and self.debug:
+            print(f"kp={self.kp}")
+            print(f"y_tilde: min={y_tilde.min()}, max={y_tilde.max()}, mean={y_tilde.mean()}")
+            print(f"dy_dkp: min={dy_dkp.min()}, max={dy_dkp.max()}, mean={dy_dkp.mean()}")
+            print(f"y2: min={y2.min()}, max={y2.max()}, mean={y2.mean()}")
 
         dy_drho = np.vstack((dy_dkp, dy_dti))
         du_drho = np.vstack((du_dkp, du_dti))
@@ -818,7 +835,10 @@ class IterativeFeedbackTuningPIController:
             grad = [0, 0]
             if rank == 0:
                 print("Too few samples, skipping update")
-        r_inv = np.linalg.inv(self.r)
+        try:
+            r_inv = np.linalg.inv(self.r)
+        except LinAlgError:
+            r_inv = np.identity(2)
         scaled_grad = np.dot(r_inv, grad)
         if rank == 0:
             print(f"R-scaled gradient: {scaled_grad}")
@@ -881,6 +901,7 @@ class IterativeFeedbackTuningPIController:
         if self.iteration_stage == 0:
             sample = int(elapsed_time / self.ts)
             self._recorded_output[sample] = state_value
+        
         if reference != 0:
             error = (state_value - reference) / reference
         else:
