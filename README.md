@@ -1,14 +1,37 @@
 # About
-This repository contains a computational model of the cortico-basal ganglia loop, capable of recording local field potentials (LFP) from the subthalamic nucleus (STN), as well as delivering deep brain stimulation (DBS) in the same location.
-The original model was presented in the article by Fleming et al., available at https://doi.org/10.3171/2023.2.JNS222576
+This repository contains a computational model of the cortico-basal ganglia loop, capable of recording local field
+potentials (LFP) from the subthalamic nucleus (STN), as well as delivering deep brain stimulation (DBS) in the same
+location. The original model was presented in the article by Fleming et al.,
+available at https://doi.org/10.3171/2023.2.JNS222576
 
 # Changes from the original model
 - The model run twice with the same random seed produces numerically identical results
 - This model is MPI-enabled, which means it can be run in parallel, reducing the simulation time
-- The simulation parameters are set with a config file that is passed as a command line argument to the `run_model.py` script
+- The simulation parameters are set with a config file that is passed as a command line argument
+  to the `run_model.py` script
 
 # Running the model
-Install Docker and build the image using included dockerfile. If you want to run the simulations directly from your OS, use the dockerfile as the guide with respect to dependencies and their required versions.
+Install Docker and build the image using included dockerfile
+```
+docker build -t fleming-model .
+```
+Run the code in the container
+```
+docker run --name <container-name> fleming-model <config_file>.yml
+```
+If you don't specify the config file (relative to the Cortex_BasalGanglia_DBS_model directory),
+by default ```conf_zero_4s.yml``` will be run.
+
+Get the simulation data out from the container
+```
+docker cp <container-name>:/usr/app/src/CBG_Fleming_Model/RESULTS ./simulation-results
+```
+
+Several scripts to help with data loading and plotting are available in the following repository:
+https://github.com/silvanx/FlemingModelResultAnalysis
+
+If you want to run the simulations directly from your OS, use the dockerfile as the guide with respect to dependencies
+and their required versions.
 
 # Config file
 The config file specifies the parameters of the simulation 
