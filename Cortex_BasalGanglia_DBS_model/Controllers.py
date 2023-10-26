@@ -788,17 +788,14 @@ class IterativeFeedbackTuningPIController:
         return yout_kp[1:], yout_ti[1:]
 
     def compute_fitness_gradient(self):
-        y1 = np.array(self._state_history[
-            -2 * self.stage_length_samples : -self.stage_length_samples
-        ])
-        y2 = np.array(self._state_history[-self.stage_length_samples :])
-        u1 = np.array(self._output_history[
-            -2 * self.stage_length_samples : -self.stage_length_samples
-        ])
-        u2 = np.array(self._output_history[-self.stage_length_samples :])
+        n_samples = self.stage_length_samples
+        y1 = np.array(self._state_history[-2 * n_samples: -n_samples])
+        y2 = np.array(self._state_history[-n_samples:])
+        u1 = np.array(self._output_history[-2 * n_samples: -n_samples])
+        u2 = np.array(self._output_history[-n_samples:])
         # y_tilde = y1 - self.setpoint
         
-        y_tilde = (self.setpoint - y1) / self.setpoint
+        y_tilde = (y1 - self.setpoint) / self.setpoint
         u_rho = u1
         dy_dkp, dy_dti = self.dc_drho(y2)
         du_dkp, du_dti = self.dc_drho(u2)
@@ -812,12 +809,12 @@ class IterativeFeedbackTuningPIController:
         du_drho = np.vstack((du_dkp, du_dti))
 
         if self.r_matrix == "identity":
-            r = np.identity(2)
+            self.r = np.identity(2)
         elif self.r_matrix == "hessian":
             r = (np.dot(dy_drho, np.transpose(dy_drho)) + self.lam * np.dot(du_drho, np.transpose(du_drho))) / self.stage_length_samples
             if self.fix_ti or self.fix_kp:
                 r = np.diag(np.diag(r))  # Remove off-diagonal elements
-        self.r = r
+            self.r = r
 
         lam = self.lam
         y_part = y_tilde * dy_drho
@@ -1097,6 +1094,7 @@ def generate_monophasic_square_dbs_signal(
             # Catch times when signal may be flat
             last_pulse_index = len(dbs_signal) - 1
             next_pulse_time = times[last_pulse_index] + isi - pulse_width
+            last_pulse_time = last_pulse_time_prior
 
         # Rescale amplitude
         dbs_signal *= amplitude
