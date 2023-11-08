@@ -801,10 +801,10 @@ class IterativeFeedbackTuningPIController:
         du_dkp, du_dti = self.dc_drho(u2)
         if rank == 0 and self.debug:
             print(f"kp={self.kp}")
-            print(f"y_tilde: min={y_tilde.min()}, max={y_tilde.max()}, mean={y_tilde.mean()}")
-            print(f"dy_dkp: min={dy_dkp.min()}, max={dy_dkp.max()}, mean={dy_dkp.mean()}")
-            print(f"y2: min={y2.min()}, max={y2.max()}, mean={y2.mean()}")
-            print(f"y1: min={y1.min()}, max={y1.max()}, mean={y1.mean()}")
+            print(f"y_tilde: min={y_tilde.min()}, max={y_tilde.max()}, mean={y_tilde.mean()}, sum={y_tilde.sum()}")
+            print(f"dy_dkp: min={dy_dkp.min()}, max={dy_dkp.max()}, mean={dy_dkp.mean()}, sum={dy_dkp.sum()}")
+            print(f"y2: min={y2.min()}, max={y2.max()}, mean={y2.mean()}, sum={y2.sum()}")
+            print(f"y1: min={y1.min()}, max={y1.max()}, mean={y1.mean()}, sum={y1.sum()}")
 
         dy_drho = np.vstack((dy_dkp, dy_dti))
         du_drho = np.vstack((du_dkp, du_dti))
