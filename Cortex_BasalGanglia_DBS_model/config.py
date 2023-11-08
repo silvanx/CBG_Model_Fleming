@@ -34,6 +34,7 @@ ift_schema = dict(
     r_matrix={"type": "string", "coerce": str, "default": "identity"},
     stage_two_mean={"type": "boolean", "coerce": bool, "default": False},
     debug={"type": "boolean", "coerce": bool, "default": False},
+    normalise_error={"type": "boolean", "coerce": bool, "default": True},
 )
 
 constant_schema = dict(
@@ -94,6 +95,7 @@ class Config(object):
         },
         stage_two_mean={"type": "boolean", "coerce": bool, "default": False},
         debug={"type": "boolean", "coerce": bool, "default": False},
+        normalise_error={"type": "boolean", "coerce": bool, "default": True}
     )
 
     def __init__(self, config_file):

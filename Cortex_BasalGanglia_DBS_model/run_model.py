@@ -253,6 +253,10 @@ if __name__ == "__main__":
     controller_window_tail_length_no_samples = int(
         controller_window_tail_length / rec_sampling_interval
     )
+    if controller_window_tail_length_no_samples > controller_window_length_no_samples * 0.3:
+        print("Controller window tail length can't be longer than 1/3 of the controller window length! Resizing...")
+        controller_window_tail_length_no_samples = int(controller_window_length_no_samples * 0.3)
+        print(f"New controller window tail_length: {controller_window_tail_length_no_samples}")
 
     controller_start = (
         steady_state_duration + controller_window_length + controller_sampling_time

@@ -704,6 +704,7 @@ class IterativeFeedbackTuningPIController:
         r_matrix="identity",
         stage_two_mean=False,
         debug=False,
+        normalise_error=True
     ):
 
         self.setpoint = setpoint
@@ -721,6 +722,7 @@ class IterativeFeedbackTuningPIController:
         self.fix_kp = fix_kp
         self.r_matrix = r_matrix
         self.stage_two_mean = stage_two_mean
+        self.normalise_error = normalise_error
 
         # Set output value bounds
         self.min_value = min_value
@@ -793,9 +795,13 @@ class IterativeFeedbackTuningPIController:
         y2 = np.array(self._state_history[-n_samples:])
         u1 = np.array(self._output_history[-2 * n_samples: -n_samples])
         u2 = np.array(self._output_history[-n_samples:])
-        #y_tilde = y1 - self.setpoint
+
+        if self.normalise_error:
+            y_tilde = (-y1 + self.setpoint) / self.setpoint
+        else:
+            y_tilde = -y1 + self.setpoint
         
-        y_tilde = (-y1 + self.setpoint) / self.setpoint
+
         u_rho = u1
         dy_dkp, dy_dti = self.dc_drho(y2)
         du_dkp, du_dti = self.dc_drho(u2)
@@ -864,7 +870,7 @@ class IterativeFeedbackTuningPIController:
             return self._mean_recorded_output
 
         sample = int(elapsed_time / self.ts)
-        if self.iteration_stage == 0:
+        if self.iteration_stage == 0 or self.iteration_stage == -1:
             return self.setpoint
         if sample >= self.stage_length_samples:
             sample = self.stage_length_samples - 1
@@ -911,7 +917,10 @@ class IterativeFeedbackTuningPIController:
             self._recorded_output[sample] = state_value
         
         if reference != 0:
-            error = (state_value - reference) / reference
+            if self.normalise_error:
+                error = (state_value - reference) / reference
+            else:
+                error = state_value - reference
         else:
             error = state_value
 
