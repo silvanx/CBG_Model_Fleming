@@ -793,9 +793,9 @@ class IterativeFeedbackTuningPIController:
         y2 = np.array(self._state_history[-n_samples:])
         u1 = np.array(self._output_history[-2 * n_samples: -n_samples])
         u2 = np.array(self._output_history[-n_samples:])
-        # y_tilde = y1 - self.setpoint
+        #y_tilde = y1 - self.setpoint
         
-        y_tilde = (y1 - self.setpoint) / self.setpoint
+        y_tilde = (-y1 + self.setpoint) / self.setpoint
         u_rho = u1
         dy_dkp, dy_dti = self.dc_drho(y2)
         du_dkp, du_dti = self.dc_drho(u2)
@@ -804,6 +804,7 @@ class IterativeFeedbackTuningPIController:
             print(f"y_tilde: min={y_tilde.min()}, max={y_tilde.max()}, mean={y_tilde.mean()}")
             print(f"dy_dkp: min={dy_dkp.min()}, max={dy_dkp.max()}, mean={dy_dkp.mean()}")
             print(f"y2: min={y2.min()}, max={y2.max()}, mean={y2.mean()}")
+            print(f"y1: min={y1.min()}, max={y1.max()}, mean={y1.mean()}")
 
         dy_drho = np.vstack((dy_dkp, dy_dti))
         du_drho = np.vstack((du_dkp, du_dti))
