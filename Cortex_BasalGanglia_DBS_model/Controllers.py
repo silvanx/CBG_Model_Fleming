@@ -805,6 +805,8 @@ class IterativeFeedbackTuningPIController:
             print(f"dy_dkp: min={dy_dkp.min()}, max={dy_dkp.max()}, mean={dy_dkp.mean()}, sum={dy_dkp.sum()}")
             print(f"y2: min={y2.min()}, max={y2.max()}, mean={y2.mean()}, sum={y2.sum()}")
             print(f"y1: min={y1.min()}, max={y1.max()}, mean={y1.mean()}, sum={y1.sum()}")
+            print(f"u1: min={u1.min()}, max={u1.max()}, mean={u1.mean()}, sum={u1.sum()}")
+            print(f"du_dkp: min={du_dkp.min()}, max={du_dkp.max()}, mean={du_dkp.mean()}, sum={du_dkp.sum()}")
 
         dy_drho = np.vstack((dy_dkp, dy_dti))
         du_drho = np.vstack((du_dkp, du_dti))
