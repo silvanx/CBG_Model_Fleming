@@ -42,6 +42,7 @@ The config file specifies the parameters of the simulation
 - `RunTime`: how long to run the simulation *after* steady state; unit: ms
 - `save_stn_voltage`: whether to write STN neuron membrane voltage to a file
 - `save_ctx_voltage`: whether to write cortical neuron membrane voltage to a file
+- `save_ctx_lfp`: whether to write cortical neuron synaptic currents to a file
 ## Model
 - `Pop_size`: how many neurons per cell population
 - `create_new_network`: should I create a new model or read the structure from a file? (default: False)
