@@ -78,6 +78,7 @@ class Config(object):
         min_ti={"type": "float", "coerce": float, "default": 0.01},
         save_stn_voltage={"type": "boolean", "coerce": bool, "default": True},
         save_ctx_voltage={"type": "boolean", "coerce": bool, "default": False},
+        save_ctx_lfp={"type": "boolean", "coerce": bool, "default": False},
         create_new_network={"type": "boolean", "coerce": bool, "default": False},
         Pop_size={"type": "integer", "coerce": int, "default": 100},
         controller_window_length={"type": "float", "coerce": float, "default": 2000.0},

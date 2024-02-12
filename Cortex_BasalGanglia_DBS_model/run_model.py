@@ -187,8 +187,12 @@ if __name__ == "__main__":
             print("Network created")
 
     # Define state variables to record from each population
-    Cortical_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
-    Cortical_Pop.record("collateral(0.5).v", sampling_interval=rec_sampling_interval)
+    if c.save_ctx_voltage:
+        Cortical_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
+        Cortical_Pop.record("collateral(0.5).v", sampling_interval=rec_sampling_interval)
+    if c.save_ctx_lfp:
+        Cortical_Pop.record("AMPA.i", sampling_interval=rec_sampling_interval)
+        Cortical_Pop.record("GABAa.i", sampling_interval=rec_sampling_interval)
     Interneuron_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
     STN_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
     STN_Pop.record("AMPA.i", sampling_interval=rec_sampling_interval)
@@ -254,9 +258,11 @@ if __name__ == "__main__":
         controller_window_tail_length / rec_sampling_interval
     )
     if controller_window_tail_length_no_samples > controller_window_length_no_samples * 0.3:
-        print("Controller window tail length can't be longer than 1/3 of the controller window length! Resizing...")
+        if rank == 0:
+            print("Controller window tail length can't be longer than 1/3 of the controller window length! Resizing...")
         controller_window_tail_length_no_samples = int(controller_window_length_no_samples * 0.3)
-        print(f"New controller window tail_length: {controller_window_tail_length_no_samples}")
+        if rank == 0:
+            print(f"New controller window tail_length: {controller_window_tail_length_no_samples}")
 
     controller_start = (
         steady_state_duration + controller_window_length + controller_sampling_time
@@ -415,8 +421,9 @@ if __name__ == "__main__":
     if rank == 0:
         print("Steady state finished.")
         print(
-            "\n---> Running simulation for %.0f ms after steady state (%.0f ms) with %s control"
-            % (simulation_runtime, steady_state_duration, controller_type)
+            f"\n---> Running simulation for {simulation_runtime:.0f}"
+            f"ms after steady state ({steady_state_duration:.0f} ms)"
+            f"with {controller_type} control"
         )
 
     # Reload striatal spike times after loading the steady state
@@ -634,12 +641,20 @@ if __name__ == "__main__":
 
     # Write population membrane voltage data to file
     if c.save_ctx_voltage:
-        Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop/Cortical_Collateral_v.mat"), 'collateral(0.5).v', clear=False)
-        Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop/Cortical_Soma_v.mat"), 'soma(0.5).v', clear=True)
+        if rank == 0:
+            print("Saving CTX voltage...")
+        Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop" / "Cortical_Collateral_v.mat"), 'collateral(0.5).v', clear=False)
+        Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop" / "Cortical_Soma_v.mat"), 'soma(0.5).v', clear=False)
     # Interneuron_Pop.write_data(str(simulation_output_dir / "Interneuron_Pop/Interneuron_Soma_v.mat"), 'soma(0.5).v', clear=True)
     # GPe_Pop.write_data(str(simulation_output_dir / "GPe_Pop/GPe_Soma_v.mat", 'soma(0.5).v'), clear=True)
     # GPi_Pop.write_data(str(simulation_output_dir / "GPi_Pop/GPi_Soma_v.mat", 'soma(0.5).v'), clear=True)
     # Thalamic_Pop.write_data(str(simulation_output_dir / "Thalamic_Pop/Thalamic_Soma_v.mat"), 'soma(0.5).v', clear=True)
+
+    if c.save_ctx_lfp:
+        if rank == 0:
+            print("Saving CTX currents...")
+        Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop" / "Ctx_GABAa_i.mat"), "GABAa.i", clear=False)
+        Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop" / "Ctx_AMPA_i.mat"), "AMPA.i", clear=False)
 
     # Write controller values to csv files
     controller_measured_beta_values = np.asarray(controller.state_history)
