@@ -406,8 +406,16 @@ class Interneuron_Type(NativeCellType):
         "bias_current_amp": 0.25,
     }
     default_initial_values = {"v": -68.0}
-    recordable = ["soma(0.5).v"]
-    units = {"soma(0.5).v": "mV"}
+    recordable = [
+        "soma(0.5).v",
+        "AMPA.i",
+        "GABAa.i",
+        ]
+    units = {
+        "soma(0.5).v": "mV",
+        "AMPA.i": "nA",
+        "GABAa.i": "nA",
+        }
     receptor_types = ["AMPA", "GABAa"]
     model = Interneuron
 

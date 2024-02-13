@@ -193,6 +193,8 @@ if __name__ == "__main__":
     if c.save_ctx_lfp:
         Cortical_Pop.record("AMPA.i", sampling_interval=rec_sampling_interval)
         Cortical_Pop.record("GABAa.i", sampling_interval=rec_sampling_interval)
+        Interneuron_Pop.record("GABAa.i", sampling_interval=rec_sampling_interval)
+        Interneuron_Pop.record("AMPA.i", sampling_interval=rec_sampling_interval)
     Interneuron_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
     STN_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
     STN_Pop.record("AMPA.i", sampling_interval=rec_sampling_interval)
@@ -655,6 +657,8 @@ if __name__ == "__main__":
             print("Saving CTX currents...")
         Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop" / "Ctx_GABAa_i.mat"), "GABAa.i", clear=False)
         Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop" / "Ctx_AMPA_i.mat"), "AMPA.i", clear=False)
+        Interneuron_Pop.write_data(str(simulation_output_dir / "Interneuron_Pop" / "Interneuron_GABAa_i.mat"), "GABAa.i", clear=False)
+        Interneuron_Pop.write_data(str(simulation_output_dir / "Interneuron_Pop" / "Interneuron_AMPA_i.mat"), "AMPA.i", clear=False)
 
     # Write controller values to csv files
     controller_measured_beta_values = np.asarray(controller.state_history)
