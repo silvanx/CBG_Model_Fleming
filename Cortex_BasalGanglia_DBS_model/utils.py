@@ -40,6 +40,51 @@ def generate_poisson_spike_times(
     return spike_times
 
 
+def burst_txt_to_signal(
+        tt: np.ndarray,
+        aa: np.ndarray,
+        tstart: float,
+        tstop: float,
+        dt: float
+        ) -> tuple[np.ndarray, np.ndarray]:
+    """Generates square wave from step amplitudes and times"""
+    segments = []
+    if tstart < tt[0]:
+        initial_segment = aa[0] * np.ones(int(np.floor((tt[0] - tstart) / dt)))
+        segments.append(initial_segment)
+    for i in range(len(tt)):
+        t = tt[i]
+        a = aa[i]
+        if t > tstop:
+            break
+        if i == (len(tt) - 1):
+            next_t = tstop
+        elif tt[i + 1] > tstop:
+            next_t = tstop
+        else:
+            next_t = tt[i + 1]
+        segment_length = int(np.floor((next_t - t) / dt))
+        seg = a * np.ones(segment_length)
+        segments.append(seg)
+    signal = np.concatenate(segments)
+    return np.linspace(tstart, tstop, len(signal)), signal
+
+
+def generate_inhomogeneous_poisson_spike_times(
+    pop_size,
+    tt,
+    fr_envelope,
+    dt,
+    random_seed
+):
+    spike_times = []
+    for neuron_index in np.arange(pop_size):
+        neuron_spike_train = np.random.rand(len(fr_envelope)) < fr_envelope * dt / 1000
+        neuron_spike_times = tt[np.nonzero(neuron_spike_train)[0]]
+        spike_times.append(Sequence(neuron_spike_times))
+    return spike_times
+
+
 def make_beta_cheby1_filter(fs, n, rp, low, high):
     """Calculate bandpass filter coefficients (1st Order Chebyshev Filter)"""
     nyq = 0.5 * fs

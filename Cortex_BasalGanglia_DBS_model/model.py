@@ -24,7 +24,7 @@ from Electrode_Distances import (
     distances_to_electrode,
     collateral_distances_to_electrode,
 )
-from utils import generate_poisson_spike_times
+import utils as u
 
 
 def create_network(
@@ -33,12 +33,14 @@ def create_network(
     sim_total_time,
     simulation_runtime,
     v_init,
-    rng_seed=3695,
-    beta_burst_modulation_scale=0.02,
-    ctx_dc_offset=0.0,
-    ctx_slow_modulation_amplitude=0.0,
-    ctx_slow_modulation_step_count=0
+    config,
 ):
+    rng_seed = config.RandomSeed
+    beta_burst_modulation_scale = config.beta_burst_modulation_scale
+    ctx_dc_offset = config.ctx_dc_offset
+    ctx_slow_modulation_amplitude = config.ctx_slow_modulation_amplitude
+    ctx_slow_modulation_step_count = config.ctx_slow_modulation_step_count
+
     np.random.seed(rng_seed)
 
     # Sphere with radius 2000 um
@@ -47,7 +49,7 @@ def create_network(
     )
 
     # Generate Poisson-distributed Striatal Spike trains
-    striatal_spike_times = generate_poisson_spike_times(
+    striatal_spike_times = u.generate_poisson_spike_times(
         Pop_size, steady_state_duration, simulation_runtime, 20, 1.0, rng_seed
     )
 
@@ -361,12 +363,15 @@ def load_network(
     sim_total_time,
     simulation_runtime,
     v_init,
-    rng_seed=3695,
-    beta_burst_modulation_scale=0.02,
-    ctx_dc_offset=0.0,
-    ctx_slow_modulation_amplitude=0.0,
-    ctx_slow_modulation_step_count=0
+    config,
 ):
+    rng_seed = config.RandomSeed
+    beta_burst_modulation_scale = config.beta_burst_modulation_scale
+    ctx_dc_offset = config.ctx_dc_offset
+    ctx_slow_modulation_amplitude = config.ctx_slow_modulation_amplitude
+    ctx_slow_modulation_step_count = config.ctx_slow_modulation_step_count
+    ctx_beta_spike_input = True
+
     np.random.seed(rng_seed)
     # Sphere with radius 2000 um
     STN_space = space.RandomStructure(
@@ -463,26 +468,54 @@ def load_network(
         modulation_t = np.hstack((modulation_t, time_shift + modulation_t))
         modulation_s = np.hstack((modulation_s, modulation_s))
 
-    modulation_s = beta_burst_modulation_scale * modulation_s  # Scale the modulation signal
+    if modulation_t[0] > sim_total_time:
+        time_shift = int(steady_state_duration - modulation_t[0])
+        modulation_t += time_shift
 
-    cortical_modulation_current = StepCurrentSource(
-        times=modulation_t, amplitudes=modulation_s
-    )
-    Cortical_Pop.inject(cortical_modulation_current)
-    if ctx_dc_offset > 0:
-        Cortical_Pop.inject(
-            DCSource(start=steady_state_duration,
-                     stop=sim_total_time,
-                     amplitude=ctx_dc_offset))
+    if ctx_beta_spike_input:
+        ctx_poisson_tt, ctx_poisson_a = u.burst_txt_to_signal(modulation_t, 26 * (modulation_s + 1), steady_state_duration, sim_total_time, dt=0.1)
+        ctx_spike_times = u.generate_inhomogeneous_poisson_spike_times(
+            Pop_size,
+            ctx_poisson_tt,
+            ctx_poisson_a,
+            dt=0.1,
+            random_seed=rng_seed,
+        )
+        Ctx_Beta_Source_Pop = Population(
+            Pop_size,
+            SpikeSourceArray(spike_times=ctx_spike_times[0]),
+            label="Ctx Beta Spike Source",
+            )
+        syn_Ctx_Beta = StaticSynapse(weight=0.01, delay=1)
+        prj_Ctx_Beta = Projection(
+            Ctx_Beta_Source_Pop,
+            Cortical_Pop,
+            FixedNumberPreConnector(n=1, allow_self_connections=False),
+            syn_Ctx_Beta,
+            source="soma(0.5)",
+            receptor_type="AMPA",
+        )
+    else:
+        modulation_s = beta_burst_modulation_scale * modulation_s  # Scale the modulation signal
 
+        cortical_modulation_current = StepCurrentSource(
+            times=modulation_t, amplitudes=modulation_s
+        )
+        Cortical_Pop.inject(cortical_modulation_current)
+        if ctx_dc_offset > 0:
+            Cortical_Pop.inject(
+                DCSource(
+                    start=steady_state_duration,
+                    stop=sim_total_time,
+                    amplitude=ctx_dc_offset))
 
-    add_slow_modulation(
-        Cortical_Pop,
-        ctx_slow_modulation_amplitude,
-        ctx_slow_modulation_step_count,
-        steady_state_duration,
-        sim_total_time
-    )
+        add_slow_modulation(
+            Cortical_Pop,
+            ctx_slow_modulation_amplitude,
+            ctx_slow_modulation_step_count,
+            steady_state_duration,
+            sim_total_time
+        )
 
     # Load cortical positions - Comment/Remove to generate new positions
     Cortical_Neuron_xy_Positions = np.loadtxt("cortical_xy_pos.txt", delimiter=",")

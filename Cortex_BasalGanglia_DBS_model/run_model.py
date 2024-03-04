@@ -138,11 +138,7 @@ if __name__ == "__main__":
             sim_total_time,
             simulation_runtime,
             v_init,
-            rng_seed,
-            beta_burst_modulation_scale,
-            ctx_dc_offset,
-            ctx_slow_modulation_amplitude,
-            ctx_slow_modulation_step_count
+            c,
         )
         if rank == 0:
             print("Network loaded.")
@@ -177,11 +173,7 @@ if __name__ == "__main__":
             sim_total_time,
             simulation_runtime,
             v_init,
-            rng_seed,
-            beta_burst_modulation_scale,
-            ctx_dc_offset,
-            ctx_slow_modulation_amplitude,
-            ctx_slow_modulation_step_count,
+            c,
         )
         if rank == 0:
             print("Network created")
