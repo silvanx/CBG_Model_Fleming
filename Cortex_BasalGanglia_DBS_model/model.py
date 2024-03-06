@@ -490,7 +490,7 @@ def load_network(
             ctx_poisson_a,
             dt=0.1,
             random_seed=rng_seed,
-            dither=ctx_beta_isi_dither,
+            isi_dither=ctx_beta_isi_dither,
         )
         Ctx_Beta_Source_Pop = Population(
             Pop_size,
