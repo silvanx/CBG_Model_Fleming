@@ -472,7 +472,7 @@ def load_network(
         time_shift = int(steady_state_duration - modulation_t[0])
         modulation_t += time_shift
 
-    if ctx_dc_offset > 0:
+    if ctx_dc_offset != 0:
         Cortical_Pop.inject(
             DCSource(
                 start=steady_state_duration,
