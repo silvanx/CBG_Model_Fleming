@@ -371,9 +371,15 @@ def load_network(
     ctx_slow_modulation_amplitude = config.ctx_slow_modulation_amplitude
     ctx_slow_modulation_step_count = config.ctx_slow_modulation_step_count
 
-    ctx_beta_spike_input = True
-    ctx_beta_frequency = 26
-    ctx_beta_isi_dither = 0.05
+    if config.cortical_beta_mechanism == "spikes":
+        ctx_beta_spike_input = True
+        ctx_beta_frequency = config.ctx_beta_spike_frequency
+        ctx_beta_isi_dither = config.ctx_beta_spike_isi_dither
+        ctx_beta_synapse_strength = config.ctx_beta_synapse_strength
+    elif config.cortical_beta_mechanism == "current":
+        ctx_beta_spike_input = False
+    else:
+        print(f"I don't know how to modulate cortical beta using {config.cortical_beta_mechanism}")
 
     np.random.seed(rng_seed)
     # Sphere with radius 2000 um
@@ -476,11 +482,16 @@ def load_network(
         modulation_t += time_shift
 
     if ctx_dc_offset != 0:
-        Cortical_Pop.inject(
-            DCSource(
-                start=steady_state_duration,
-                stop=sim_total_time,
-                amplitude=ctx_dc_offset))
+        for cell in Cortical_Pop:
+            if config.ctx_dc_offset_std > 0:
+                cell_offset = ctx_dc_offset + config.ctx_dc_offset_std * np.random.randn(1)
+            else:
+                cell_offset = ctx_dc_offset
+            cell.inject(
+                DCSource(
+                    start=steady_state_duration,
+                    stop=sim_total_time,
+                    amplitude=cell_offset))
 
     if ctx_beta_spike_input:
         ctx_poisson_tt, ctx_poisson_a = u.burst_txt_to_signal(modulation_t, ctx_beta_frequency * (modulation_s + 1), steady_state_duration, sim_total_time, dt=0.1)
@@ -497,7 +508,7 @@ def load_network(
             SpikeSourceArray(spike_times=ctx_spike_times[0]),
             label="Ctx Beta Spike Source",
             )
-        syn_Ctx_Beta = StaticSynapse(weight=0.01, delay=1)
+        syn_Ctx_Beta = StaticSynapse(weight=ctx_beta_synapse_strength, delay=1)
         prj_Ctx_Beta = Projection(
             Ctx_Beta_Source_Pop,
             Cortical_Pop,
@@ -509,10 +520,10 @@ def load_network(
     else:
         modulation_s = beta_burst_modulation_scale * modulation_s  # Scale the modulation signal
 
-        cortical_modulation_current = StepCurrentSource(
+        cortical_burst_modulation_current = StepCurrentSource(
             times=modulation_t, amplitudes=modulation_s
         )
-        Cortical_Pop.inject(cortical_modulation_current)
+        Cortical_Pop.inject(cortical_burst_modulation_current)
 
         add_slow_modulation(
             Cortical_Pop,
