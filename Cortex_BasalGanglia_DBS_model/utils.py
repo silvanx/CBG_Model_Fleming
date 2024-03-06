@@ -88,6 +88,7 @@ def generate_inhomogeneous_poisson_spike_times(
         neuron_spike_train = np.random.rand(len(fr_envelope)) < fr_envelope * dt / 1000
         neuron_spike_times = tt[np.nonzero(neuron_spike_train)[0]]
         neuron_spike_times += isi_dither * np.random.randn(len(neuron_spike_times))
+        neuron_spike_times.sort()
         spike_times.append(Sequence(neuron_spike_times))
     return spike_times
 
