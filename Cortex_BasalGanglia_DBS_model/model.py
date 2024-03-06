@@ -472,6 +472,13 @@ def load_network(
         time_shift = int(steady_state_duration - modulation_t[0])
         modulation_t += time_shift
 
+    if ctx_dc_offset > 0:
+        Cortical_Pop.inject(
+            DCSource(
+                start=steady_state_duration,
+                stop=sim_total_time,
+                amplitude=ctx_dc_offset))
+
     if ctx_beta_spike_input:
         ctx_poisson_tt, ctx_poisson_a = u.burst_txt_to_signal(modulation_t, 26 * (modulation_s + 1), steady_state_duration, sim_total_time, dt=0.1)
         ctx_spike_times = u.generate_inhomogeneous_poisson_spike_times(
@@ -502,12 +509,6 @@ def load_network(
             times=modulation_t, amplitudes=modulation_s
         )
         Cortical_Pop.inject(cortical_modulation_current)
-        if ctx_dc_offset > 0:
-            Cortical_Pop.inject(
-                DCSource(
-                    start=steady_state_duration,
-                    stop=sim_total_time,
-                    amplitude=ctx_dc_offset))
 
         add_slow_modulation(
             Cortical_Pop,
