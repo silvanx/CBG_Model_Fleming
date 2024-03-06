@@ -4,7 +4,12 @@ from pyNN.parameters import Sequence
 
 
 def generate_poisson_spike_times(
-    pop_size, start_time, duration, fr, timestep, random_seed
+    pop_size,
+    start_time,
+    duration,
+    fr,
+    timestep,
+    random_seed
 ):
     """generate_population_spike_times generates (N = pop_size) Poisson
     distributed spiketrains with firing rate fr.
@@ -75,12 +80,14 @@ def generate_inhomogeneous_poisson_spike_times(
     tt,
     fr_envelope,
     dt,
-    random_seed
+    random_seed,
+    isi_dither,
 ):
     spike_times = []
     for neuron_index in np.arange(pop_size):
         neuron_spike_train = np.random.rand(len(fr_envelope)) < fr_envelope * dt / 1000
         neuron_spike_times = tt[np.nonzero(neuron_spike_train)[0]]
+        neuron_spike_times += isi_dither * np.random.randn(len(neuron_spike_times))
         spike_times.append(Sequence(neuron_spike_times))
     return spike_times
 

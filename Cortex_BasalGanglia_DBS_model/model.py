@@ -370,7 +370,10 @@ def load_network(
     ctx_dc_offset = config.ctx_dc_offset
     ctx_slow_modulation_amplitude = config.ctx_slow_modulation_amplitude
     ctx_slow_modulation_step_count = config.ctx_slow_modulation_step_count
+
     ctx_beta_spike_input = True
+    ctx_beta_frequency = 26
+    ctx_beta_isi_dither = 0.05
 
     np.random.seed(rng_seed)
     # Sphere with radius 2000 um
@@ -480,13 +483,14 @@ def load_network(
                 amplitude=ctx_dc_offset))
 
     if ctx_beta_spike_input:
-        ctx_poisson_tt, ctx_poisson_a = u.burst_txt_to_signal(modulation_t, 26 * (modulation_s + 1), steady_state_duration, sim_total_time, dt=0.1)
+        ctx_poisson_tt, ctx_poisson_a = u.burst_txt_to_signal(modulation_t, ctx_beta_frequency * (modulation_s + 1), steady_state_duration, sim_total_time, dt=0.1)
         ctx_spike_times = u.generate_inhomogeneous_poisson_spike_times(
             Pop_size,
             ctx_poisson_tt,
             ctx_poisson_a,
             dt=0.1,
             random_seed=rng_seed,
+            dither=ctx_beta_isi_dither,
         )
         Ctx_Beta_Source_Pop = Population(
             Pop_size,
