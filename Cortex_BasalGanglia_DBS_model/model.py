@@ -481,17 +481,17 @@ def load_network(
         time_shift = int(steady_state_duration - modulation_t[0])
         modulation_t += time_shift
 
-    if ctx_dc_offset != 0:
-        for cell in Cortical_Pop:
-            if config.ctx_dc_offset_std > 0:
-                cell_offset = ctx_dc_offset + config.ctx_dc_offset_std * np.random.randn(1)
-            else:
-                cell_offset = ctx_dc_offset
-            cell.inject(
-                DCSource(
-                    start=steady_state_duration,
-                    stop=sim_total_time,
-                    amplitude=cell_offset))
+    random_array = np.random.randn(Pop_size)
+
+    for cell in Cortical_Pop:
+        cell_offset = ctx_dc_offset
+        if config.ctx_dc_offset_std > 0:
+            cell_offset += config.ctx_dc_offset_std * random_array[cell]
+        cell.inject(
+            DCSource(
+                start=steady_state_duration,
+                stop=sim_total_time,
+                amplitude=cell_offset))
 
     if ctx_beta_spike_input:
         ctx_poisson_tt, ctx_poisson_a = u.burst_txt_to_signal(modulation_t, ctx_beta_frequency * (modulation_s + 1), steady_state_duration, sim_total_time, dt=0.1)
