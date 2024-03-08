@@ -12,21 +12,26 @@ available at https://doi.org/10.3171/2023.2.JNS222576
 - Ability to record cortical "LFP" analog
 - Possibility to choose if the cortical beta comes intracellularly or synaptically
 
-# Running the model
-Install Docker and build the image using included dockerfile
+# Running the model using Docker
+First, install Docker (https://www.docker.com/products/docker-desktop/). Then clone the project
 ```
-docker build -t fleming-model .
+git clone https://github.com/silvanx/CBG_Model_Fleming.git 
+cd CBG_Model_Fleming
+```
+Build the image using included dockerfile
+```
+docker build -t cbg-model .
 ```
 Run the code in the container
 ```
-docker run --name <container-name> fleming-model <config_file>.yml
+docker run --name container-name cbg-model <config_file>.yml
 ```
 If you don't specify the config file (relative to the Cortex_BasalGanglia_DBS_model directory),
 by default ```conf_zero_4s.yml``` will be run.
 
 Get the simulation data out from the container
 ```
-docker cp <container-name>:/usr/app/src/CBG_Fleming_Model/RESULTS ./simulation-results
+docker cp container-name:/usr/app/src/CBG_Fleming_Model/RESULTS ./simulation-results
 ```
 
 Several scripts to help with data loading and plotting are available in the following repository:
