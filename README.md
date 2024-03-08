@@ -9,6 +9,8 @@ available at https://doi.org/10.3171/2023.2.JNS222576
 - This model is MPI-enabled, which means it can be run in parallel, reducing the simulation time
 - The simulation parameters are set with a config file that is passed as a command line argument
   to the `run_model.py` script
+- Ability to record cortical "LFP" analog
+- Possibility to choose if the cortical beta comes intracellularly or synaptically
 
 # Running the model
 Install Docker and build the image using included dockerfile
@@ -40,19 +42,35 @@ The config file specifies the parameters of the simulation
 - `TimeStep`: timestep of the NEURON simulator
 - `SteadyStateDuration`: how long to wait before applying stimulation; unit: ms
 - `RunTime`: how long to run the simulation *after* steady state; unit: ms
-- `save_stn_voltage`: whether to write STN neuron membrane voltage to a file
-- `save_ctx_voltage`: whether to write cortical neuron membrane voltage to a file
-- `save_ctx_lfp`: whether to write cortical neuron synaptic currents to a file
+- `save_stn_voltage`: whether to write STN neuron membrane voltage to a file; True/False
+- `save_ctx_voltage`: whether to write cortical neuron membrane voltage to a file; True/False
+- `save_ctx_lfp`: whether to write cortical neuron synaptic currents to a file; True/False
 ## Model
 - `Pop_size`: how many neurons per cell population
-- `create_new_network`: should I create a new model or read the structure from a file? (default: False)
-- `beta_burst_modulation_scale`: amplitude of the modulating current in cortical neurons; unit: nA
+- `create_new_network`: should I create a new model or read the structure from a file?; True/False (default: False = read structure from a file)
 - `ctx_dc_offset`: constant current applied to cortical neurons; unit: nA
+- `ctx_dc_offset_std`: add gaussian random variability to the constant cortical current by specifying the standard deviation of the distribution; unit: nA
+
+- `cortical_beta_mechanism`: how to introduce the beta activity into the cortex; allowed values:
+  - `current`: intracellular current modulating the firing rate of the Cortical neurons
+  - `spikes`: synaptic input with beta frequency
+
+If `cortical beta mechanism` is set to `spikes`, the following parameters are responsible for the behaviour of the system:
+- `ctx_beta_spike_frequency`: Frequency of the Poisson-distributed spikes coming into the cortex
+- `ctx_beta_synapse_strength`: Strength of the synaptic connections
+- `ctx_beta_spike_isi_dither`: Standard deviation of additional jitter added to spike times
+
+If `cortical beta mechanism` is set to `current`, the following parameters are responsible for the behaviour of the system:
 - `ctx_slow_modulation_step_count`: how many times during the simulation to switch ctx input from `0` to `ctx_slow_modulation_amplitude`
 - `ctx_slow_modulation_amplitude`: amplitude of slow cortical modulation
+- `beta_burst_modulation_scale`: amplitude of the modulating current in cortical neurons; unit: nA
 ## Controller
+- `Controller`: specify the controller type; allowed values:
+  - `ZERO`: no stimulation
+  - `OPEN`: constant open-loop stimulation
+  - `PID`: PID (proportional-integral-derivative) controller
+  - `IFT`: Iterative Feedback Tuning controller (EXPERIMENTAL)
 - `setpoint`: target value of the biomarker
-- `td`:
 - `ts`: time between subsequent controller calls; unit: s
 - `min_value`: minimum value of controller output
 - `max_value`: maximum value of controller output
@@ -61,6 +79,7 @@ The config file specifies the parameters of the simulation
 ### PID controller settings
 - `kp`: proportional gain
 - `ti`: integral constant
+- `td`: derivative constant
 
 ### IFT controller settings
 - `kp`: initial proportional gain
@@ -70,6 +89,8 @@ The config file specifies the parameters of the simulation
 - `lam`: lambda parameter, weighting the MSE and TEED parts of the fitness function
 - `min_kp`: minimal value of kp
 - `min_ti`: minimal value of ti 
+- `fix_kp`: if True, don't update the value of Kp (default: False)
+- `fix_ti`: if True, don't update the value of Ti (default: False)
 
 ### OPEN controller settings
 - `stimulation_amplitude`: amplitude of the open-loop stimulation
