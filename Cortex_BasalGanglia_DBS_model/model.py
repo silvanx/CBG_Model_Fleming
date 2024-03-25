@@ -25,6 +25,7 @@ from Electrode_Distances import (
     collateral_distances_to_electrode,
 )
 import utils as u
+from pathlib import Path
 
 
 def create_network(
@@ -42,6 +43,7 @@ def create_network(
     ctx_slow_modulation_step_count = config.ctx_slow_modulation_step_count
 
     np.random.seed(rng_seed)
+    structure_save_dir = Path("network_structure")
 
     # Sphere with radius 2000 um
     STN_space = space.RandomStructure(
@@ -54,9 +56,9 @@ def create_network(
     )
 
     # Save spike times so they can be reloaded
-    np.save("Striatal_Spike_Times.npy", striatal_spike_times)
+    np.save(structure_save_dir / "Striatal_Spike_Times.npy", striatal_spike_times)
 
-    for i in range(0, Pop_size):
+    for i in range(Pop_size):
         spike_times = striatal_spike_times[i][0].value
         spike_times = spike_times[spike_times > steady_state_duration]
         striatal_spike_times[i][0] = Sequence(spike_times)
@@ -109,8 +111,9 @@ def create_network(
     Striatal_Pop.set(spike_times=striatal_spike_times[:, 0])
 
     # Load burst times
-    burst_times_script = "burst_times_1.txt"
-    burst_level_script = "burst_level_1.txt"
+    burst_dir = Path("burst_data")
+    burst_times_script = burst_dir / "burst_times_1.txt"
+    burst_level_script = burst_dir / "burst_level_1.txt"
     modulation_t = np.loadtxt(burst_times_script, delimiter=",")
     modulation_s = np.loadtxt(burst_level_script, delimiter=",")
     modulation_s = beta_burst_modulation_scale * modulation_s  # Scale the modulation signal
@@ -171,7 +174,7 @@ def create_network(
             Cortical_cell.position = STN_space.generate_positions(1).flatten()
 
     # Save the generated cortical xy positions to a textfile
-    np.savetxt("cortical_xy_pos.txt", Cortical_Pop.positions, delimiter=",")
+    np.savetxt(structure_save_dir / "cortical_xy_pos.txt", Cortical_Pop.positions, delimiter=",")
 
     for STN_cell in STN_Pop:
         while (
@@ -185,7 +188,7 @@ def create_network(
         STN_cell.position[2] = 500
 
     # Save the generated STN xy positions to a textfile
-    np.savetxt("STN_xy_pos.txt", STN_Pop.positions, delimiter=",")
+    np.savetxt(structure_save_dir / "STN_xy_pos.txt", STN_Pop.positions, delimiter=",")
 
     # Synaptic Connections
     # Add variability to Cortical connections - cortical interneuron
@@ -314,23 +317,23 @@ def create_network(
     # Save the network topology so it can be reloaded
     # prj_CorticalSpikeSourceCorticalSoma.saveConnections(file="CorticalSpikeSourceCorticalSoma_Connections.txt")
     prj_CorticalAxon_Interneuron.saveConnections(
-        file="CorticalAxonInterneuron_Connections.txt"
+        file=structure_save_dir / "CorticalAxonInterneuron_Connections.txt"
     )
     prj_Interneuron_CorticalSoma.saveConnections(
-        file="InterneuronCortical_Connections.txt"
+        file=structure_save_dir / "InterneuronCortical_Connections.txt"
     )
-    prj_CorticalSTN.saveConnections(file="CorticalSTN_Connections.txt")
-    prj_STNGPe.saveConnections(file="STNGPe_Connections.txt")
-    prj_GPeGPe.saveConnections(file="GPeGPe_Connections.txt")
-    prj_GPeSTN.saveConnections(file="GPeSTN_Connections.txt")
-    prj_StriatalGPe.saveConnections(file="StriatalGPe_Connections.txt")
-    prj_STNGPi.saveConnections(file="STNGPi_Connections.txt")
-    prj_GPeGPi.saveConnections(file="GPeGPi_Connections.txt")
-    prj_GPiThalamic.saveConnections(file="GPiThalamic_Connections.txt")
-    prj_ThalamicCortical.saveConnections(file="ThalamicCorticalSoma_Connections.txt")
-    prj_CorticalThalamic.saveConnections(file="CorticalSomaThalamic_Connections.txt")
+    prj_CorticalSTN.saveConnections(file=structure_save_dir / "CorticalSTN_Connections.txt")
+    prj_STNGPe.saveConnections(file=structure_save_dir / "STNGPe_Connections.txt")
+    prj_GPeGPe.saveConnections(file=structure_save_dir / "GPeGPe_Connections.txt")
+    prj_GPeSTN.saveConnections(file=structure_save_dir / "GPeSTN_Connections.txt")
+    prj_StriatalGPe.saveConnections(file=structure_save_dir / "StriatalGPe_Connections.txt")
+    prj_STNGPi.saveConnections(file=structure_save_dir / "STNGPi_Connections.txt")
+    prj_GPeGPi.saveConnections(file=structure_save_dir / "GPeGPi_Connections.txt")
+    prj_GPiThalamic.saveConnections(file=structure_save_dir / "GPiThalamic_Connections.txt")
+    prj_ThalamicCortical.saveConnections(file=structure_save_dir / "ThalamicCorticalSoma_Connections.txt")
+    prj_CorticalThalamic.saveConnections(file=structure_save_dir / "CorticalSomaThalamic_Connections.txt")
     # Load GPe stimulation order
-    GPe_stimulation_order = np.loadtxt("GPe_Stimulation_Order.txt", delimiter=",")
+    GPe_stimulation_order = np.loadtxt(structure_save_dir / "GPe_Stimulation_Order.txt", delimiter=",")
     GPe_stimulation_order = [int(index) for index in GPe_stimulation_order]
 
     return (
@@ -371,6 +374,8 @@ def load_network(
     ctx_slow_modulation_amplitude = config.ctx_slow_modulation_amplitude
     ctx_slow_modulation_step_count = config.ctx_slow_modulation_step_count
 
+    structure_save_dir = Path("network_structure")
+
     if config.cortical_beta_mechanism == "spikes":
         ctx_beta_spike_input = True
         ctx_beta_frequency = config.ctx_beta_spike_frequency
@@ -388,9 +393,9 @@ def load_network(
     )
 
     # Load striatal spike times from file
-    striatal_spike_times = np.load("Striatal_Spike_Times.npy", allow_pickle=True)
+    striatal_spike_times = np.load(structure_save_dir / "Striatal_Spike_Times.npy", allow_pickle=True)
     Pop_size = len(striatal_spike_times[:, 0])
-    for i in range(0, Pop_size):
+    for i in range(Pop_size):
         spike_times = striatal_spike_times[i][0].value
         spike_times = spike_times[spike_times > steady_state_duration]
         striatal_spike_times[i][0] = Sequence(spike_times)
@@ -467,8 +472,9 @@ def load_network(
         )
 
     # Load burst times
-    burst_times_script = "burst_times_1.txt"
-    burst_level_script = "burst_level_1.txt"
+    burst_dir = Path("burst_data")
+    burst_times_script = burst_dir / "burst_times_1.txt"
+    burst_level_script = burst_dir / "burst_level_1.txt"
     modulation_t = np.loadtxt(burst_times_script, delimiter=",")
     modulation_s = np.loadtxt(burst_level_script, delimiter=",")
 
@@ -534,7 +540,7 @@ def load_network(
         )
 
     # Load cortical positions - Comment/Remove to generate new positions
-    Cortical_Neuron_xy_Positions = np.loadtxt("cortical_xy_pos.txt", delimiter=",")
+    Cortical_Neuron_xy_Positions = np.loadtxt(structure_save_dir / "cortical_xy_pos.txt", delimiter=",")
     cortex_local_indices = [cell in Cortical_Pop for cell in Cortical_Pop.all_cells]
     Cortical_Neuron_x_Positions = Cortical_Neuron_xy_Positions[0, cortex_local_indices]
     Cortical_Neuron_y_Positions = Cortical_Neuron_xy_Positions[1, cortex_local_indices]
@@ -545,7 +551,7 @@ def load_network(
         cell.position[1] = Cortical_Neuron_y_Positions[ii]
 
     # Load STN positions - Comment/Remove to generate new positions
-    STN_Neuron_xy_Positions = np.loadtxt("STN_xy_pos.txt", delimiter=",")
+    STN_Neuron_xy_Positions = np.loadtxt(structure_save_dir / "STN_xy_pos.txt", delimiter=",")
     stn_local_indices = [cell in STN_Pop for cell in STN_Pop.all_cells]
     STN_Neuron_x_Positions = STN_Neuron_xy_Positions[0, stn_local_indices]
     STN_Neuron_y_Positions = STN_Neuron_xy_Positions[1, stn_local_indices]
@@ -587,7 +593,7 @@ def load_network(
     prj_CorticalAxon_Interneuron = Projection(
         Cortical_Pop,
         Interneuron_Pop,
-        FromFileConnector("CorticalAxonInterneuron_Connections.txt"),
+        FromFileConnector(structure_save_dir / "CorticalAxonInterneuron_Connections.txt"),
         syn_CorticalAxon_Interneuron,
         source="middle_axon_node",
         receptor_type="AMPA",
@@ -595,14 +601,14 @@ def load_network(
     prj_Interneuron_CorticalSoma = Projection(
         Interneuron_Pop,
         Cortical_Pop,
-        FromFileConnector("InterneuronCortical_Connections.txt"),
+        FromFileConnector(structure_save_dir / "InterneuronCortical_Connections.txt"),
         syn_Interneuron_CorticalSoma,
         receptor_type="GABAa",
     )
     prj_CorticalSTN = Projection(
         Cortical_Pop,
         STN_Pop,
-        FromFileConnector("CorticalSTN_Connections.txt"),
+        FromFileConnector(structure_save_dir / "CorticalSTN_Connections.txt"),
         syn_CorticalCollateralSTN,
         source="collateral(0.5)",
         receptor_type="AMPA",
@@ -610,7 +616,7 @@ def load_network(
     prj_STNGPe = Projection(
         STN_Pop,
         GPe_Pop,
-        FromFileConnector("STNGPe_Connections.txt"),
+        FromFileConnector(structure_save_dir / "STNGPe_Connections.txt"),
         syn_STNGPe,
         source="soma(0.5)",
         receptor_type="AMPA",
@@ -618,7 +624,7 @@ def load_network(
     prj_GPeGPe = Projection(
         GPe_Pop,
         GPe_Pop,
-        FromFileConnector("GPeGPe_Connections.txt"),
+        FromFileConnector(structure_save_dir / "GPeGPe_Connections.txt"),
         syn_GPeGPe,
         source="soma(0.5)",
         receptor_type="GABAa",
@@ -626,7 +632,7 @@ def load_network(
     prj_GPeSTN = Projection(
         GPe_Pop,
         STN_Pop,
-        FromFileConnector("GPeSTN_Connections.txt"),
+        FromFileConnector(structure_save_dir / "GPeSTN_Connections.txt"),
         syn_GPeSTN,
         source="soma(0.5)",
         receptor_type="GABAa",
@@ -634,7 +640,7 @@ def load_network(
     prj_StriatalGPe = Projection(
         Striatal_Pop,
         GPe_Pop,
-        FromFileConnector("StriatalGPe_Connections.txt"),
+        FromFileConnector(structure_save_dir / "StriatalGPe_Connections.txt"),
         syn_StriatalGPe,
         source="soma(0.5)",
         receptor_type="GABAa",
@@ -642,7 +648,7 @@ def load_network(
     prj_STNGPi = Projection(
         STN_Pop,
         GPi_Pop,
-        FromFileConnector("STNGPi_Connections.txt"),
+        FromFileConnector(structure_save_dir / "STNGPi_Connections.txt"),
         syn_STNGPi,
         source="soma(0.5)",
         receptor_type="AMPA",
@@ -650,7 +656,7 @@ def load_network(
     prj_GPeGPi = Projection(
         GPe_Pop,
         GPi_Pop,
-        FromFileConnector("GPeGPi_Connections.txt"),
+        FromFileConnector(structure_save_dir / "GPeGPi_Connections.txt"),
         syn_GPeGPi,
         source="soma(0.5)",
         receptor_type="GABAa",
@@ -658,7 +664,7 @@ def load_network(
     prj_GPiThalamic = Projection(
         GPi_Pop,
         Thalamic_Pop,
-        FromFileConnector("GPiThalamic_Connections.txt"),
+        FromFileConnector(structure_save_dir / "GPiThalamic_Connections.txt"),
         syn_GPiThalamic,
         source="soma(0.5)",
         receptor_type="GABAa",
@@ -666,7 +672,7 @@ def load_network(
     prj_ThalamicCortical = Projection(
         Thalamic_Pop,
         Cortical_Pop,
-        FromFileConnector("ThalamicCorticalSoma_Connections.txt"),
+        FromFileConnector(structure_save_dir / "ThalamicCorticalSoma_Connections.txt"),
         syn_ThalamicCortical,
         source="soma(0.5)",
         receptor_type="AMPA",
@@ -674,14 +680,14 @@ def load_network(
     prj_CorticalThalamic = Projection(
         Cortical_Pop,
         Thalamic_Pop,
-        FromFileConnector("CorticalSomaThalamic_Connections.txt"),
+        FromFileConnector(structure_save_dir / "CorticalSomaThalamic_Connections.txt"),
         syn_CorticalThalamic,
         source="soma(0.5)",
         receptor_type="AMPA",
     )
 
     # Load GPe stimulation order
-    GPe_stimulation_order = np.loadtxt("GPe_Stimulation_Order.txt", delimiter=",")
+    GPe_stimulation_order = np.loadtxt(structure_save_dir / "GPe_Stimulation_Order.txt", delimiter=",")
     GPe_stimulation_order = [int(index) for index in GPe_stimulation_order]
 
     return (
