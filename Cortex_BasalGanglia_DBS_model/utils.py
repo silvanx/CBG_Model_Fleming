@@ -55,41 +55,54 @@ def burst_txt_to_signal(
     """Generates square wave from step amplitudes and times"""
     segments = []
     if tstart < tt[0]:
-        initial_segment = aa[0] * np.ones(int(np.floor((tt[0] - tstart) / dt)))
+        initial_segment = aa[0] * np.ones(((tt[0] - tstart) // dt))
         segments.append(initial_segment)
-    for i in range(len(tt)):
-        t = tt[i]
-        a = aa[i]
+    
+    tt_length = len(tt)
+    for i, t in enumerate(tt):
         if t > tstop:
             break
-        if i == (len(tt) - 1):
-            next_t = tstop
-        elif tt[i + 1] > tstop:
+        
+        a = aa[i]
+        if i == (tt_length - 1) or tt[i + 1] > tstop:
             next_t = tstop
         else:
             next_t = tt[i + 1]
         segment_length = int(np.floor((next_t - t) / dt))
         seg = a * np.ones(segment_length)
         segments.append(seg)
+        
     signal = np.concatenate(segments)
-    return np.linspace(tstart, tstop, len(signal)), signal
+    signal_times = np.linspace(tstart, tstop, len(signal))
+    
+    return signal_times, signal
 
 
 def generate_inhomogeneous_poisson_spike_times(
-    pop_size,
-    tt,
-    fr_envelope,
-    dt,
-    random_seed,
-    isi_dither,
+    pop_size: int,
+    tt: np.ndarray,
+    fr_envelope: np.ndarray,
+    dt: float,
+    random_seed: int,
+    isi_dither: float,
 ):
-    spike_times = []
-    for neuron_index in np.arange(pop_size):
+    def one_neuron_spike_times(
+        tt,
+        fr_envelope,
+        dt,
+        random_seed,
+        isi_dither,
+    ):
         neuron_spike_train = np.random.rand(len(fr_envelope)) < fr_envelope * dt / 1000
         neuron_spike_times = tt[np.nonzero(neuron_spike_train)[0]]
         neuron_spike_times += isi_dither * np.random.randn(len(neuron_spike_times))
-        neuron_spike_times.sort()
-        spike_times.append(Sequence(neuron_spike_times))
+        neuron_spike_times = np.sort(neuron_spike_times)
+        return Sequence(neuron_spike_times)
+    
+    spike_times = [
+        one_neuron_spike_times(tt, fr_envelope, dt, random_seed, isi_dither)
+        for _ in range(pop_size)
+    ]
     return spike_times
 
 
