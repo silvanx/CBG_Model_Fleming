@@ -593,7 +593,7 @@ def load_network(
     prj_CorticalAxon_Interneuron = Projection(
         Cortical_Pop,
         Interneuron_Pop,
-        FromFileConnector(structure_save_dir / "CorticalAxonInterneuron_Connections.txt"),
+        FromFileConnector(str(structure_save_dir / "CorticalAxonInterneuron_Connections.txt")),
         syn_CorticalAxon_Interneuron,
         source="middle_axon_node",
         receptor_type="AMPA",
@@ -601,14 +601,14 @@ def load_network(
     prj_Interneuron_CorticalSoma = Projection(
         Interneuron_Pop,
         Cortical_Pop,
-        FromFileConnector(structure_save_dir / "InterneuronCortical_Connections.txt"),
+        FromFileConnector(str(structure_save_dir / "InterneuronCortical_Connections.txt")),
         syn_Interneuron_CorticalSoma,
         receptor_type="GABAa",
     )
     prj_CorticalSTN = Projection(
         Cortical_Pop,
         STN_Pop,
-        FromFileConnector(structure_save_dir / "CorticalSTN_Connections.txt"),
+        FromFileConnector(str(structure_save_dir / "CorticalSTN_Connections.txt")),
         syn_CorticalCollateralSTN,
         source="collateral(0.5)",
         receptor_type="AMPA",
@@ -616,7 +616,7 @@ def load_network(
     prj_STNGPe = Projection(
         STN_Pop,
         GPe_Pop,
-        FromFileConnector(structure_save_dir / "STNGPe_Connections.txt"),
+        FromFileConnector(str(structure_save_dir / "STNGPe_Connections.txt")),
         syn_STNGPe,
         source="soma(0.5)",
         receptor_type="AMPA",
@@ -624,7 +624,7 @@ def load_network(
     prj_GPeGPe = Projection(
         GPe_Pop,
         GPe_Pop,
-        FromFileConnector(structure_save_dir / "GPeGPe_Connections.txt"),
+        FromFileConnector(str(structure_save_dir / "GPeGPe_Connections.txt")),
         syn_GPeGPe,
         source="soma(0.5)",
         receptor_type="GABAa",
@@ -632,7 +632,7 @@ def load_network(
     prj_GPeSTN = Projection(
         GPe_Pop,
         STN_Pop,
-        FromFileConnector(structure_save_dir / "GPeSTN_Connections.txt"),
+        FromFileConnector(str(structure_save_dir / "GPeSTN_Connections.txt")),
         syn_GPeSTN,
         source="soma(0.5)",
         receptor_type="GABAa",
@@ -640,7 +640,7 @@ def load_network(
     prj_StriatalGPe = Projection(
         Striatal_Pop,
         GPe_Pop,
-        FromFileConnector(structure_save_dir / "StriatalGPe_Connections.txt"),
+        FromFileConnector(str(structure_save_dir / "StriatalGPe_Connections.txt")),
         syn_StriatalGPe,
         source="soma(0.5)",
         receptor_type="GABAa",
@@ -648,7 +648,7 @@ def load_network(
     prj_STNGPi = Projection(
         STN_Pop,
         GPi_Pop,
-        FromFileConnector(structure_save_dir / "STNGPi_Connections.txt"),
+        FromFileConnector(str(structure_save_dir / "STNGPi_Connections.txt")),
         syn_STNGPi,
         source="soma(0.5)",
         receptor_type="AMPA",
@@ -656,7 +656,7 @@ def load_network(
     prj_GPeGPi = Projection(
         GPe_Pop,
         GPi_Pop,
-        FromFileConnector(structure_save_dir / "GPeGPi_Connections.txt"),
+        FromFileConnector(str(structure_save_dir / "GPeGPi_Connections.txt")),
         syn_GPeGPi,
         source="soma(0.5)",
         receptor_type="GABAa",
@@ -664,7 +664,7 @@ def load_network(
     prj_GPiThalamic = Projection(
         GPi_Pop,
         Thalamic_Pop,
-        FromFileConnector(structure_save_dir / "GPiThalamic_Connections.txt"),
+        FromFileConnector(str(structure_save_dir / "GPiThalamic_Connections.txt")),
         syn_GPiThalamic,
         source="soma(0.5)",
         receptor_type="GABAa",
@@ -672,7 +672,7 @@ def load_network(
     prj_ThalamicCortical = Projection(
         Thalamic_Pop,
         Cortical_Pop,
-        FromFileConnector(structure_save_dir / "ThalamicCorticalSoma_Connections.txt"),
+        FromFileConnector(str(structure_save_dir / "ThalamicCorticalSoma_Connections.txt")),
         syn_ThalamicCortical,
         source="soma(0.5)",
         receptor_type="AMPA",
@@ -680,7 +680,7 @@ def load_network(
     prj_CorticalThalamic = Projection(
         Cortical_Pop,
         Thalamic_Pop,
-        FromFileConnector(structure_save_dir / "CorticalSomaThalamic_Connections.txt"),
+        FromFileConnector(str(structure_save_dir / "CorticalSomaThalamic_Connections.txt")),
         syn_CorticalThalamic,
         source="soma(0.5)",
         receptor_type="AMPA",
