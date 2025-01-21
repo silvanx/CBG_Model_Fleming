@@ -4,3 +4,4 @@
 *.so
 neuron_mechanisms/x86_64
 RESULTS
+typings
