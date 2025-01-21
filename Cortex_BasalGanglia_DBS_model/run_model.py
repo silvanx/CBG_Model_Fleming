@@ -71,6 +71,7 @@ if __name__ == "__main__":
     timestep = c.TimeStep
     steady_state_duration = c.SteadyStateDuration
     save_stn_voltage = c.save_stn_voltage
+    save_gpe_voltage = c.save_gpe_voltage
     beta_burst_modulation_scale = c.beta_burst_modulation_scale
     ctx_dc_offset = c.ctx_dc_offset
     Pop_size = c.Pop_size
@@ -78,6 +79,7 @@ if __name__ == "__main__":
     controller_sampling_time = 1000 * c.ts
     ctx_slow_modulation_amplitude = c.ctx_slow_modulation_amplitude
     ctx_slow_modulation_step_count = c.ctx_slow_modulation_step_count
+    DBS_freq = c.stimulation_frequency
 
     sim_total_time = (
         steady_state_duration + simulation_runtime + timestep
@@ -371,7 +373,7 @@ if __name__ == "__main__":
             last_pulse_time_prior=last_pulse_time_prior,
             dt=simulator.state.dt,
             amplitude=100.0,
-            frequency=130.0,
+            frequency=DBS_freq,
             pulse_width=0.06,
             offset=0,
         )
@@ -533,7 +535,6 @@ if __name__ == "__main__":
             DBS_amp = controller.update(
                 state_value=lfp_beta_average_value, current_time=simulator.state.t
             )
-            DBS_freq = 130.0
 
         # Update the DBS Signal
         if call_index + 1 < len(controller_call_times):
@@ -618,20 +619,30 @@ if __name__ == "__main__":
                 pass
 
         # Write population data to file
-        if save_stn_voltage:
-            write_index = "{:.0f}_".format(call_index)
-            suffix = "_{:.0f}ms-{:.0f}ms".format(
-                last_write_time, simulator.state.t)
-            fname = write_index + "STN_Soma_v" + suffix + ".mat"
-            STN_Pop.write_data(
-                str(simulation_output_dir / "STN_POP" / fname),
-                "soma(0.5).v",
-                clear=True
-            )
-        else:
-            STN_Pop.get_data("soma(0.5).v", clear=True)
+        # if save_stn_voltage:
+        #     write_index = "{:.0f}_".format(call_index)
+        #     suffix = "_{:.0f}ms-{:.0f}ms".format(
+        #         last_write_time, simulator.state.t)
+        #     fname = write_index + "STN_Soma_v" + suffix + ".mat"
+        #     STN_Pop.write_data(
+        #         str(simulation_output_dir / "STN_POP" / fname),
+        #         "soma(0.5).v",
+        #         clear=True
+        #     )
+        # else:
 
         last_write_time = simulator.state.t
+
+
+    if c.save_stn_voltage:
+        if rank == 0:
+            print("Saving STN voltage...")
+        STN_Pop.write_data(str(simulation_output_dir / "STN_Pop" / "STN_Soma_v.mat"), "soma(0.5).v", clear=False)
+
+    if c.save_gpe_voltage:
+        if rank == 0:
+            print("Saving GPe voltage...")
+        GPe_Pop.write_data(str(simulation_output_dir / "GPe_Pop" / "GPe_Soma_v.mat"), "soma(0.5).v", clear=False)
 
     # Write population membrane voltage data to file
     if c.save_ctx_voltage:
@@ -640,7 +651,6 @@ if __name__ == "__main__":
         Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop" / "Cortical_Collateral_v.mat"), 'collateral(0.5).v', clear=False)
         Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop" / "Cortical_Soma_v.mat"), 'soma(0.5).v', clear=False)
     # Interneuron_Pop.write_data(str(simulation_output_dir / "Interneuron_Pop/Interneuron_Soma_v.mat"), 'soma(0.5).v', clear=True)
-    # GPe_Pop.write_data(str(simulation_output_dir / "GPe_Pop/GPe_Soma_v.mat", 'soma(0.5).v'), clear=True)
     # GPi_Pop.write_data(str(simulation_output_dir / "GPi_Pop/GPi_Soma_v.mat", 'soma(0.5).v'), clear=True)
     # Thalamic_Pop.write_data(str(simulation_output_dir / "Thalamic_Pop/Thalamic_Soma_v.mat"), 'soma(0.5).v', clear=True)
 

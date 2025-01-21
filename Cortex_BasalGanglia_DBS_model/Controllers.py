@@ -118,6 +118,7 @@ class ConstantController:
         min_value=0.0,
         max_value=1e9,
         stimulation_amplitude=0.0,
+        stimulation_frequency=130.0,
         ts=0.0,
         units="mA",
     ):
@@ -126,6 +127,7 @@ class ConstantController:
         self.max_value = max_value
         self.min_value = min_value
         self.stimulation_amplitude = stimulation_amplitude
+        self.stimulation_frequency = stimulation_frequency
         self.ts = ts  # should be in sec as per above
         self.units = units
         self.label = "Constant_Controller/%f%s" % (self.stimulation_amplitude, self.units)
