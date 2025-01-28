@@ -47,6 +47,7 @@ from config import Config, get_controller_kwargs
 
 # Import global variables for GPe DBS
 import Global_Variables as GV
+import version
 
 h = neuron.h
 comm = MPI.COMM_WORLD
@@ -91,6 +92,7 @@ if __name__ == "__main__":
     simulator.load_mechanisms("neuron_mechanisms")
 
     if rank == 0:
+        print(f"CBG model ver {version.version}")
         print("\n------ Configuration ------")
         print(c, "\n")
 
