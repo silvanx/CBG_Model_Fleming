@@ -197,6 +197,7 @@ if __name__ == "__main__":
     STN_Pop.record("GABAa.i", sampling_interval=rec_sampling_interval)
     Striatal_Pop.record("spikes")
     GPe_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
+    GPe_Pop.record("spikes")
     GPi_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
     Thalamic_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
 
@@ -440,7 +441,7 @@ if __name__ == "__main__":
             STN_Pop.get_data("AMPA.i", gather=False).segments[0].analogsignals[0]
         )
         STN_GABAa_i = np.array(
-            STN_Pop.get_data("GABAa.i", gather=False).segments[0].analogsignals[0]
+            STN_Pop.get_data("GABAa.i", gather=False, clear=True).segments[0].analogsignals[0]
         )
         STN_Syn_i = STN_AMPA_i + STN_GABAa_i
 
@@ -640,11 +641,13 @@ if __name__ == "__main__":
         if rank == 0:
             print("Saving STN voltage...")
         STN_Pop.write_data(str(simulation_output_dir / "STN_Pop" / "STN_Soma_v.mat"), "soma(0.5).v", clear=False)
+    STN_Pop.write_data(str(simulation_output_dir / "STN_Pop" / "STN_spikes.mat"), "spikes", clear=False)
 
     if c.save_gpe_voltage:
         if rank == 0:
             print("Saving GPe voltage...")
         GPe_Pop.write_data(str(simulation_output_dir / "GPe_Pop" / "GPe_Soma_v.mat"), "soma(0.5).v", clear=False)
+    GPe_Pop.write_data(str(simulation_output_dir / "GPe_Pop" / "GPe_spikes.mat"), "spikes", clear=False)
 
     # Write population membrane voltage data to file
     if c.save_ctx_voltage:
