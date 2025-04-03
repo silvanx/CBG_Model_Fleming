@@ -441,7 +441,7 @@ if __name__ == "__main__":
             STN_Pop.get_data("AMPA.i", gather=False).segments[0].analogsignals[0]
         )
         STN_GABAa_i = np.array(
-            STN_Pop.get_data("GABAa.i", gather=False, clear=True).segments[0].analogsignals[0]
+            STN_Pop.get_data("GABAa.i", gather=False).segments[0].analogsignals[0]
         )
         STN_Syn_i = STN_AMPA_i + STN_GABAa_i
 
@@ -464,9 +464,7 @@ if __name__ == "__main__":
             )
             * 1e-6
         )
-        STN_LFP = np.hstack(
-            (STN_LFP, comm.allreduce(STN_LFP_1 - STN_LFP_2, op=MPI.SUM))
-        )
+        STN_LFP = comm.allreduce(STN_LFP_1 - STN_LFP_2, op=MPI.SUM)
 
         # STN LFP AMPA and GABAa Contributions
         STN_LFP_AMPA_1 = (
@@ -487,9 +485,7 @@ if __name__ == "__main__":
             )
             * 1e-6
         )
-        STN_LFP_AMPA = np.hstack(
-            (STN_LFP_AMPA, comm.allreduce(STN_LFP_AMPA_1 - STN_LFP_AMPA_2, op=MPI.SUM))
-        )
+        STN_LFP_AMPA = comm.allreduce(STN_LFP_AMPA_1 - STN_LFP_AMPA_2, op=MPI.SUM)
 
         STN_LFP_GABAa_1 = (
             (1 / (4 * math.pi * sigma))
@@ -509,12 +505,7 @@ if __name__ == "__main__":
             )
             * 1e-6
         )
-        STN_LFP_GABAa = np.hstack(
-            (
-                STN_LFP_GABAa,
-                comm.allreduce(STN_LFP_GABAa_1 - STN_LFP_GABAa_2, op=MPI.SUM),
-            )
-        )
+        STN_LFP_GABAa = comm.allreduce(STN_LFP_GABAa_1 - STN_LFP_GABAa_2, op=MPI.SUM)
 
         # Biomarker Calculation:
         lfp_beta_average_value = calculate_avg_beta_power(
