@@ -2,7 +2,7 @@
 This repository contains a computational model of the cortico-basal ganglia loop, capable of recording local field
 potentials (LFP) from the subthalamic nucleus (STN), as well as delivering deep brain stimulation (DBS) in the same
 location. The original model was presented in the article by Fleming et al.,
-available at https://doi.org/10.3171/2023.2.JNS222576
+available at https://doi.org/10.3389/fnins.2020.00166
 
 # Changes from the original model
 - The model run twice with the same random seed produces numerically identical results

@@ -44,6 +44,7 @@ import argparse
 from utils import make_beta_cheby1_filter, calculate_avg_beta_power
 from model import create_network, load_network, electrode_distance
 from config import Config, get_controller_kwargs
+import version
 
 # Import global variables for GPe DBS
 import Global_Variables as GV
@@ -92,7 +93,7 @@ if __name__ == "__main__":
     simulator.load_mechanisms("neuron_mechanisms")
 
     if rank == 0:
-        print(f"CBG model ver {version.version}")
+        print(f"CBG Model ver {version.version}")
         print("\n------ Configuration ------")
         print(c, "\n")
 
