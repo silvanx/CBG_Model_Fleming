@@ -48,6 +48,7 @@ import version
 
 # Import global variables for GPe DBS
 import Global_Variables as GV
+import version
 
 h = neuron.h
 comm = MPI.COMM_WORLD
@@ -72,6 +73,7 @@ if __name__ == "__main__":
     timestep = c.TimeStep
     steady_state_duration = c.SteadyStateDuration
     save_stn_voltage = c.save_stn_voltage
+    save_gpe_voltage = c.save_gpe_voltage
     beta_burst_modulation_scale = c.beta_burst_modulation_scale
     ctx_dc_offset = c.ctx_dc_offset
     Pop_size = c.Pop_size
@@ -79,6 +81,7 @@ if __name__ == "__main__":
     controller_sampling_time = 1000 * c.ts
     ctx_slow_modulation_amplitude = c.ctx_slow_modulation_amplitude
     ctx_slow_modulation_step_count = c.ctx_slow_modulation_step_count
+    DBS_freq = c.stimulation_frequency
 
     sim_total_time = (
         steady_state_duration + simulation_runtime + timestep
@@ -195,6 +198,7 @@ if __name__ == "__main__":
     STN_Pop.record("GABAa.i", sampling_interval=rec_sampling_interval)
     Striatal_Pop.record("spikes")
     GPe_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
+    GPe_Pop.record("spikes")
     GPi_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
     Thalamic_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
 
@@ -373,7 +377,7 @@ if __name__ == "__main__":
             last_pulse_time_prior=last_pulse_time_prior,
             dt=simulator.state.dt,
             amplitude=100.0,
-            frequency=130.0,
+            frequency=DBS_freq,
             pulse_width=0.06,
             offset=0,
         )
@@ -461,9 +465,7 @@ if __name__ == "__main__":
             )
             * 1e-6
         )
-        STN_LFP = np.hstack(
-            (STN_LFP, comm.allreduce(STN_LFP_1 - STN_LFP_2, op=MPI.SUM))
-        )
+        STN_LFP = comm.allreduce(STN_LFP_1 - STN_LFP_2, op=MPI.SUM)
 
         # STN LFP AMPA and GABAa Contributions
         STN_LFP_AMPA_1 = (
@@ -484,9 +486,7 @@ if __name__ == "__main__":
             )
             * 1e-6
         )
-        STN_LFP_AMPA = np.hstack(
-            (STN_LFP_AMPA, comm.allreduce(STN_LFP_AMPA_1 - STN_LFP_AMPA_2, op=MPI.SUM))
-        )
+        STN_LFP_AMPA = comm.allreduce(STN_LFP_AMPA_1 - STN_LFP_AMPA_2, op=MPI.SUM)
 
         STN_LFP_GABAa_1 = (
             (1 / (4 * math.pi * sigma))
@@ -506,12 +506,7 @@ if __name__ == "__main__":
             )
             * 1e-6
         )
-        STN_LFP_GABAa = np.hstack(
-            (
-                STN_LFP_GABAa,
-                comm.allreduce(STN_LFP_GABAa_1 - STN_LFP_GABAa_2, op=MPI.SUM),
-            )
-        )
+        STN_LFP_GABAa = comm.allreduce(STN_LFP_GABAa_1 - STN_LFP_GABAa_2, op=MPI.SUM)
 
         # Biomarker Calculation:
         lfp_beta_average_value = calculate_avg_beta_power(
@@ -535,7 +530,6 @@ if __name__ == "__main__":
             DBS_amp = controller.update(
                 state_value=lfp_beta_average_value, current_time=simulator.state.t
             )
-            DBS_freq = 130.0
 
         # Update the DBS Signal
         if call_index + 1 < len(controller_call_times):
@@ -620,20 +614,32 @@ if __name__ == "__main__":
                 pass
 
         # Write population data to file
-        if save_stn_voltage:
-            write_index = "{:.0f}_".format(call_index)
-            suffix = "_{:.0f}ms-{:.0f}ms".format(
-                last_write_time, simulator.state.t)
-            fname = write_index + "STN_Soma_v" + suffix + ".mat"
-            STN_Pop.write_data(
-                str(simulation_output_dir / "STN_POP" / fname),
-                "soma(0.5).v",
-                clear=True
-            )
-        else:
-            STN_Pop.get_data("soma(0.5).v", clear=True)
+        # if save_stn_voltage:
+        #     write_index = "{:.0f}_".format(call_index)
+        #     suffix = "_{:.0f}ms-{:.0f}ms".format(
+        #         last_write_time, simulator.state.t)
+        #     fname = write_index + "STN_Soma_v" + suffix + ".mat"
+        #     STN_Pop.write_data(
+        #         str(simulation_output_dir / "STN_POP" / fname),
+        #         "soma(0.5).v",
+        #         clear=True
+        #     )
+        # else:
 
         last_write_time = simulator.state.t
+
+
+    if c.save_stn_voltage:
+        if rank == 0:
+            print("Saving STN voltage...")
+        STN_Pop.write_data(str(simulation_output_dir / "STN_Pop" / "STN_Soma_v.mat"), "soma(0.5).v", clear=False)
+    STN_Pop.write_data(str(simulation_output_dir / "STN_Pop" / "STN_spikes.mat"), "spikes", clear=False)
+
+    if c.save_gpe_voltage:
+        if rank == 0:
+            print("Saving GPe voltage...")
+        GPe_Pop.write_data(str(simulation_output_dir / "GPe_Pop" / "GPe_Soma_v.mat"), "soma(0.5).v", clear=False)
+    GPe_Pop.write_data(str(simulation_output_dir / "GPe_Pop" / "GPe_spikes.mat"), "spikes", clear=False)
 
     # Write population membrane voltage data to file
     if c.save_ctx_voltage:
@@ -642,7 +648,6 @@ if __name__ == "__main__":
         Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop" / "Cortical_Collateral_v.mat"), 'collateral(0.5).v', clear=False)
         Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop" / "Cortical_Soma_v.mat"), 'soma(0.5).v', clear=False)
     # Interneuron_Pop.write_data(str(simulation_output_dir / "Interneuron_Pop/Interneuron_Soma_v.mat"), 'soma(0.5).v', clear=True)
-    # GPe_Pop.write_data(str(simulation_output_dir / "GPe_Pop/GPe_Soma_v.mat", 'soma(0.5).v'), clear=True)
     # GPi_Pop.write_data(str(simulation_output_dir / "GPi_Pop/GPi_Soma_v.mat", 'soma(0.5).v'), clear=True)
     # Thalamic_Pop.write_data(str(simulation_output_dir / "Thalamic_Pop/Thalamic_Soma_v.mat"), 'soma(0.5).v', clear=True)
 

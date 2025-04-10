@@ -33,11 +33,12 @@ WORKDIR /usr/app/src/CBG_Fleming_Model/neuron_mechanisms
 
 RUN nrnivmodl
 
+
 WORKDIR /usr/app/src/CBG_Fleming_Model
 
 COPY ./Cortex_BasalGanglia_DBS_model/*.py ./
 COPY ./Cortex_BasalGanglia_DBS_model/*.npy ./
 COPY ./Cortex_BasalGanglia_DBS_model/configs/*.yml ./configs/
 
-ENTRYPOINT ["mpirun", "--allow-run-as-root", "-np", "4", "python3", "/usr/app/src/CBG_Fleming_Model/run_model.py"]
+ENTRYPOINT ["mpirun", "--allow-run-as-root", "-np", "6", "python3", "/usr/app/src/CBG_Fleming_Model/run_model.py"]
 CMD ["/usr/app/src/CBG_Fleming_Model/configs/conf_zero_4s.yml"]

@@ -48,6 +48,7 @@ The config file specifies the parameters of the simulation
 - `SteadyStateDuration`: how long to wait before applying stimulation; unit: ms
 - `RunTime`: how long to run the simulation *after* steady state; unit: ms
 - `save_stn_voltage`: whether to write STN neuron membrane voltage to a file; True/False
+- `save_gpe_voltage`: whether to write GPe neuron membrane voltage to a file; True/False
 - `save_ctx_voltage`: whether to write cortical neuron membrane voltage to a file; True/False
 - `save_ctx_lfp`: whether to write cortical neuron synaptic currents to a file; True/False
 ## Model
@@ -81,6 +82,7 @@ If `cortical beta mechanism` is set to `current`, the following parameters are r
 - `max_value`: maximum value of controller output
 - `controller_window_length`: length of time on which the biomarker value is calculated; unit: ms
 - `controller_window_tail_length`: length of the tail which is ignored for calculating biomarker to avoid edge effects; unit: ms
+- `stimulation_frequency`: stimulation frequency; unit: Hz; default: 130.0
 ### PID controller settings
 - `kp`: proportional gain
 - `ti`: integral constant

@@ -77,6 +77,7 @@ class Config(object):
         min_kp={"type": "float", "coerce": float, "default": 0.01},
         min_ti={"type": "float", "coerce": float, "default": 0.01},
         save_stn_voltage={"type": "boolean", "coerce": bool, "default": True},
+        save_gpe_voltage={"type": "boolean", "coerce": bool, "default": True},
         save_ctx_voltage={"type": "boolean", "coerce": bool, "default": False},
         save_ctx_lfp={"type": "boolean", "coerce": bool, "default": False},
         create_new_network={"type": "boolean", "coerce": bool, "default": False},
@@ -86,6 +87,7 @@ class Config(object):
         fix_kp={"type": "boolean", "coerce": bool, "default": False},
         fix_ti={"type": "boolean", "coerce": bool, "default": False},
         stimulation_amplitude={"type": "float", "coerce": float, "default": 0},
+        stimulation_frequency={"type": "float", "coerce": float, "default": 130.0},
         cortical_beta_mechanism={
             "type": "string",
             "coerce": (str, lambda x: x.lower()),
