@@ -97,6 +97,12 @@ if __name__ == "__main__":
         print("\n------ Configuration ------")
         print(c, "\n")
 
+        print(f"Creating output directory: {output_dir}")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        with open(output_dir / "config.txt", "w") as config_output:
+            config_output.write(f"Model version: {version.version}\n")
+            config_output.write(str(c))
+
     # Make beta band filter centred on 25Hz (cutoff frequencies are 21-29 Hz)
     # for biomarker estimation
     fs = 1000.0 / rec_sampling_interval
@@ -291,9 +297,6 @@ if __name__ == "__main__":
     controller = Controller(**controller_kwargs)
 
     simulation_output_dir = output_dir
-    if rank == 0:
-        print(f"Output directory: {simulation_output_dir}")
-        simulation_output_dir.mkdir(parents=True, exist_ok=True)
 
     # Generate a square wave which represents the DBS signal
     # Needs to be initialized to zero when unused to prevent
