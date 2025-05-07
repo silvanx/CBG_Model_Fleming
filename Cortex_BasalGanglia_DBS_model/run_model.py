@@ -424,8 +424,8 @@ if __name__ == "__main__":
     if rank == 0:
         print("Steady state finished.")
         print(
-            f"\n---> Running simulation for {simulation_runtime:.0f}"
-            f"ms after steady state ({steady_state_duration:.0f} ms)"
+            f"\n---> Running simulation for {simulation_runtime:.0f} "
+            f"ms after steady state ({steady_state_duration:.0f} ms) "
             f"with {controller_type} control"
         )
 
@@ -650,9 +650,18 @@ if __name__ == "__main__":
             print("Saving CTX voltage...")
         Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop" / "Cortical_Collateral_v.mat"), 'collateral(0.5).v', clear=False)
         Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop" / "Cortical_Soma_v.mat"), 'soma(0.5).v', clear=False)
-    # Interneuron_Pop.write_data(str(simulation_output_dir / "Interneuron_Pop/Interneuron_Soma_v.mat"), 'soma(0.5).v', clear=True)
-    # GPi_Pop.write_data(str(simulation_output_dir / "GPi_Pop/GPi_Soma_v.mat", 'soma(0.5).v'), clear=True)
-    # Thalamic_Pop.write_data(str(simulation_output_dir / "Thalamic_Pop/Thalamic_Soma_v.mat"), 'soma(0.5).v', clear=True)
+    if c.save_interneuron_voltage:
+        if rank == 0:
+            print("Saving Interneuron voltage...")
+        Interneuron_Pop.write_data(str(simulation_output_dir / "Interneuron_Pop" / "Interneuron_Soma_v.mat"), 'soma(0.5).v', clear=False)
+    if c.save_gpi_voltage:
+        if rank == 0:
+            print("Saving GPi voltage...")
+        GPi_Pop.write_data(str(simulation_output_dir / "GPi_Pop" / "GPi_Soma_v.mat"), 'soma(0.5).v', clear=False)
+    if c.save_thalamus_voltage:
+        if rank == 0:
+            print("Saving Thalamus voltage...")
+        Thalamic_Pop.write_data(str(simulation_output_dir / "Thalamic_Pop" / "Thalamic_Soma_v.mat"), 'soma(0.5).v', clear=False)
 
     if c.save_ctx_lfp:
         if rank == 0:
