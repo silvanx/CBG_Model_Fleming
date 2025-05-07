@@ -1,0 +1,7 @@
+{ 
+  "stubPath": "stubs",
+
+  "exclude": [
+    "**\\__pycache__",
+  ],
+}
