@@ -16,6 +16,8 @@ RUN patch -p1 < /usr/app/src/CBG_Fleming_Model/pynn-steady-state.patch
 WORKDIR /usr/local/lib/python3.9/site-packages/pyNN/neuron/nmodl
 RUN nrnivmodl
 
+
+RUN echo "deb http://archive.debian.org/debian buster main contrib non-free" > /etc/apt/sources.list
 RUN apt-get update
 RUN apt-get -y install openmpi-bin=3.1.3-11
 RUN pip3 install mpi4py==3.1.4
