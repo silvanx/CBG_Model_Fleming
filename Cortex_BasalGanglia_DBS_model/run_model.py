@@ -193,6 +193,7 @@ if __name__ == "__main__":
     if c.save_ctx_voltage:
         Cortical_Pop.record("soma(0.5).v", sampling_interval=rec_sampling_interval)
         Cortical_Pop.record("collateral(0.5).v", sampling_interval=rec_sampling_interval)
+        Cortical_Pop.record("last_node(0.5).v", sampling_interval=rec_sampling_interval)
     if c.save_ctx_lfp:
         Cortical_Pop.record("AMPA.i", sampling_interval=rec_sampling_interval)
         Cortical_Pop.record("GABAa.i", sampling_interval=rec_sampling_interval)
@@ -650,6 +651,7 @@ if __name__ == "__main__":
             print("Saving CTX voltage...")
         Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop" / "Cortical_Collateral_v.mat"), 'collateral(0.5).v', clear=False)
         Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop" / "Cortical_Soma_v.mat"), 'soma(0.5).v', clear=False)
+        Cortical_Pop.write_data(str(simulation_output_dir / "Cortical_Pop" / "Last_Node_v.mat"), 'last_node(0.5).v', clear=False)
     if c.save_interneuron_voltage:
         if rank == 0:
             print("Saving Interneuron voltage...")

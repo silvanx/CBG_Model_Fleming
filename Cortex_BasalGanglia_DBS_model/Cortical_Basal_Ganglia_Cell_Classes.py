@@ -199,6 +199,8 @@ class Cortical_Neuron(object):
         self.middle_node = self.node[middle_index]
         self.middle_myelin = self.myelin[middle_index]
 
+        self.last_node = self.node[-1]
+
         # Add extracellular and xtra mechanisms to collateral
         self.collateral.insert("extracellular")
         self.collateral.insert("xtra")
@@ -236,11 +238,13 @@ class Cortical_Neuron(object):
             "soma": self.soma(0.5)._ref_v,
             "middle_axon_node": self.middle_node(0.5)._ref_v,
             "collateral": self.collateral(0.5)._ref_v,
+            "last_axon_node": self.last_node(0.5)._ref_v,
         }
         self.source_section = {
             "soma": self.soma,
             "middle_axon_node": self.middle_node,
             "collateral": self.collateral,
+            "last_axon_node": self.last_node,
         }
         self.rec = h.NetCon(
             self.source["collateral"], None, sec=self.source_section["collateral"]
@@ -322,6 +326,7 @@ class Cortical_Neuron_Type(NativeCellType):
         "middle_myelin(0.5).v",
         "AMPA.i",
         "GABAa.i",
+        "last_node(0.5).v",
     ]
     units = {
         "soma(0.5).v": "mV",
@@ -332,6 +337,7 @@ class Cortical_Neuron_Type(NativeCellType):
         "middle_myelin(0.5).v": "mV",
         "AMPA.i": "nA",
         "GABAa.i": "nA",
+        "last_node(0.5).v": "mV",
     }
     receptor_types = ["AMPA", "GABAa"]
     model = Cortical_Neuron
